@@ -607,6 +607,115 @@
             client.subscribe('demoDash/mobileFlask/#');
         });
 
+        // Función para actualizar el estado de todos los botones según el estado del dron
+        function updateButtonStates(droneState) {
+            const botonConectar = document.getElementById('botonConectar');
+            const botonDespegar = document.getElementById('botonDespegar');
+            const botonAterrizar = document.getElementById('botonAterrizar');
+            const botonRTL = document.getElementById('botonRTL');
+
+            // Resetear clases de todos los botones
+            function resetButtonClasses(button) {
+                button.classList.remove('boton-verde', 'boton-amarillo', 'boton-rojo');
+            }
+
+            switch (droneState) {
+                case 'connected':
+                    // Dron conectado pero en tierra
+                    if (!despegando) {
+                        botonDespegar.disabled = false;
+                        botonDespegar.textContent = 'Despegar';
+                        resetButtonClasses(botonDespegar);
+                    }
+                    
+                    botonAterrizar.disabled = true;
+                    botonAterrizar.textContent = 'Aterrizar';
+                    resetButtonClasses(botonAterrizar);
+                    
+                    botonRTL.disabled = true;
+                    botonRTL.textContent = 'RTL';
+                    resetButtonClasses(botonRTL);
+                    break;
+
+                case 'arming':
+                    break;
+                    
+                case 'takingOff':
+                    break;
+
+                case 'flying':
+                    // Dron volando
+                    despegando = false; // Resetear variable cuando esté volando
+                    botonDespegar.disabled = true;
+                    botonDespegar.textContent = 'Volando';
+                    resetButtonClasses(botonDespegar);
+                    botonDespegar.classList.add('boton-verde');
+                    
+                    botonAterrizar.disabled = false;
+                    botonAterrizar.textContent = 'Aterrizar';
+                    resetButtonClasses(botonAterrizar);
+                    
+                    botonRTL.disabled = false;
+                    botonRTL.textContent = 'RTL';
+                    resetButtonClasses(botonRTL);
+                    break;
+
+                case 'landing':
+                    // Dron aterrizando
+                    botonDespegar.disabled = true;
+                    botonAterrizar.disabled = true;
+                    botonAterrizar.textContent = 'Aterrizando...';
+                    resetButtonClasses(botonAterrizar);
+                    botonAterrizar.classList.add('boton-amarillo');
+                    botonRTL.disabled = true;
+                    break;
+
+                case 'returning':
+                    // Dron volviendo a base (RTL)
+                    botonDespegar.disabled = true;
+                    botonAterrizar.disabled = true;
+                    botonRTL.disabled = true;
+                    botonRTL.textContent = 'Volviendo a base...';
+                    resetButtonClasses(botonRTL);
+                    botonRTL.classList.add('boton-amarillo');
+                    break;
+
+                default:
+                    // Estado desconocido o desconectado
+                    botonDespegar.disabled = true;
+                    botonDespegar.textContent = 'Despegar';
+                    resetButtonClasses(botonDespegar);
+                    
+                    botonAterrizar.disabled = true;
+                    botonAterrizar.textContent = 'Aterrizar';
+                    resetButtonClasses(botonAterrizar);
+                    
+                    botonRTL.disabled = true;
+                    botonRTL.textContent = 'RTL';
+                    resetButtonClasses(botonRTL);
+                    break;
+            }
+        }
+
+        // Función para mostrar temporalmente estado "En Tierra"
+        function showLandedState(buttonId) {
+            const button = document.getElementById(buttonId);
+            button.textContent = 'En Tierra';
+            button.classList.remove('boton-amarillo');
+            button.classList.add('boton-verde');
+            
+            // Después de 3 segundos, resetear al estado base
+            setTimeout(() => {
+                updateButtonStates('connected');
+            }, 3000);
+        }
+
+        // Variable para trackear el estado anterior del dron
+        let previousDroneState = null;
+        
+        // Variable para evitar sobrescribir estado manual de despegue
+        let despegando = false;
+
         // Actualizar el event listener de MQTT para procesar la telemetría correctamente
         client.on('message', function (topic, message) {
             if (topic == "demoDash/mobileFlask/telemetryInfo") {
@@ -630,12 +739,30 @@
                     <p><strong>Estado:</strong> ${data.state}</p>
                 `;
 
+                // Detectar si acabamos de aterrizar (transición de landing/returning a connected)
+                if ((previousDroneState === 'landing' || previousDroneState === 'returning') && 
+                    data.state === 'connected') {
+                    // Mostrar "En Tierra" por 3 segundos antes de resetear
+                    if (previousDroneState === 'landing') {
+                        showLandedState('botonAterrizar');
+                    } else if (previousDroneState === 'returning') {
+                        showLandedState('botonRTL');
+                    }
+                } else {
+                    // Actualizar estado de todos los botones basándose en el estado del dron
+                    updateButtonStates(data.state);
+                }
+
+                // Fallback: mantener funcionalidad original para el botón despegar
                 if (data.state == "flying") {
                     // Se ha completado el despegue. Pongo el boton en verde
                     const botonDespegar = document.getElementById('botonDespegar');
                     botonDespegar.classList.remove('boton-amarillo');
                     botonDespegar.classList.add('boton-verde');
                 }
+
+                // Guardar el estado actual para la próxima comparación
+                previousDroneState = data.state;
             }
 
             if (topic == "demoDash/mobileFlask/frame") {
@@ -704,7 +831,13 @@
             const altura = document.getElementById('altura').value;
             if (altura) {
                 client.publish('mobileFlask/demoDash/arm_takeOff', altura);
+                
+                // Activar variable de estado y actualizar botón a estado "despegando"
+                despegando = true;
+                const botonDespegar = document.getElementById('botonDespegar');
+                botonDespegar.textContent = 'Despegando...';
                 botonDespegar.classList.add('boton-amarillo');
+                botonDespegar.disabled = true;
             } else {
                 alert("Por favor, ingrese una altura válida.");
             }
@@ -715,7 +848,14 @@
             const alturaInput = document.getElementById("altura");
             if (alturaInput) {
                 alturaInput.value = altura;
+                
+                // Activar variable de estado y actualizar botón
+                despegando = true;
+                const botonDespegar = document.getElementById('botonDespegar');
+                botonDespegar.textContent = 'Despegando...';
                 botonDespegar.classList.add('boton-amarillo');
+                botonDespegar.disabled = true;
+                
                 // Publicar el comando MQTT para que lo reciba la Estacion De Tierra
                 client.publish("mobileFlask/demoDash/arm_takeOff", String(altura));
             } else {
@@ -725,7 +865,12 @@
 
         function aterrizarDron() {
              client.publish('mobileFlask/demoDash/Land');
-             botonAterrizar.classList.add('boton-verde');
+             
+             // Actualizar botón a estado "aterrizando"
+             const botonAterrizar = document.getElementById('botonAterrizar');
+             botonAterrizar.textContent = 'Aterrizando...';
+             botonAterrizar.classList.add('boton-amarillo');
+             botonAterrizar.disabled = true;
         }
 
         function moverDron(direction) {
@@ -733,8 +878,13 @@
         }
 
         function returnToLaunch() {
-            client.publish('mobileFlask/demoDash/RTL')
-            botonRTL.classList.add('boton-verde');
+            client.publish('mobileFlask/demoDash/RTL');
+            
+            // Actualizar botón a estado "volviendo a base"
+            const botonRTL = document.getElementById('botonRTL');
+            botonRTL.textContent = 'Volviendo a base...';
+            botonRTL.classList.add('boton-amarillo');
+            botonRTL.disabled = true;
         }
 
         function mover_dron_a_coordenadas(lat,lng) {
