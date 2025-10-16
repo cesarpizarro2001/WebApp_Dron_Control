@@ -1,0 +1,807 @@
+<!--Este es el fichero que enviará el servidor web al navegador cuando éste se conecte a la web-->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+     <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+    <title>Web App</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <!--    Necesito estos scripts para trabajar con MQTT y con websockets-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<style>
+        body { margin: 0; padding: 0; }
+        #map { height: 100vh; width: 100%; }
+        #webcam-container {
+            height: 100vh;
+            width: 100%;
+            display: none;
+            background-color: black;
+            justify-content: center;
+            align-items: center;
+        }
+        #webcam-video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        #datos-telemetria {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            gap: 30px;
+            font-size: 15px;
+            height: 30px;
+            align-items: center;
+            overflow: hidden;
+        }
+        .dato {
+            font-weight: bold;
+        }
+
+        .direction-arrow { pointer-events: none; }
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 100px;
+        }
+        .controls button, .controls input {
+            display: block;
+            width: 100%;
+            margin-bottom: 3px;
+            padding: 4px;
+            font-size: 13px;
+            border-radius: 5px;
+        }
+        .boton-verde { background-color: #4CAF50; color: white; }
+        .boton-amarillo { background-color: #FFD700; color: black; }
+        .boton-rojo { background-color: #f44336; }
+        .boton-azul { background-color: #2196F3; color: white; }
+
+    </style>
+<body>
+    <div class="controls">
+        <input type="number" id="altura" placeholder="Altura (m)" />
+        <button id="botonConectar" onclick="conectarDron()">Conectar</button>
+        <button id="botonDespegar" onclick="despegarDron()">Despegar</button>
+        <button id="botonAterrizar" onclick="aterrizarDron()">Aterrizar</button>
+        <button id="botonRTL" onclick="returnToLaunch()">RTL</button>
+        <button id="botonRuta" class="boton-azul" onclick="toggleRutaMode()">Crear Ruta</button>
+        <button id="botonImagenDron" class="boton-azul" onclick="toggleWebcamView()">Cámara Dron</button>
+        <button id="botonCapturarFoto" class="boton-azul" onclick="capturarFoto()">Hacer Foto</button>
+        <button id="botonIniciarVideo" class="boton-azul" onclick="iniciarGrabacion()">Hacer Video</button>
+        <button id="botonDetenerVideo" class="boton-rojo" style="display:none;" onclick="detenerGrabacion()">Detener Video</button>
+        <button id="botonCamaraMovil" class="boton-azul" onclick="abrirVentanaCamara()">Cámara Móvil</button>
+        <button id="toggleNavegacion" class="boton-azul" onclick="toggleNavegacion()">Ocultar Nav.</button>
+
+    </div>
+
+    <div id="navegacion" class="controls navigation-grid" style="
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    margin-top: 10px;
+    width: 100%;
+    max-width: 150px;
+    position: absolute;
+    top: 0px;
+    right: 130px;
+    ">
+    <button onclick="moverDron('NorthWest')" style="grid-area: 1 / 1 / 2 / 2; background-color: #2196F3; color: white;">NW</button>
+    <button onclick="moverDron('North')" style="grid-area: 1 / 2 / 2 / 3; background-color: #2196F3; color: white;">N</button>
+    <button onclick="moverDron('NorthEast')" style="grid-area: 1 / 3 / 2 / 4; background-color: #2196F3; color: white;">NE</button>
+
+    <button onclick="moverDron('West')" style="grid-area: 2 / 1 / 3 / 2; background-color: #2196F3; color: white;">W</button>
+    <button onclick="moverDron('Stop')" style="grid-area: 2 / 2 / 3 / 3; background-color: #FF9800; color: white;">Stop</button>
+    <button onclick="moverDron('East')" style="grid-area: 2 / 3 / 3 / 4; background-color: #2196F3; color: white;">E</button>
+
+    <button onclick="moverDron('SouthWest')" style="grid-area: 3 / 1 / 4 / 2; background-color: #2196F3; color: white;">SW</button>
+    <button onclick="moverDron('South')" style="grid-area: 3 / 2 / 4 / 3; background-color: #2196F3; color: white;">S</button>
+    <button onclick="moverDron('SouthEast')" style="grid-area: 3 / 3 / 4 / 4; background-color: #2196F3; color: white;">SE</button>
+    </div>
+
+    <div id="datos-telemetria">
+        <span><strong>Altitud:</strong> <span class="dato" id="altitud">0m</span></span>
+        <span><strong>Velocidad:</strong> <span class="dato" id="velocidad">0m/s</span></span>
+        <span><strong>Estado:</strong> <span class="dato" id="estado">Desconocido</span></span>
+    </div>
+
+    <div id="webcam-container" style="display: none; margin-top: 20px; text-align: center;">
+        <h3>Video por WebSockets</h3>
+        <img id='video-stream' style='width:100%; max-width:600px;'>
+    </div>
+
+    <div id="camara-container" style="display: none; margin-top: 20px; text-align: center;">
+        <h3>Camara</h3>
+        <div id="button-container">
+            <button id="botonFront" class="boton" onclick="frontCamera()">Cámara frontal</button>
+            <!-- <button id="botonBack" class="boton" onclick="backCamera() disabled">Cámara trasera</button> (Opción de usar también la cámara trasera)-->
+        </div>
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <img id="processedStream" alt="Video Procesado">
+    </div>
+
+    <div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script>
+        // Inicializar el mapa
+        var map = L.map('map').setView([41.27624, 1.98838], 20);
+        L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+            maxZoom: 20
+        }).addTo(map);
+
+        // Variables globales para el seguimiento del dron
+        let currentPos = [41.27624, 1.98838];
+        let droneMarker = L.marker(currentPos, {
+            icon: L.icon({
+                iconUrl: 'static/icono_dron.png',
+                iconSize: [30, 30]
+            })
+        }).addTo(map);
+
+        let currentFlightName = null;
+        // Variables para la funcionalidad de ruta
+        let rutaMode = false;
+        let waypoints = [];
+        let waypointMarkers = [];
+        let siguiendoRuta = false;
+        let rutaPolyline = L.polyline([], { color: 'black', weight: 3 }).addTo(map);
+        let telemetry_info = null;
+
+        // Función para manejar la orientación del dron
+        function createArrowSVG(angle) {
+        return `
+        <svg width="300" height="300" viewBox="-150 -150 300 300" xmlns="http://www.w3.org/2000/svg">
+            <g transform="rotate(${angle} 0 0)">
+                <!-- Línea roja larga de dirección -->
+                <line x1="0" y1="0" x2="0" y2="-140" stroke="red" stroke-width="3"/>
+            </g>
+        </svg>
+        `;
+        }
+
+        // Función para crear el SVG del marcador de waypoint en forma de pin
+        function createWaypointPinSVG(number, color = "#FFC107") {
+            return `
+                <svg width="30" height="45" viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 0C9 0 0 9 0 20C0 35 20 60 20 60C20 60 40 35 40 20C40 9 31 0 20 0Z" fill="${color}" stroke="#000" stroke-width="1"/>
+                    <circle cx="20" cy="20" r="10" fill="white"/>
+                    <text x="20" y="24" font-family="Arial" font-size="12" font-weight="bold" text-anchor="middle">${number}</text>
+                </svg>
+            `;
+        }
+
+        var DirectionArrow = L.Icon.extend({
+            options: {
+                iconSize: [300, 300],
+                iconAnchor: [150, 150]
+            }
+        });
+
+        // Definir el icono de waypoint personalizado
+        var WaypointIcon = L.Icon.extend({
+            options: {
+                iconSize: [30, 45],
+                iconAnchor: [15, 45],  // Punto de anclaje en la punta inferior del pin
+                popupAnchor: [0, -45]  // Punto de anclaje para popups
+            }
+        });
+
+        let directionArrow = L.marker(currentPos, {
+            icon: new DirectionArrow({
+                iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(0))
+            })
+        }).addTo(map);
+
+        // Función para actualizar la posición del dron
+        function updateDronePosition(lat, lon, heading) {
+            const newPos = [lat, lon];
+            droneMarker.setLatLng(newPos);
+            directionArrow.setLatLng(newPos);
+
+            // Actualizar la dirección de la flecha
+            directionArrow.setIcon(new DirectionArrow({
+                iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(heading))
+            }));
+
+            currentPos = newPos;
+
+            // Comprobar si está siguiendo una ruta y verificar si ha alcanzado un waypoint
+            if (siguiendoRuta && waypoints.length > 0) {
+                checkWaypointReached();
+            }
+        }
+
+        // Función de Waypoint alcanzado
+        function checkWaypointReached() {
+            // Si no hay waypoints, no hay nada que verificar
+            if (waypoints.length === 0) return;
+
+            // Obtener el primer waypoint (el próximo destino)
+            const nextWaypoint = waypoints[0];
+
+            // Calcular la distancia entre el dron y el waypoint
+            const droneLatLng = L.latLng(currentPos[0], currentPos[1]);
+            const waypointLatLng = L.latLng(nextWaypoint.lat, nextWaypoint.lng);
+            const distance = droneLatLng.distanceTo(waypointLatLng);
+
+            // Si el dron está a menos de 3 metros del waypoint, consideramos que ha llegado
+            if (distance < 3) {
+                // Eliminar el waypoint alcanzado
+                waypoints.shift();
+
+                // Eliminar el marcador del waypoint
+                if (waypointMarkers.length > 0) {
+                    map.removeLayer(waypointMarkers[0]);
+                    waypointMarkers.shift();
+                }
+
+                // Si quedan más waypoints, ir al siguiente
+                if (waypoints.length > 0) {
+                    const nextWaypoint = waypoints[0];
+                    moverDronAWaypoint(nextWaypoint);
+                } else {
+                    // Si no quedan más waypoints, terminar la ruta
+                    finalizarRuta();
+                }
+            }
+        }
+
+        // Función que indica fin de la ruta
+        function finalizarRuta() {
+            siguiendoRuta = false;
+
+            // Limpiar la línea de la ruta
+            rutaPolyline.setLatLngs([]);
+
+            // Cambiar el botón de vuelta a "Crear Ruta"
+            const botonRuta = document.getElementById('botonRuta');
+            botonRuta.textContent = "Crear Ruta";
+            botonRuta.classList.remove('boton-rojo');
+            botonRuta.classList.add('boton-azul');
+
+            // Habilitar los otros botones
+            document.getElementById('botonConectar').disabled = false;
+            document.getElementById('botonDespegar').disabled = false;
+
+
+            waypoints = [];
+            waypointMarkers.forEach(m => map.removeLayer(m));
+            waypointMarkers = [];
+            rutaPolyline.setLatLngs([]);  // <-- Esta línea asegura borrar la línea negra
+
+        }
+
+        // Manejar clicks en el mapa
+        map.on('click', function(e) {
+            // Si estamos en modo ruta, añadir waypoint
+            if (rutaMode) {
+                addWaypoint(e.latlng);
+                return;
+            }
+
+            // Si estamos siguiendo una ruta, ignorar clicks
+            if (siguiendoRuta) {
+                return;
+            }
+
+            // Comportamiento normal: ir a la posición clickeada
+            const targetPos = [e.latlng.lat, e.latlng.lng];
+            mover_dron_a_coordenadas(targetPos[0], targetPos[1]);
+        });
+
+        // Añadir Waypoint para la ruta
+       function addWaypoint(latlng) {
+            const waypointNum = waypoints.length + 1;
+
+            // Crear contenedor flotante para elegir tipo de captura
+            const popupDiv = document.createElement("div");
+
+            popupDiv.innerHTML = `
+                <label style="font-size: 14px;">Captura en este waypoint:</label><br>
+                <select id="capturaTipo">
+                    <option value="ninguna" selected>Ninguna</option>
+                    <option value="foto">Foto</option>
+                    <option value="video">Vídeo</option>
+                </select><br>
+                <div id="duracionDiv" style="display:none;">
+                    <label for="duracionInput">Duración vídeo (seg):</label>
+                    <input type="number" id="duracionInput" value="5" min="1" style="width:60px;" />
+                </div>
+                <button id="confirmarWaypointBtn">Confirmar</button>
+            `;
+
+            const popup = L.popup()
+                .setLatLng(latlng)
+                .setContent(popupDiv)
+                .openOn(map);
+
+            // Mostrar para escoger duración si se elige video
+            popupDiv.querySelector("#capturaTipo").addEventListener("change", function () {
+                popupDiv.querySelector("#duracionDiv").style.display = this.value === "video" ? "block" : "none";
+            });
+
+            // Confirmar y cerrar
+            popupDiv.querySelector("#confirmarWaypointBtn").addEventListener("click", () => {
+                const tipo = popupDiv.querySelector("#capturaTipo").value;
+                const duracion = tipo === "video" ? parseInt(popupDiv.querySelector("#duracionInput").value) : 0;
+
+                // Guardar el waypoint
+                waypoints.push({
+                    lat: latlng.lat,
+                    lng: latlng.lng,
+                    num: waypointNum,
+                    captura: tipo,
+                    duracion: duracion
+                });
+
+                // Elegir color según tipo
+                let color = "#FFC107"; // Ninguna
+                if (tipo === "foto") color = "#2196F3"; // Azul
+                else if (tipo === "video") color = "#F44336"; // Rojo
+
+                const waypointIcon = new WaypointIcon({
+                    iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createWaypointPinSVG(waypointNum, color))
+                });
+
+                const marker = L.marker([latlng.lat, latlng.lng], { icon: waypointIcon }).addTo(map);
+                waypointMarkers.push(marker);
+
+                actualizarRutaPolyline();
+                map.closePopup();
+            });
+        }
+
+        // Actualiza la línea negra de la ruta
+        function actualizarRutaPolyline() {
+            const coordenadas = waypoints.map(wp => [wp.lat, wp.lng]);
+            rutaPolyline.setLatLngs(coordenadas);
+        }
+
+        // Muestra u oculta la botonera de navegación clásica
+        function toggleNavegacion() {
+            const nav = document.getElementById('navegacion');
+            const btn = document.getElementById('toggleNavegacion');
+
+            if (nav.style.display === 'none') {
+                nav.style.display = 'grid';
+                btn.textContent = 'Ocultar Nav.';
+            } else {
+                nav.style.display = 'none';
+                btn.textContent = 'Mostrar Nav.';
+            }
+        }
+
+        // Cambia el botón crear ruta a otro tipo de información (Recorrer ruta)
+        function toggleRutaMode() {
+            const botonRuta = document.getElementById('botonRuta');
+
+            // Si ya estamos siguiendo una ruta, no hacemos nada
+            if (siguiendoRuta) return;
+
+            if (!rutaMode) {
+                // Activar modo de creación de ruta
+                rutaMode = true;
+                botonRuta.textContent = "Recorrer Ruta";
+                botonRuta.classList.remove('boton-azul');
+                botonRuta.classList.add('boton-amarillo');
+            } else {
+                // Si hay waypoints, iniciar la ruta
+                if (waypoints.length > 0) {
+                    iniciarRuta();
+                } else {
+                    // Si no hay waypoints, volver al modo normal
+                    rutaMode = false;
+                    botonRuta.textContent = "Crear Ruta";
+                    botonRuta.classList.remove('boton-amarillo');
+                    botonRuta.classList.add('boton-azul');
+                }
+            }
+        }
+
+        // Función que indica el inicio de una ruta y cambia el botón a: siguiendo ruta
+        function iniciarRuta() {
+            siguiendoRuta = true;
+            rutaMode = false;
+
+            const botonRuta = document.getElementById('botonRuta');
+            botonRuta.textContent = "Siguiendo Ruta...";
+            botonRuta.classList.remove('boton-amarillo');
+            botonRuta.classList.add('boton-rojo');
+
+            // Deshabilitar los otros botones
+            document.getElementById('botonConectar').disabled = true;
+            document.getElementById('botonDespegar').disabled = true;
+
+
+            client.publish('mobileFlask/demoDash/waypointRuta', JSON.stringify(waypoints));
+
+        }
+
+        // Mover el dron al waypoint indicado
+        function moverDronAWaypoint(waypoint) {
+            mover_dron_a_coordenadas(waypoint.lat, waypoint.lng);
+            console.log('Dron moviéndose al waypoint:', waypoint.num);
+        }
+
+        // Función para mostrar u ocultar el contenedor de video
+        function toggleWebcamView() {
+            const webcamContainer = document.getElementById('webcam-container');
+            if (webcamContainer.style.display === 'none') {
+                webcamContainer.style.display = 'block';
+                document.getElementById('botonImagenDron').textContent = 'Ver Mapa';
+            } else {
+                webcamContainer.style.display = 'none';
+                document.getElementById('botonImagenDron').textContent = 'Cámara Dron';
+            }
+        }
+
+        // Función para mostrar u ocultar el contenedor de la cámara del móvil
+        function abrirVentanaCamara() {
+            const camaraContainer = document.getElementById('camara-container');
+            if (camaraContainer.style.display === 'none') {
+                camaraContainer.style.display = 'block';
+                document.getElementById('botonCamaraMovil').textContent = 'Ver Mapa';
+                alert("Ponga el móvil en vertical y oculte los botones de navegación para optimizar el uso de esta función.");
+            } else {
+                camaraContainer.style.display = 'none';
+                document.getElementById('botonCamaraMovil').textContent = 'Cámara Móvil';
+            }
+        }
+
+        // Función de capturar foto
+        function capturarFoto() {
+            console.log("Enviando comando para capturar foto");
+            client.publish('mobileFlask/demoDash/capturarFoto');
+            // Mostrar feedback visual momentáneo
+            const botonCapturarFoto = document.getElementById('botonCapturarFoto');
+            botonCapturarFoto.classList.remove('boton-azul');
+            botonCapturarFoto.classList.add('boton-verde');
+            botonCapturarFoto.textContent = "Foto Hecha";
+
+            // Restaurar el botón después de 2 segundos
+            setTimeout(function() {
+                botonCapturarFoto.classList.remove('boton-verde');
+                botonCapturarFoto.classList.add('boton-azul');
+                botonCapturarFoto.textContent = "Hacer Foto";
+            }, 2000);
+        }
+
+        // Inicia la grabación del vídeo de la cámara del dron
+        function iniciarGrabacion() {
+            console.log("Enviando comando para iniciar grabación de video");
+            client.publish('mobileFlask/demoDash/iniciarVideo');
+
+            // Mostrar feedback visual
+            const botonIniciarVideo = document.getElementById('botonIniciarVideo');
+            const botonDetenerVideo = document.getElementById('botonDetenerVideo');
+
+            botonIniciarVideo.style.display = 'none';
+            botonDetenerVideo.style.display = 'block';
+        }
+
+         // Detiene la grabación del vídeo de la cámara del dron
+        function detenerGrabacion() {
+            console.log("Enviando comando para detener grabación de video");
+            client.publish('mobileFlask/demoDash/detenerVideo');
+
+            // Mostrar feedback visual
+            const botonIniciarVideo = document.getElementById('botonIniciarVideo');
+            const botonDetenerVideo = document.getElementById('botonDetenerVideo');
+
+            botonIniciarVideo.style.display = 'block';
+            botonDetenerVideo.style.display = 'none';
+        }
+
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const imgStream = document.getElementById("processedStream");
+
+        <!-- Me conecto por websocket al servidor flask. Por ahí me enviará los frames-->
+        const socket = io();
+        console.log ("conectado al web socket");
+        socket.on('stream_frame', function(data) {
+            <!-- cada vez que recibo un frame por el websocket lo coloco en su sitio-->
+            console.log ("recibo frame por web socket");
+            document.getElementById('video-stream').src = 'data:image/jpeg;base64,' + data;
+        });
+
+        console.log ('voy a conectarme al broker');
+        // const client = mqtt.connect ('ws://broker.hivemq.com:8000/mqtt')
+        // const client = mqtt.connect ('ws://test.mosquitto.com:8000/mqtt', {
+        client = mqtt.connect ('wss://dronseetac.upc.edu:8883/mqtt', {
+          username: 'dronsEETAC',
+          password: 'mimara1456.'
+        })
+
+        client.on('connect', function () {
+            console.log('Connected to MQTT broker');
+            client.subscribe('demoDash/mobileFlask/#');
+        });
+
+        // Actualizar el event listener de MQTT para procesar la telemetría correctamente
+        client.on('message', function (topic, message) {
+            if (topic == "demoDash/mobileFlask/telemetryInfo") {
+                const data = JSON.parse(message.toString());
+                telemetry_info = data; // Guardar los datos completos
+
+                // Actualizar posición y dirección del dron
+                if (data.lat && data.lon) {
+                    updateDronePosition(
+                        data.lat,
+                        data.lon,
+                        data.heading || 0
+                    );
+                }
+
+                // Actualizar telemetría en el UI
+                const telemetriaDiv = document.getElementById('datos-telemetria');
+                telemetriaDiv.innerHTML = `
+                    <p><strong>Altitud:</strong> ${data.alt}m</p>
+                    <p><strong>Velocidad:</strong> ${data.groundSpeed.toFixed(2)}m/s</p>
+                    <p><strong>Estado:</strong> ${data.state}</p>
+                `;
+
+                if (data.state == "flying") {
+                    // Se ha completado el despegue. Pongo el boton en verde
+                    const botonDespegar = document.getElementById('botonDespegar');
+                    botonDespegar.classList.remove('boton-amarillo');
+                    botonDespegar.classList.add('boton-verde');
+                }
+            }
+
+            if (topic == "demoDash/mobileFlask/frame") {
+                console.log ("recibo frame");
+                document.getElementById('video-stream2').src = 'data:image/jpeg;base64,' + message.toString();
+            }
+
+            if (topic == "demoDash/mobileFlask/videoError") {
+                const errorMsg = message.toString();
+                console.error(`Error en grabación: ${errorMsg}`);
+                // Mostrar error al usuario
+                alert(`Error en grabación: ${errorMsg}`);
+
+                // Restaurar botones
+                document.getElementById('botonIniciarVideo').style.display = 'block';
+                document.getElementById('botonDetenerVideo').style.display = 'none';
+            }
+
+            if (topic == "demoDash/mobileFlask/flightNameSet") {
+                currentFlightName = message.toString();
+                console.log(`Nombre del vuelo establecido: ${currentFlightName}`);
+                // Opcional: Mostrar el nombre del vuelo en alguna parte de la UI
+                const webcamContainer = document.getElementById('webcam-container');
+                let flightNameDisplay = document.getElementById('flight-name-display');
+                if (!flightNameDisplay) {
+                    flightNameDisplay = document.createElement('div');
+                    flightNameDisplay.id = 'flight-name-display';
+                    flightNameDisplay.style.position = 'absolute';
+                    flightNameDisplay.style.top = '50px';
+                    flightNameDisplay.style.left = '10px';
+                    flightNameDisplay.style.background = 'rgba(0,0,0,0.7)';
+                    flightNameDisplay.style.color = 'white';
+                    flightNameDisplay.style.padding = '5px 10px';
+                    flightNameDisplay.style.borderRadius = '5px';
+                    flightNameDisplay.style.zIndex = '1001';
+                    webcamContainer.appendChild(flightNameDisplay);
+                }
+                flightNameDisplay.textContent = `Vuelo: ${currentFlightName}`;
+            }
+
+            if (topic == "demoDash/mobileFlask/fotoCapturada") {
+                const nombreFoto = message.toString();
+                let ubicacion = currentFlightName ? `${currentFlightName}/${nombreFoto}` : nombreFoto;
+                console.log(`Foto capturada: ${ubicacion}`);
+            }
+
+            if (topic == "demoDash/mobileFlask/videoIniciado") {
+                const nombreVideo = message.toString();
+                let ubicacion = currentFlightName ? `${currentFlightName}/${nombreVideo}` : nombreVideo;
+                console.log(`Grabación iniciada: ${ubicacion}`);
+            }
+
+            if (topic == "demoDash/mobileFlask/videoDetenido") {
+            console.log("Grabación detenida");
+            }
+        });
+
+        function conectarDron() {
+            console.log ("Voy a conectar");
+            client.publish('mobileFlask/demoDash/connect');
+            const botonConectar = document.getElementById('botonConectar');
+            botonConectar.classList.add('boton-verde');
+        }
+
+        function despegarDron() {
+            const altura = document.getElementById('altura').value;
+            if (altura) {
+                client.publish('mobileFlask/demoDash/arm_takeOff', altura);
+                botonDespegar.classList.add('boton-amarillo');
+            } else {
+                alert("Por favor, ingrese una altura válida.");
+            }
+        }
+
+        // Función para despegar el dron mediante gesto usando MediaPipe
+        function despegarDronDesdeGesto(altura) {
+            const alturaInput = document.getElementById("altura");
+            if (alturaInput) {
+                alturaInput.value = altura;
+                botonDespegar.classList.add('boton-amarillo');
+                // Publicar el comando MQTT para que lo reciba la Estacion De Tierra
+                client.publish("mobileFlask/demoDash/arm_takeOff", String(altura));
+            } else {
+                alert("Por favor, ingrese una altura válida.");
+            }
+        }
+
+        function aterrizarDron() {
+             client.publish('mobileFlask/demoDash/Land');
+             botonAterrizar.classList.add('boton-verde');
+        }
+
+        function moverDron(direction) {
+            client.publish('mobileFlask/demoDash/go', direction)
+        }
+
+        function returnToLaunch() {
+            client.publish('mobileFlask/demoDash/RTL')
+            botonRTL.classList.add('boton-verde');
+        }
+
+        function mover_dron_a_coordenadas(lat,lng) {
+            const mensaje = JSON.stringify({
+                "lat": lat,
+                "lng": lng
+            });
+            console.log(`Enviando comando goto: ${mensaje}`);
+            client.publish('mobileFlask/demoDash/goto', mensaje)
+        }
+
+        // Función para seguir una ruta de waypoints
+        let is_following_route = false;
+        function seguir_ruta_waypoints(waypoints) {
+        try {
+            // Marcamos que el dron está siguiendo una ruta
+            is_following_route = true;
+
+            // Enviamos la información de la ruta
+            const mensaje = JSON.stringify({
+                "waypoints": waypoints
+            });
+
+            console.log(`Iniciando seguimiento de ruta con ${waypoints.length} waypoints`);
+
+            return true;
+            } catch (error) {
+            console.error(`Error al iniciar seguimiento de ruta: ${error}`);
+            is_following_route = false;
+            return false;
+            }
+        }
+
+        // Indico que no quiero ver el video del movil en la pantalla
+        video.style.display = 'none';
+        let cam;
+
+        // Activo la cámara frontal del móvil
+        function frontCamera() {
+        // Elijo la cámara frontal
+            cam = "user";
+            const botonFront = document.getElementById('botonFront');
+            botonFront.classList.add('boton-verde');
+
+            startVideo();
+        }
+
+        // Activo la cámara trasera del móvil (he desactivado esta opción para que la atención se la lleve la cámara frontal, pero funcionaria exactamente igual)
+        function backCamera () {
+        // Elijo la cámara trasera
+            const botonBack = document.getElementById('botonBack');
+            botonBack.classList.add('boton-verde');
+
+            cam = "environment";
+            startVideo();
+        }
+
+        // Inicio el video del móvil
+        function startVideo() {
+        // Verificar si getUserMedia es soportado por el navegador
+            if (navigator.mediaDevices.getUserMedia) {
+                 // Aqui le indico la cámara que quiero
+                 navigator.mediaDevices.getUserMedia({
+                     video: { facingMode: cam }
+                 }).then(function(stream) {
+                     // Asignar el stream al elemento de video
+                     video.srcObject = stream;
+                     sendFrames();
+
+                 })
+                   .catch(function(error) {
+                        console.log("Error al acceder a la cámara: ", error);
+                   });
+            } else {
+                 alert("getUserMedia no está soportado por este navegador.");
+            }
+        }
+
+        // Envio el video del móvil al servidor para que lo procese
+        function sendFrames() {
+            setInterval(() => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let frame = canvas.toDataURL("image/jpeg"); // Convertir a base64
+                socket.emit("frame_from_camera", frame); // Enviar frame al servidor
+            }, 200); // 200ms es 5 FPS, 66ms es 15 FPS y 33ms es 30 FPS
+        }
+
+        // Recibir frames procesados del servidor y mostrarlos
+        socket.on("processed_frame", function (data) {
+            imgStream.src = data; // Mostrar el frame recibido
+        });
+
+        // Recibo despegar desde mediapipe
+        socket.on('arm_takeOff', function(data) {
+            console.log ("WebApp recibe despegar");
+            despegarDronDesdeGesto(data);
+        });
+
+        // Recibo aterrizar desde mediapipe
+        socket.on('Land', function() {
+            console.log ("WebApp recibe aterrizar");
+            aterrizarDron();
+        });
+
+        // Recibo mover o stop desde mediapipe
+        socket.on('go', function(data) {
+            console.log ("WebApp recibe go");
+            moverDron(data);
+        });
+
+        // cuando me pidan los datos de telemetría entrego los valores que tengo para esos datos
+        function obtenerDatosTelemetria() {
+        // La telemetría ya se está recibiendo en el event listener de 'message'
+        // Esta función devuelve los datos más recientes
+
+            if (telemetry_info) {
+                return {
+                    estado: "success",
+                    data: {
+                        lat: telemetry_info.lat,
+                        lon: telemetry_info.lon,
+                        alt: telemetry_info.alt,
+                        velocidad: telemetry_info.groundSpeed,
+                        direccion: telemetry_info.heading,
+                        estado: telemetry_info.state
+                    }
+                };
+            } else {
+                return {
+                    estado: "fail",
+                    message: "Aún no hay datos de telemetría"
+                };
+            }
+        }
+
+    </script>
+</body>
+</html>

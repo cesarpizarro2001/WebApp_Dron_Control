@@ -1,0 +1,14 @@
+flask
+flask-socketio
+mediapipe
+opencv-python
+numpy
+paho-mqtt==1.6.1
+python-socketio
+requests
+websocket-client
+pillow
+pyserial
+pymavlink
+jax==0.4.13
+jaxlib==0.4.13
