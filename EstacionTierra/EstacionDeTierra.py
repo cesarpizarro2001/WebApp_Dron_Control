@@ -64,14 +64,428 @@ def publish_event ( event):
 connection_mode = "simulation"  # Por defecto simulación
 com_port = "com"  # Puerto COM por defecto
 
+# Variable global para controlar mensajes de estado únicos
+last_printed_state = None
+
+
+# Función para deshabilitar botones virtualmente
+def deshabilitar_boton(boton, modo_disconnect="desconectado"):
+    """
+    Deshabilita un botón sin usar el estado 'disabled' de tkinter.
+    El botón se vuelve semitransparente y no responde a clics.
+    
+    Para disconnectBtn:
+    - modo_disconnect="desconectado" → "Desconectado" (gris)
+    - modo_disconnect="funcionando" → "Aterrizar para Desconectar" (semitransparente)
+    """
+    # Función vacía que no hace nada
+    def comando_vacio():
+        pass
+    
+    # Cambiar el comando a la función vacía
+    boton['command'] = comando_vacio
+    
+    # Caso especial para el botón disconnect
+    if boton == disconnectBtn:
+        if modo_disconnect == "desconectado":
+            boton['text'] = "Desconectado"
+            boton['bg'] = "gray"
+            boton['fg'] = "white"
+        elif modo_disconnect == "funcionando":
+            boton['text'] = "Aterriza y desarma para Desconectar"
+            bg_deshabilitado = crear_color_semitransparente(boton['bg'])
+            fg_deshabilitado = crear_color_semitransparente(boton['fg'])
+            boton['bg'] = bg_deshabilitado
+            boton['fg'] = fg_deshabilitado
+    else:
+        # Aplicar efecto visual semitransparente para otros botones
+        bg_deshabilitado = crear_color_semitransparente(boton['bg'])
+        fg_deshabilitado = crear_color_semitransparente(boton['fg'])
+        
+        boton['bg'] = bg_deshabilitado
+        boton['fg'] = fg_deshabilitado
+
+# Función para habilitar botones - los devuelve a su estado inicial
+def habilitar_boton(boton):
+    """
+    Habilita un botón devolviéndolo a su estado inicial específico.
+    """
+    # Determinar qué botón es y restaurarlo a su estado inicial
+    if boton == armBtn:
+        boton['text'] = "Armar"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = armar_dron
+        
+    elif boton == takeOffBtn:
+        boton['text'] = "Despegar"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = despegar_dron
+        
+    elif boton == NorthBtn:
+        boton['text'] = "Norte"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = lambda: dron.go('North')
+        
+    elif boton == SouthBtn:
+        boton['text'] = "Sur"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = lambda: dron.go('South')
+        
+    elif boton == EastBtn:
+        boton['text'] = "Este"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = lambda: dron.go('East')
+        
+    elif boton == WestBtn:
+        boton['text'] = "Oeste"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = lambda: dron.go('West')
+        
+    elif boton == StopBtn:
+        boton['text'] = "Parar"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = lambda: dron.go('Stop')
+        
+    elif boton == RTLBtn:
+        boton['text'] = "RTL"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = lambda: rtl_with_feedback()
+        
+    elif boton == disconnectBtn:
+        boton['text'] = "Desconectar"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = desconectar_con_feedback
+        
+    elif boton == connectBtn:
+        boton['text'] = "Conectar"
+        boton['bg'] = "dark orange"
+        boton['fg'] = "black"
+        boton['command'] = conectar_local
+
+# Función auxiliar para crear colores semitransparentes
+def crear_color_semitransparente(color):
+    """
+    Convierte los colores 'dark orange' y 'violet' a versiones más claras y transparentes.
+    Para otros colores, los devuelve sin cambios.
+    """
+    if color.lower() == 'dark orange':
+        return '#FFD4B3'  # Naranja muy claro y transparente
+    elif color.lower() == 'violet':
+        return '#E6D0FF'  # Violeta muy claro y transparente
+    
+    # Para cualquier otro color, devolverlo sin cambios
+    return color
+
 # Ejecuta el botón para conectar de la Estacion de Tierra en el modo que escojamos
 def conectar_local():
-    if connection_mode == "simulation":
-        dron.connect('tcp:127.0.0.1:5763', 115200)
-        print('Conectando localmente en modo SIMULACIÓN')
+    # Cambiar el botón a estado "conectando..."
+    connectBtn['text'] = "Conectando..."
+    connectBtn['bg'] = "yellow"
+    connectBtn['fg'] = "black"
+    connectBtn.update()  # Forzar la actualización visual
+    
+    def connection_callback():
+        # Esta función se ejecutará cuando la conexión sea exitosa
+        connectBtn['text'] = "Conectado"
+        connectBtn['bg'] = "green"
+        connectBtn['fg'] = "white"
+        
+        # Deshabilitar funcionalmente el botón de conectar (mantener apariencia pero sin función)
+        def comando_vacio():
+            pass
+        connectBtn['command'] = comando_vacio
+        
+        # Habilitar botones necesarios tras la conexión
+        habilitar_boton(armBtn)  # Permitir armar el dron
+        habilitar_boton(disconnectBtn)  # Permitir desconectar
+        
+        # Configurar callbacks automáticos para el estado del dron
+        setup_arm_state_monitoring()
+    
+    def connection_error_callback():
+        # Esta función se ejecutará si hay error en la conexión
+        connectBtn['text'] = "Error - Conectar"
+        connectBtn['bg'] = "red"
+        connectBtn['fg'] = "white"
+    
+    try:
+        if connection_mode == "simulation":
+            result = dron.connect('tcp:127.0.0.1:5763', 115200)
+            print('Conectando localmente en modo SIMULACIÓN')
+        else:
+            result = dron.connect(com_port, 57600)
+            print(f'Conectando localmente en modo PRODUCCIÓN en puerto {com_port.upper()}')
+        
+        # Verificar si la conexión fue exitosa
+        if hasattr(dron, 'state') and dron.state == 'connected':
+            connection_callback()
+        elif result:  # Si el método connect retorna True
+            connection_callback()
+        else:
+            connection_error_callback()
+            
+    except Exception as e:
+        print(f"Error al conectar: {e}")
+        connection_error_callback()
+
+# Ejecuta el botón para armar el dron con monitoreo por eventos
+def armar_dron():
+    # Cambiar el botón a estado "armando"
+    armBtn['text'] = "Armando..."
+    armBtn['bg'] = "yellow"
+    armBtn['fg'] = "black"
+    armBtn.update()  # Forzar la actualización visual
+    
+    try:
+        result = dron.arm()
+        print('Comando de armado enviado')
+        
+        # Implementar timeout de seguridad
+        def timeout_check():
+            if armBtn['text'] == "Armando...":
+                print('Timeout: El dron no se armó en 5 segundos')
+                armBtn['text'] = "Error - Armar"
+                armBtn['bg'] = "red"
+                armBtn['fg'] = "white"
+
+        # Programar timeout en 5 segundos
+        ventana.after(5000, timeout_check)
+
+    except Exception as e:
+        print(f"Error al armar: {e}")
+        # Error al armar
+        armBtn['text'] = "Error - Armar"
+        armBtn['bg'] = "red"
+        armBtn['fg'] = "white"
+
+# Funciones para manejo de eventos del botón armar
+def setup_arm_state_monitoring():
+    """Configura los callbacks para monitorear el estado del dron automáticamente"""
+    if dron and hasattr(dron, 'message_handler') and dron.message_handler:
+        # Registrar callback para heartbeat (cambios de estado)
+        dron.message_handler.register_handler('HEARTBEAT', on_drone_state_change)
+        print('Callbacks de estado del dron configurados')
     else:
-        dron.connect(com_port, 57600)
-        print(f'Conectando localmente en modo PRODUCCIÓN en puerto {com_port.upper()}')
+        print('No se puede configurar monitoreo: dron no conectado')
+
+def on_drone_state_change(msg):
+    """Callback que se ejecuta automáticamente cuando cambia el estado del dron"""
+    global last_printed_state
+    
+    if not dron:
+        return
+        
+    current_state = dron.state
+    
+    # Usar after() para actualizar UI desde el thread principal
+    def update_ui():
+        global last_printed_state
+        
+        if current_state == 'armed' and armBtn['text'] == "Armando...":
+            print('Dron ARMADO')
+            armBtn['text'] = "Armado"
+            armBtn['bg'] = "green"
+            armBtn['fg'] = "white"
+            
+            # Habilitar el botón despegar cuando el dron se arme
+            habilitar_boton(takeOffBtn)
+            # Deshabilitar desconectar cuando el dron esté armado (seguridad)
+            deshabilitar_boton(disconnectBtn, "funcionando")
+            last_printed_state = 'armed'
+            
+        elif current_state in ['takingOff'] and armBtn['text'] in ["Armado", "Armando..."]:
+            # Solo imprimir si es la primera vez que entra en este estado
+            if last_printed_state != 'takingOff':
+                print(f'Dron en vuelo: {current_state}')
+                last_printed_state = 'takingOff'
+                
+            # El botón armar mantiene "Armado" pero se deshabilita funcionalmente
+            armBtn['text'] = "Armado"
+            armBtn['bg'] = "green"
+            armBtn['fg'] = "white"
+            
+            # Deshabilitar funcionalmente los botones armar y despegar (mantener apariencia pero sin función)
+            def comando_vacio():
+                pass
+            armBtn['command'] = comando_vacio
+            takeOffBtn['command'] = comando_vacio
+            
+            # Habilitar solo los botones de movimiento y control del dron cuando esté volando
+            habilitar_boton(NorthBtn)   # Norte
+            habilitar_boton(SouthBtn)   # Sur
+            habilitar_boton(EastBtn)    # Este
+            habilitar_boton(WestBtn)    # Oeste
+            habilitar_boton(StopBtn)    # Parar
+            habilitar_boton(RTLBtn)     # RTL
+            # Mantener desconectar deshabilitado mientras vuela (seguridad)
+            deshabilitar_boton(disconnectBtn, "funcionando")
+            
+        elif current_state == 'connected' and armBtn['text'] in ["Armado", "Armando..."]:
+            # Solo imprimir si es la primera vez que entra en este estado
+            if last_printed_state != 'connected':
+                print('Dron desarmado - regresando al estado conectado')
+                last_printed_state = 'connected'
+            
+            # Si el RTL estaba activo, el dron completó una misión - reseteo completo
+            if RTLBtn['text'] == "Volviendo a Base...":
+                print('Misión RTL completada - reseteo completo del sistema')
+                RTLBtn['text'] = "Aterrizado"
+                RTLBtn['bg'] = "green"
+                RTLBtn['fg'] = "white"
+                
+                # Programar secuencia: habilitar y luego deshabilitar RTL después de 3 segundos
+                def reset_and_disable_rtl():
+                    habilitar_boton(RTLBtn)  # Restaurar estado original
+                    ventana.after(0, lambda: deshabilitar_boton(RTLBtn))  # Deshabilitar tras 0ms
+                
+                ventana.after(3000, reset_and_disable_rtl)
+                
+                # RESETEAR COMPLETAMENTE AL ESTADO "CONECTADO" (tras vuelo/misión)
+                # 1. Restaurar botón armar a su estado inicial
+                habilitar_boton(armBtn)
+                habilitar_boton(disconnectBtn)
+                
+                # 2. Restaurar botón despegar al estado inicial y luego deshabilitarlo
+                habilitar_boton(takeOffBtn)
+                deshabilitar_boton(takeOffBtn)  # Deshabilitarlo hasta próximo armado
+                
+                # 3. Deshabilitar todos los botones de vuelo
+                deshabilitar_boton(NorthBtn)
+                deshabilitar_boton(SouthBtn)
+                deshabilitar_boton(EastBtn)
+                deshabilitar_boton(WestBtn)
+                deshabilitar_boton(StopBtn)
+                
+            else:
+                # Desarme simple (timeout) - solo resetear armar y despegar
+                print('Desarme por timeout')
+                habilitar_boton(armBtn)
+                deshabilitar_boton(takeOffBtn)  # Mantener despegar deshabilitado
+                habilitar_boton(disconnectBtn)
+    
+    # Ejecutar actualización en el thread principal de tkinter
+    ventana.after(0, update_ui)
+
+# Ejecuta el botón para despegar con feedback visual
+def despegar_dron():
+    # Cambiar el botón a estado "despegando..."
+    takeOffBtn['text'] = "Despegando..."
+    takeOffBtn['bg'] = "yellow"
+    takeOffBtn['fg'] = "black"
+    takeOffBtn.update()  # Forzar la actualización visual
+    
+    def takeoff_callback():
+        # Esta función se ejecutará cuando el despegue sea exitoso
+        takeOffBtn['text'] = "Volando"
+        takeOffBtn['bg'] = "green"
+        takeOffBtn['fg'] = "white"
+    
+    def takeoff_error_callback():
+        # Esta función se ejecutará si hay error en el despegue
+        takeOffBtn['text'] = "Error - Despegar"
+        takeOffBtn['bg'] = "red"
+        takeOffBtn['fg'] = "white"
+    
+    try:
+        # Usar takeOff con callback no bloqueante
+        result = dron.takeOff(3, blocking=False, callback=takeoff_callback)
+        
+        # Verificar si el despegue se inició correctamente
+        if hasattr(dron, 'state'):
+            # Dar un momento para que se actualice el estado
+            time.sleep(0.5)
+            if dron.state in ['takingOff', 'flying']:
+                print('Despegue iniciado correctamente')
+                # El callback se encargará de actualizar el botón cuando termine
+            else:
+                print('El dron no cambió a estado de despegue')
+                takeoff_error_callback()
+        else:
+            # Si no tenemos estado, asumir que se inició bien
+            print('Comando de despegue enviado')
+            
+    except Exception as e:
+        print(f"Error al despegar: {e}")
+        takeoff_error_callback()
+
+# Función para ejecutar RTL con feedback visual
+def rtl_with_feedback():
+    if dron.state == 'flying':
+        # Cambiar el botón a estado "volviendo a base..."
+        RTLBtn['text'] = "Volviendo a Base..."
+        RTLBtn['bg'] = "yellow"
+        RTLBtn['fg'] = "black"
+        RTLBtn.update()  # Forzar la actualización visual
+        
+        try:
+            # Ejecutar RTL en modo no bloqueante
+            dron.RTL(blocking=False)
+            print('Comando RTL enviado')
+            
+        except Exception as e:
+            print(f"Error al ejecutar RTL: {e}")
+            # Error al ejecutar RTL
+            RTLBtn['text'] = "Error - RTL"
+            RTLBtn['bg'] = "red"
+            RTLBtn['fg'] = "white"
+            # Restaurar después de 3 segundos
+            ventana.after(3000, lambda: habilitar_boton(RTLBtn))
+
+# Función para desconectar con feedback visual
+def desconectar_con_feedback():
+    # Cambiar el botón a estado "desconectando..."
+    disconnectBtn['text'] = "Desconectando..."
+    disconnectBtn['bg'] = "yellow"
+    disconnectBtn['fg'] = "black"
+    disconnectBtn.update()  # Forzar la actualización visual
+    
+    try:
+        # Detener el message handler ANTES de desconectar para evitar errores de socket
+        if hasattr(dron, 'message_handler') and dron.message_handler:
+            print('Deteniendo message handler...')
+            dron.message_handler.stop()
+            dron.message_handler = None
+        
+        result = dron.disconnect()
+        if result:
+            print('Desconexión exitosa')
+            # Cambiar el botón a estado desconectado
+            deshabilitar_boton(disconnectBtn, "desconectado")
+            
+            # Resetear todos los botones al estado inicial
+            habilitar_boton(connectBtn)
+            
+            # Deshabilitar todos los demás botones
+            deshabilitar_boton(armBtn)
+            deshabilitar_boton(takeOffBtn)
+            deshabilitar_boton(NorthBtn)
+            deshabilitar_boton(SouthBtn)
+            deshabilitar_boton(EastBtn)
+            deshabilitar_boton(WestBtn)
+            deshabilitar_boton(StopBtn)
+            deshabilitar_boton(RTLBtn)
+            deshabilitar_boton(disconnectBtn, "desconectado")
+            
+        else:
+            print('Error: No se pudo desconectar')
+            disconnectBtn['text'] = "Error - Desconectar"
+            disconnectBtn['bg'] = "red"
+            disconnectBtn['fg'] = "white"
+            
+    except Exception as e:
+        print(f"Error al desconectar: {e}")
+        disconnectBtn['text'] = "Error - Desconectar"
+        disconnectBtn['bg'] = "red"
+        disconnectBtn['fg'] = "white"
 
 # Ejecuta el botón para permitir conectar la WebApp en el modo que escojamos
 def toggle_connection_mode():
@@ -139,6 +553,10 @@ def on_message(client, userdata, message):
         command = parts[2]
         print ('recibo ', command)
         if command == 'connect':
+            # NO actualizar el botón de conectar cuando viene de WebApp
+            # Solo realizar la conexión sin feedback visual local
+            print('Conectando desde WebApp')
+                
             # Selecciono los parámetros según el modo
             if connection_mode == "simulation":
                 connection_string = 'tcp:127.0.0.1:5763'  # Simulación
@@ -149,18 +567,24 @@ def on_message(client, userdata, message):
                 baud = 57600  # Dron Real (producción)
                 print(f'Conectando en modo PRODUCCIÓN en puerto {com_port.upper()}')
 
-            dron.connect(connection_string, baud)
-            print('conectado')
-            # le pido los datos de telemetria y le indico la función a ejecutar cada vez que tenga un nuevo paquete de datos
-            print('pido datos de telemetria')
-            dron.send_telemetry_info(procesarTelemetria)
+            try:
+                result = dron.connect(connection_string, baud)
+                print('conectado desde WebApp')
+                    
+                # le pido los datos de telemetria y le indico la función a ejecutar cada vez que tenga un nuevo paquete de datos
+                print('pido datos de telemetria')
+                dron.send_telemetry_info(procesarTelemetria)
+                
+            except Exception as e:
+                print(f'Error al conectar desde WebApp: {e}')
 
         if command == 'arm_takeOff':
             if dron.state == 'connected':
                 # recupero la altura a alcanzar, que viene como payload del mensaje
                 alt = int( message.payload.decode("utf-8"))
+                print(f'Armando y despegando desde WebApp a {alt}m')
                 dron.arm()
-                print ('armado')
+                print ('armado desde WebApp')
                 # operación no bloqueante. Cuando acabe publicará el evento correspondiente
                 dron.takeOff(alt, blocking=False, callback=publish_event, params='flying')
 
@@ -172,14 +596,15 @@ def on_message(client, userdata, message):
 
         if command == 'Land':
             if dron.state == 'flying':
-                print ('voy a aterrizar')
+                print ('Aterrizando desde WebApp')
                 # operación no bloqueante
                 dron.Land(blocking=False)
 
         if command == 'RTL':
             if dron.state == 'flying':
-                print('Ejecutando RTL')
-                # operación no bloqueante
+                print('Ejecutando RTL desde WebApp')
+                # NO actualizar la interfaz de la estación de tierra cuando viene de WebApp
+                # Solo ejecutar el comando sin feedback visual local
                 dron.RTL(blocking=False)
 
         if command == 'goto':
@@ -1203,10 +1628,10 @@ modeBtn.grid(row=0, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 connectBtn = tk.Button(ventana, text="Conectar", bg="dark orange", command=conectar_local)
 connectBtn.grid(row=1, column=0, padx=3, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-armBtn = tk.Button(ventana, text="Armar", bg="dark orange", command=lambda: dron.arm())
+armBtn = tk.Button(ventana, text="Armar", bg="dark orange", command=armar_dron)
 armBtn.grid(row=2, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-takeOffBtn = tk.Button(ventana, text="Despegar", bg="dark orange", command=lambda: dron.takeOff(3))
+takeOffBtn = tk.Button(ventana, text="Despegar", bg="dark orange", command=despegar_dron)
 takeOffBtn.grid(row=3, column=0,  padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 NorthBtn = tk.Button(ventana, text="Norte", bg="dark orange", command=lambda: dron.go('North'))
@@ -1224,10 +1649,10 @@ WestBtn.grid(row=7, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 StopBtn = tk.Button(ventana, text="Parar", bg="dark orange", command=lambda: dron.go('Stop'))
 StopBtn.grid(row=8, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-RTLBtn = tk.Button(ventana, text="RTL", bg="dark orange", command=lambda: dron.RTL())
+RTLBtn = tk.Button(ventana, text="RTL", bg="dark orange", command=lambda: rtl_with_feedback())
 RTLBtn.grid(row=9, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
-disconnectBtn = tk.Button(ventana, text="Desconectar", bg="dark orange", command=lambda: dron.disconnect())
+disconnectBtn = tk.Button(ventana, text="Desconectar", bg="dark orange", command=desconectar_con_feedback)
 disconnectBtn.grid(row=10, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 allowExternalBtn = tk.Button(ventana, text="Conectar WebApp", bg="violet", command= allowExternal)
@@ -1291,5 +1716,21 @@ print('Conectado a broker.hivemq.com:8000')
 client.subscribe('mobileFlask/demoDash/#')
 print('demoDash esperando peticiones ')
 client.loop_start()'''
+
+# Deshabilitar todos los botones excepto "Conectar" y "Conectar WebApp" al iniciar
+# Solo permitir conectar al dron y conectar a la WebApp al inicio
+deshabilitar_boton(modeBtn)
+deshabilitar_boton(armBtn)
+deshabilitar_boton(takeOffBtn)
+deshabilitar_boton(NorthBtn)
+deshabilitar_boton(SouthBtn)
+deshabilitar_boton(EastBtn)
+deshabilitar_boton(WestBtn)
+deshabilitar_boton(StopBtn)
+deshabilitar_boton(RTLBtn)
+deshabilitar_boton(disconnectBtn, "desconectado")
+deshabilitar_boton(videoWebsocketBtn)
+deshabilitar_boton(galleryBtn)
+deshabilitar_boton(cameraBtn)
 
 ventana.mainloop()
