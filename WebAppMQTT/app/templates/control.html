@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
      <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
     <title>Web App</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <!--    Necesito estos scripts para trabajar con MQTT y con websockets-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
@@ -104,6 +105,29 @@
         .boton-rojo { background-color: #f44336; color: white; }
         .boton-azul { background-color: #2196F3; color: white; }
         
+        /* === INDICADOR MODO SEGUIMIENTO === */
+        .follow-mode-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border: 3px solid #4CAF50;
+            border-radius: 50%;
+            background: rgba(76, 175, 80, 0.1);
+            pointer-events: none;
+            z-index: 1001;
+            display: none;
+            animation: pulse-follow 2s infinite;
+        }
+        
+        @keyframes pulse-follow {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.3; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+        }
+        
         /* === JOYSTICK === */
         .joystick-area {
             position: absolute;
@@ -118,8 +142,8 @@
         
         .joystick-container {
             position: fixed;
-            bottom: 80px;
-            left: 80px;
+            bottom: 100px;
+            left: 100px;
             width: 120px;
             height: 120px;
             background: rgba(255, 255, 255, 0.2);
@@ -204,6 +228,7 @@
         <button id="botonDetenerVideo" class="boton-rojo" style="display:none;" onclick="detenerGrabacion()">Detener Video</button>
         <button id="botonCamaraMovil" class="boton-azul" onclick="abrirVentanaCamara()">Cámara Móvil</button>
         <button id="toggleNavegacion" class="boton-azul" onclick="toggleNavegacion()">Ocultar Nav.</button>
+        <button id="botonSeguirDron" class="boton-azul" onclick="toggleFollowDrone()">Seguir Dron</button>
 
     </div>
 
@@ -255,6 +280,9 @@
 
     <div id="map"></div>
 
+    <!-- Indicador visual del modo seguimiento -->
+    <div id="follow-indicator" class="follow-mode-indicator"></div>
+
     <!-- Área del joystick flotante (mitad izquierda de la pantalla) -->
     <div class="joystick-area" id="joystick-area">
         <div class="joystick-container" id="joystick-container">
@@ -279,8 +307,10 @@
         let droneMarker = L.marker(currentPos, {
             icon: L.icon({
                 iconUrl: 'static/icono_dron.png',
-                iconSize: [30, 30]
-            })
+                iconSize: [30, 30],
+                iconAnchor: [15, 15] // Centrar el icono
+            }),
+            zIndexOffset: 1000 // Asegurar que esté encima de otros elementos
         }).addTo(map);
 
         let currentFlightName = null;
@@ -291,6 +321,10 @@
         let siguiendoRuta = false;
         let rutaPolyline = L.polyline([], { color: 'black', weight: 3 }).addTo(map);
         let telemetry_info = null;
+        
+        // Variables para el seguimiento del dron
+        let followDrone = false;
+        let droneFollowButton = null;
         
         // ===== ICONOS Y MARCADORES =====
 
@@ -344,9 +378,16 @@
         // Función para actualizar la posición del dron
         function updateDronePosition(lat, lon, heading) {
             const newPos = [lat, lon];
+            
+            // Siempre actualizar la posición real del dron
             droneMarker.setLatLng(newPos);
             directionArrow.setLatLng(newPos);
-
+            
+            // Si está en modo seguimiento, mover el mapa para mantener el dron centrado
+            if (followDrone) {
+                map.setView(newPos, map.getZoom(), {animate: true, duration: 0.3});
+            }
+            
             // Actualizar la dirección de la flecha
             directionArrow.setIcon(new DirectionArrow({
                 iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(heading))
@@ -517,6 +558,39 @@
             } else {
                 nav.style.display = 'none';
                 btn.textContent = 'Mostrar Nav.';
+            }
+        }
+
+        // Función para activar/desactivar el seguimiento del dron
+        function toggleFollowDrone() {
+            const botonSeguir = document.getElementById('botonSeguirDron');
+            const followIndicator = document.getElementById('follow-indicator');
+            
+            followDrone = !followDrone;
+            
+            if (followDrone) {
+                // Activar modo seguimiento
+                botonSeguir.textContent = "Dejar de Seguir";
+                botonSeguir.classList.remove('boton-azul');
+                botonSeguir.classList.add('boton-verde');
+                
+                // Mostrar indicador visual
+                // followIndicator.style.display = 'block'; // Comentado para quitar el círculo verde
+                
+                // Centrar inmediatamente en el dron
+                map.setView(currentPos, map.getZoom());
+                
+                console.log('Modo seguimiento activado: El mapa seguirá al dron');
+            } else {
+                // Desactivar modo seguimiento
+                botonSeguir.textContent = "Seguir Dron";
+                botonSeguir.classList.remove('boton-verde');
+                botonSeguir.classList.add('boton-azul');
+                
+                // Ocultar indicador visual
+                // followIndicator.style.display = 'none'; // Comentado para quitar el círculo verde
+                
+                console.log('Modo seguimiento desactivado');
             }
         }
 
@@ -1165,25 +1239,11 @@
 
         // Función para convertir la posición del joystick a comando de dirección
         function joystickToDirection(deltaX, deltaY) {
+
             const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             
-            // Threshold adaptativo: más pequeño para móviles, más grande para PC
-            const screenWidth = window.innerWidth;
-            let threshold;
-            if (screenWidth < 768) {
-                // Móviles: threshold muy pequeño
-                threshold = 10;
-            } else if (screenWidth < 1024) {
-                // Tablets: threshold intermedio
-                threshold = 15;
-            } else {
-                // PC/Desktop: threshold más grande
-                threshold = 20;
-            }
-            
-            // Debug: mostrar cálculos
-            console.log(`Debug - screenWidth: ${screenWidth}, threshold: ${threshold}, distance: ${distance.toFixed(1)}, deltaX: ${deltaX.toFixed(1)}, deltaY: ${deltaY.toFixed(1)}`);
-            
+            const threshold = 15;
+                        
             if (distance < threshold) {
                 return 'Stop';
             }
@@ -1240,15 +1300,9 @@
                 
                 joystickActive = true;
                 
-                // En dispositivos táctiles, usar las coordenadas fijas del joystick
-                if (IS_TOUCH_DEVICE) {
-                    // Coordenadas globales del centro del joystick fijo
-                    joystickStartX = 80 + 60; // left + radius
-                    joystickStartY = window.innerHeight - 80 - 60; // height - bottom - radius
-                } else {
-                    joystickStartX = x;
-                    joystickStartY = y;
-                }
+                // Coordenadas fijas del joystick (solo dispositivos táctiles llegan aquí)
+                joystickStartX = 100 + 60; // left + radius
+                joystickStartY = window.innerHeight - 100 - 60; // height - bottom - radius
                 
                 showJoystick(x, y);
                 
@@ -1271,15 +1325,9 @@
                 
                 const touch = e.touches[0];
                 
-                // En dispositivos táctiles, usar coordenadas globales
-                if (IS_TOUCH_DEVICE) {
-                    currentTouchX = touch.clientX;
-                    currentTouchY = touch.clientY;
-                } else {
-                    const rect = joystickArea.getBoundingClientRect();
-                    currentTouchX = touch.clientX - rect.left;
-                    currentTouchY = touch.clientY - rect.top;
-                }
+                // Usar coordenadas globales (solo dispositivos táctiles llegan aquí)
+                currentTouchX = touch.clientX;
+                currentTouchY = touch.clientY;
                 
                 const deltaX = currentTouchX - joystickStartX;
                 const deltaY = currentTouchY - joystickStartY;
