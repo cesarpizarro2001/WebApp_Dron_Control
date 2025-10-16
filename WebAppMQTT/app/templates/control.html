@@ -13,10 +13,32 @@
     <!--    Necesito estos scripts para trabajar con MQTT y con websockets-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Detectar si es un dispositivo táctil
+        function isTouchDevice() {
+            return (('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0) ||
+                   (navigator.msMaxTouchPoints > 0));
+        }
+        
+        // Variable global para saber si es táctil
+        const IS_TOUCH_DEVICE = isTouchDevice();
+        console.log('Dispositivo táctil detectado:', IS_TOUCH_DEVICE);
+    </script>
 </head>
 <style>
-        body { margin: 0; padding: 0; }
-        #map { height: 100vh; width: 100%; }
+        /* === ESTILOS BÁSICOS === */
+        body { 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        /* === CONTENEDORES PRINCIPALES === */
+        #map { 
+            height: 100vh; 
+            width: 100%; 
+        }
+        
         #webcam-container {
             height: 100vh;
             width: 100%;
@@ -25,11 +47,14 @@
             justify-content: center;
             align-items: center;
         }
+        
         #webcam-video {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
         }
+        
+        /* === TELEMETRÍA === */
         #datos-telemetria {
             position: absolute;
             top: 10px;
@@ -46,11 +71,12 @@
             align-items: center;
             overflow: hidden;
         }
+        
         .dato {
             font-weight: bold;
         }
-
-        .direction-arrow { pointer-events: none; }
+        
+        /* === CONTROLES === */
         .controls {
             position: absolute;
             top: 10px;
@@ -62,6 +88,7 @@
             z-index: 1000;
             max-width: 100px;
         }
+        
         .controls button, .controls input {
             display: block;
             width: 100%;
@@ -70,12 +97,14 @@
             font-size: 13px;
             border-radius: 5px;
         }
+        
+        /* === BOTONES COLOREADOS === */
         .boton-verde { background-color: #4CAF50; color: white; }
         .boton-amarillo { background-color: #FFD700; color: black; }
-        .boton-rojo { background-color: #f44336; }
+        .boton-rojo { background-color: #f44336; color: white; }
         .boton-azul { background-color: #2196F3; color: white; }
         
-        /* Estilos para el joystick flotante */
+        /* === JOYSTICK === */
         .joystick-area {
             position: absolute;
             left: 0;
@@ -84,25 +113,30 @@
             height: 100vh;
             z-index: 500;
             pointer-events: auto;
-            touch-action: none; /* Prevenir scroll en dispositivos táctiles */
+            touch-action: none;
         }
         
         .joystick-container {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.25);
+            position: fixed;
+            bottom: 80px;
+            left: 80px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
             display: none;
             z-index: 501;
             pointer-events: none;
             transition: opacity 0.2s ease;
-            /* Tamaño adaptativo definido por JavaScript */
         }
         
         .joystick-knob {
             position: absolute;
-            background: rgba(66, 165, 245, 0.5);
-            border: 2px solid rgba(33, 150, 243, 0.6);
+            width: 50px;
+            height: 50px;
+            background: rgba(66, 165, 245, 0.7);
+            border: 2px solid rgba(33, 150, 243, 0.8);
             border-radius: 50%;
             top: 50%;
             left: 50%;
@@ -110,7 +144,6 @@
             pointer-events: none;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             transition: transform 0.1s ease;
-            /* Tamaño adaptativo definido por JavaScript */
         }
         
         .joystick-center-dot {
@@ -125,6 +158,28 @@
             pointer-events: none;
         }
         
+        /* === CLASES DE VISIBILIDAD SEGÚN DISPOSITIVO === */
+        /* Mostrar joystick solo en dispositivos táctiles */
+        .joystick-container.touch-device {
+            display: block;
+            opacity: 0.8;
+        }
+        
+        /* Ocultar cruceta en dispositivos táctiles */
+        .navigation-grid.touch-hidden {
+            display: none !important;
+        }
+        
+        /* Ocultar joystick completamente en dispositivos no táctiles */
+        .joystick-area.non-touch-hidden {
+            display: none !important;
+        }
+        
+        /* === UTILIDADES === */
+        .direction-arrow { 
+            pointer-events: none; 
+        }
+        
         /* Prevenir selección de texto en elementos táctiles */
         .joystick-area, .joystick-container, .joystick-knob {
             -webkit-user-select: none;
@@ -134,7 +189,6 @@
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
         }
-
     </style>
 <body>
     <div class="controls">
@@ -212,6 +266,9 @@
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
         // Inicializar el mapa
+        // ===== VARIABLES GLOBALES =====
+        
+        // Variables del mapa y posicionamiento
         var map = L.map('map').setView([41.27624, 1.98838], 20);
         L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
             maxZoom: 20
@@ -234,6 +291,8 @@
         let siguiendoRuta = false;
         let rutaPolyline = L.polyline([], { color: 'black', weight: 3 }).addTo(map);
         let telemetry_info = null;
+        
+        // ===== ICONOS Y MARCADORES =====
 
         // Función para manejar la orientación del dron
         function createArrowSVG(angle) {
@@ -279,6 +338,8 @@
                 iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(0))
             })
         }).addTo(map);
+        
+        // ===== FUNCIONES DE MAPAS Y NAVEGACIÓN =====
 
         // Función para actualizar la posición del dron
         function updateDronePosition(lat, lon, heading) {
@@ -510,6 +571,8 @@
             mover_dron_a_coordenadas(waypoint.lat, waypoint.lng);
             console.log('Dron moviéndose al waypoint:', waypoint.num);
         }
+        
+        // ===== FUNCIONES DE WEBCAM Y CAPTURA =====
 
         // Función para mostrar u ocultar el contenedor de video
         function toggleWebcamView() {
@@ -584,6 +647,8 @@
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const imgStream = document.getElementById("processedStream");
+        
+        // ===== CONEXIONES WEBSOCKET Y MQTT =====
 
         // Me conecto por websocket al servidor flask. Por ahí me enviará los frames
         const socket = io();
@@ -1021,72 +1086,16 @@
                 };
             }
         }
+        
+        // ===== CONTROL JOYSTICK (DISPOSITIVOS TÁCTILES) =====
 
         // JOYSTICK FLOTANTE - Variables globales
+        // Variables globales del joystick
         let joystickActive = false;
         let joystickStartX, joystickStartY;
         let joystickContainer, joystickKnob, joystickArea;
         let joystickInterval = null;
-        // Variables globales del joystick - Configuración adaptativa
-        let joystickMaxDistance = 55; // Se calculará dinámicamente según el tamaño de pantalla
-        
-        // Configuración adaptativa del joystick
-        let joystickConfig = {
-            containerSize: 0,
-            knobSize: 0,
-            maxDistance: 0
-        };
-        
-        // Función para calcular tamaños adaptativos del joystick
-        function calculateJoystickSizes() {
-            const screenWidth = window.innerWidth;
-            const screenHeight = window.innerHeight;
-            const maxDimension = Math.max(screenWidth, screenHeight);
-            
-            // Tamaño del contenedor basado en un porcentaje de la pantalla
-            joystickConfig.containerSize = Math.floor(maxDimension * 0.12); // 12% de la dimensión mayor
-            joystickConfig.knobSize = Math.floor(joystickConfig.containerSize * 0.4); // 40% del contenedor
-            joystickConfig.maxDistance = (joystickConfig.containerSize - joystickConfig.knobSize) / 2;
-            
-            // Asegurar tamaños mínimos y máximos
-            joystickConfig.containerSize = Math.max(120, Math.min(200, joystickConfig.containerSize));
-            joystickConfig.knobSize = Math.max(50, Math.min(80, joystickConfig.knobSize));
-            joystickConfig.maxDistance = Math.max(25, Math.min(60, joystickConfig.maxDistance));
-            
-            // Actualizar la variable global
-            joystickMaxDistance = joystickConfig.maxDistance;
-            
-            console.log('Tamaños adaptativos calculados:', {
-                pantalla: `${screenWidth}x${screenHeight}`,
-                contenedor: joystickConfig.containerSize,
-                knob: joystickConfig.knobSize,
-                maxDistance: joystickConfig.maxDistance
-            });
-        }
-        
-        // Función para aplicar los tamaños calculados al joystick
-        function applyJoystickSizes() {
-            const joystickContainer = document.querySelector('.joystick-container');
-            const joystickKnob = document.querySelector('.joystick-knob');
-            
-            if (joystickContainer && joystickKnob) {
-                joystickContainer.style.width = joystickConfig.containerSize + 'px';
-                joystickContainer.style.height = joystickConfig.containerSize + 'px';
-                joystickKnob.style.width = joystickConfig.knobSize + 'px';
-                joystickKnob.style.height = joystickConfig.knobSize + 'px';
-                
-                console.log('Tamaños aplicados al joystick:', {
-                    contenedor: joystickConfig.containerSize + 'px',
-                    knob: joystickConfig.knobSize + 'px'
-                });
-            }
-        }
-        
-        // Función para recalcular tamaños cuando cambie el tamaño de pantalla
-        function handleResize() {
-            calculateJoystickSizes();
-            applyJoystickSizes();
-        }
+        let joystickMaxDistance = 55; // Distancia máxima fija
 
         // Inicializar referencias a elementos del joystick
         function initJoystick() {
@@ -1097,7 +1106,14 @@
 
         // Función para mostrar el joystick en una posición específica
         function showJoystick(x, y) {
-            joystickContainer.style.left = (x - 90) + 'px'; // Centrar el joystick más grande
+            // En dispositivos táctiles, el joystick es fijo, solo resetear
+            if (IS_TOUCH_DEVICE) {
+                resetJoystickKnob();
+                return;
+            }
+            
+            // En dispositivos no táctiles, comportamiento original
+            joystickContainer.style.left = (x - 90) + 'px';
             joystickContainer.style.top = (y - 90) + 'px';
             joystickContainer.style.display = 'block';
             resetJoystickKnob();
@@ -1105,7 +1121,6 @@
 
         // Función para ocultar el joystick
         function hideJoystick() {
-            joystickContainer.style.display = 'none';
             joystickActive = false;
             if (joystickInterval) {
                 clearInterval(joystickInterval);
@@ -1113,6 +1128,15 @@
             }
             // Enviar comando de parada
             moverDron('Stop');
+            
+            // En dispositivos táctiles, solo resetear knob, no ocultar
+            if (IS_TOUCH_DEVICE) {
+                resetJoystickKnob();
+                return;
+            }
+            
+            // En dispositivos no táctiles, ocultar completamente
+            joystickContainer.style.display = 'none';
         }
 
         // Función para resetear la posición del knob al centro
@@ -1215,12 +1239,20 @@
                 const y = touch.clientY - rect.top;
                 
                 joystickActive = true;
-                joystickStartX = x;
-                joystickStartY = y;
-                // No inicializamos currentTouchX/Y aquí, se actualizarán en touchmove
+                
+                // En dispositivos táctiles, usar las coordenadas fijas del joystick
+                if (IS_TOUCH_DEVICE) {
+                    // Coordenadas globales del centro del joystick fijo
+                    joystickStartX = 80 + 60; // left + radius
+                    joystickStartY = window.innerHeight - 80 - 60; // height - bottom - radius
+                } else {
+                    joystickStartX = x;
+                    joystickStartY = y;
+                }
+                
                 showJoystick(x, y);
                 
-                console.log('Touch START:', {x, y, joystickStartX, joystickStartY});
+                console.log('Touch START:', {x, y, joystickStartX, joystickStartY, isTouch: IS_TOUCH_DEVICE});
                 
                 // Iniciar envío periódico de comandos
                 joystickInterval = setInterval(() => {
@@ -1238,16 +1270,23 @@
                 if (!joystickActive) return;
                 
                 const touch = e.touches[0];
-                const rect = joystickArea.getBoundingClientRect();
-                currentTouchX = touch.clientX - rect.left;
-                currentTouchY = touch.clientY - rect.top;
+                
+                // En dispositivos táctiles, usar coordenadas globales
+                if (IS_TOUCH_DEVICE) {
+                    currentTouchX = touch.clientX;
+                    currentTouchY = touch.clientY;
+                } else {
+                    const rect = joystickArea.getBoundingClientRect();
+                    currentTouchX = touch.clientX - rect.left;
+                    currentTouchY = touch.clientY - rect.top;
+                }
                 
                 const deltaX = currentTouchX - joystickStartX;
                 const deltaY = currentTouchY - joystickStartY;
                 
                 console.log('Touch MOVE:', {currentTouchX, currentTouchY, deltaX, deltaY});
                 
-                // Actualizar posición del knob inmediatamente (sin esperar al interval)
+                // Actualizar posición del knob inmediatamente
                 const limited = updateJoystickKnob(deltaX, deltaY);
             });
 
@@ -1310,12 +1349,13 @@
                 }
             });
         }
+        
+        // ===== INICIALIZACIÓN DE LA APLICACIÓN =====
 
         // Inicializar el joystick cuando se carga la página
         document.addEventListener('DOMContentLoaded', function() {
-            // Calcular y aplicar tamaños adaptativos del joystick
-            calculateJoystickSizes();
-            applyJoystickSizes();
+            // Configurar interfaz según tipo de dispositivo
+            setupDeviceSpecificUI();
             
             // Inicializar funcionalidad del joystick
             initJoystick();
@@ -1323,9 +1363,43 @@
             setupJoystickMouseEvents();
         });
         
-        // Recalcular tamaños cuando cambie el tamaño de ventana
-        window.addEventListener('resize', handleResize);
-
+        // Función para configurar la UI según el tipo de dispositivo
+        function setupDeviceSpecificUI() {
+            const joystickContainer = document.getElementById('joystick-container');
+            const joystickArea = document.getElementById('joystick-area');
+            const navegacion = document.getElementById('navegacion');
+            const toggleNavBtn = document.getElementById('toggleNavegacion');
+            
+            if (IS_TOUCH_DEVICE) {
+                // Dispositivo táctil: mostrar joystick fijo, ocultar cruceta
+                if (joystickContainer) {
+                    joystickContainer.classList.add('touch-device');
+                }
+                if (joystickArea) {
+                    joystickArea.classList.remove('non-touch-hidden');
+                }
+                if (navegacion) {
+                    navegacion.classList.add('touch-hidden');
+                }
+                if (toggleNavBtn) {
+                    toggleNavBtn.style.display = 'none';
+                }
+                console.log('Configurado para dispositivo táctil: Joystick visible, cruceta oculta');
+            } else {
+                // Dispositivo no táctil: ocultar joystick completamente, mostrar cruceta
+                if (joystickContainer) {
+                    joystickContainer.classList.remove('touch-device');
+                }
+                if (joystickArea) {
+                    joystickArea.classList.add('non-touch-hidden');
+                }
+                if (navegacion) {
+                    navegacion.classList.remove('touch-hidden');
+                }
+                console.log('Configurado para dispositivo no táctil: Cruceta visible, joystick completamente oculto');
+            }
+        }
+        
     </script>
 </body>
 </html>
