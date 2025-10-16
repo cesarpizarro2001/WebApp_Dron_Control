@@ -4,7 +4,9 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
      <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
     <title>Web App</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -72,6 +74,66 @@
         .boton-amarillo { background-color: #FFD700; color: black; }
         .boton-rojo { background-color: #f44336; }
         .boton-azul { background-color: #2196F3; color: white; }
+        
+        /* Estilos para el joystick flotante */
+        .joystick-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50%;
+            height: 100vh;
+            z-index: 500;
+            pointer-events: auto;
+            touch-action: none; /* Prevenir scroll en dispositivos táctiles */
+        }
+        
+        .joystick-container {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            display: none;
+            z-index: 501;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            /* Tamaño adaptativo definido por JavaScript */
+        }
+        
+        .joystick-knob {
+            position: absolute;
+            background: rgba(66, 165, 245, 0.5);
+            border: 2px solid rgba(33, 150, 243, 0.6);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s ease;
+            /* Tamaño adaptativo definido por JavaScript */
+        }
+        
+        .joystick-center-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        
+        /* Prevenir selección de texto en elementos táctiles */
+        .joystick-area, .joystick-container, .joystick-knob {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
     </style>
 <body>
@@ -138,6 +200,14 @@
     </div>
 
     <div id="map"></div>
+
+    <!-- Área del joystick flotante (mitad izquierda de la pantalla) -->
+    <div class="joystick-area" id="joystick-area">
+        <div class="joystick-container" id="joystick-container">
+            <div class="joystick-center-dot"></div>
+            <div class="joystick-knob" id="joystick-knob"></div>
+        </div>
+    </div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
@@ -515,11 +585,11 @@
         const ctx = canvas.getContext("2d");
         const imgStream = document.getElementById("processedStream");
 
-        <!-- Me conecto por websocket al servidor flask. Por ahí me enviará los frames-->
+        // Me conecto por websocket al servidor flask. Por ahí me enviará los frames
         const socket = io();
         console.log ("conectado al web socket");
         socket.on('stream_frame', function(data) {
-            <!-- cada vez que recibo un frame por el websocket lo coloco en su sitio-->
+            // cada vez que recibo un frame por el websocket lo coloco en su sitio
             console.log ("recibo frame por web socket");
             document.getElementById('video-stream').src = 'data:image/jpeg;base64,' + data;
         });
@@ -801,6 +871,310 @@
                 };
             }
         }
+
+        // JOYSTICK FLOTANTE - Variables globales
+        let joystickActive = false;
+        let joystickStartX, joystickStartY;
+        let joystickContainer, joystickKnob, joystickArea;
+        let joystickInterval = null;
+        // Variables globales del joystick - Configuración adaptativa
+        let joystickMaxDistance = 55; // Se calculará dinámicamente según el tamaño de pantalla
+        
+        // Configuración adaptativa del joystick
+        let joystickConfig = {
+            containerSize: 0,
+            knobSize: 0,
+            maxDistance: 0
+        };
+        
+        // Función para calcular tamaños adaptativos del joystick
+        function calculateJoystickSizes() {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            const maxDimension = Math.max(screenWidth, screenHeight);
+            
+            // Tamaño del contenedor basado en un porcentaje de la pantalla
+            joystickConfig.containerSize = Math.floor(maxDimension * 0.12); // 12% de la dimensión mayor
+            joystickConfig.knobSize = Math.floor(joystickConfig.containerSize * 0.4); // 40% del contenedor
+            joystickConfig.maxDistance = (joystickConfig.containerSize - joystickConfig.knobSize) / 2;
+            
+            // Asegurar tamaños mínimos y máximos
+            joystickConfig.containerSize = Math.max(120, Math.min(200, joystickConfig.containerSize));
+            joystickConfig.knobSize = Math.max(50, Math.min(80, joystickConfig.knobSize));
+            joystickConfig.maxDistance = Math.max(25, Math.min(60, joystickConfig.maxDistance));
+            
+            // Actualizar la variable global
+            joystickMaxDistance = joystickConfig.maxDistance;
+            
+            console.log('Tamaños adaptativos calculados:', {
+                pantalla: `${screenWidth}x${screenHeight}`,
+                contenedor: joystickConfig.containerSize,
+                knob: joystickConfig.knobSize,
+                maxDistance: joystickConfig.maxDistance
+            });
+        }
+        
+        // Función para aplicar los tamaños calculados al joystick
+        function applyJoystickSizes() {
+            const joystickContainer = document.querySelector('.joystick-container');
+            const joystickKnob = document.querySelector('.joystick-knob');
+            
+            if (joystickContainer && joystickKnob) {
+                joystickContainer.style.width = joystickConfig.containerSize + 'px';
+                joystickContainer.style.height = joystickConfig.containerSize + 'px';
+                joystickKnob.style.width = joystickConfig.knobSize + 'px';
+                joystickKnob.style.height = joystickConfig.knobSize + 'px';
+                
+                console.log('Tamaños aplicados al joystick:', {
+                    contenedor: joystickConfig.containerSize + 'px',
+                    knob: joystickConfig.knobSize + 'px'
+                });
+            }
+        }
+        
+        // Función para recalcular tamaños cuando cambie el tamaño de pantalla
+        function handleResize() {
+            calculateJoystickSizes();
+            applyJoystickSizes();
+        }
+
+        // Inicializar referencias a elementos del joystick
+        function initJoystick() {
+            joystickArea = document.getElementById('joystick-area');
+            joystickContainer = document.getElementById('joystick-container');
+            joystickKnob = document.getElementById('joystick-knob');
+        }
+
+        // Función para mostrar el joystick en una posición específica
+        function showJoystick(x, y) {
+            joystickContainer.style.left = (x - 90) + 'px'; // Centrar el joystick más grande
+            joystickContainer.style.top = (y - 90) + 'px';
+            joystickContainer.style.display = 'block';
+            resetJoystickKnob();
+        }
+
+        // Función para ocultar el joystick
+        function hideJoystick() {
+            joystickContainer.style.display = 'none';
+            joystickActive = false;
+            if (joystickInterval) {
+                clearInterval(joystickInterval);
+                joystickInterval = null;
+            }
+            // Enviar comando de parada
+            moverDron('Stop');
+        }
+
+        // Función para resetear la posición del knob al centro
+        function resetJoystickKnob() {
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+        }
+
+        // Función para actualizar la posición del knob
+        function updateJoystickKnob(deltaX, deltaY) {
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            if (distance <= joystickMaxDistance) {
+                joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+            } else {
+                // Limitar el knob al borde del joystick
+                const angle = Math.atan2(deltaY, deltaX);
+                const limitedX = Math.cos(angle) * joystickMaxDistance;
+                const limitedY = Math.sin(angle) * joystickMaxDistance;
+                joystickKnob.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
+                deltaX = limitedX;
+                deltaY = limitedY;
+            }
+            
+            return { x: deltaX, y: deltaY };
+        }
+
+        // Función para convertir la posición del joystick a comando de dirección
+        function joystickToDirection(deltaX, deltaY) {
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Threshold adaptativo: más pequeño para móviles, más grande para PC
+            const screenWidth = window.innerWidth;
+            let threshold;
+            if (screenWidth < 768) {
+                // Móviles: threshold muy pequeño
+                threshold = 10;
+            } else if (screenWidth < 1024) {
+                // Tablets: threshold intermedio
+                threshold = 15;
+            } else {
+                // PC/Desktop: threshold más grande
+                threshold = 20;
+            }
+            
+            // Debug: mostrar cálculos
+            console.log(`Debug - screenWidth: ${screenWidth}, threshold: ${threshold}, distance: ${distance.toFixed(1)}, deltaX: ${deltaX.toFixed(1)}, deltaY: ${deltaY.toFixed(1)}`);
+            
+            if (distance < threshold) {
+                return 'Stop';
+            }
+            
+            // Calcular ángulo (0° = Este, 90° = Norte, 180° = Oeste, 270° = Sur)
+            let angle = Math.atan2(-deltaY, deltaX) * 180 / Math.PI; // -deltaY porque Y crece hacia abajo
+            if (angle < 0) angle += 360;
+            
+            console.log(`Debug angle: ${angle.toFixed(1)}°`);
+            
+            // Convertir ángulo a dirección cardinal/intercardinal
+            if (angle >= 337.5 || angle < 22.5) return 'East';
+            else if (angle >= 22.5 && angle < 67.5) return 'NorthEast';
+            else if (angle >= 67.5 && angle < 112.5) return 'North';
+            else if (angle >= 112.5 && angle < 157.5) return 'NorthWest';
+            else if (angle >= 157.5 && angle < 202.5) return 'West';
+            else if (angle >= 202.5 && angle < 247.5) return 'SouthWest';
+            else if (angle >= 247.5 && angle < 292.5) return 'South';
+            else if (angle >= 292.5 && angle < 337.5) return 'SouthEast';
+            
+            return 'Stop';
+        }
+
+        // Variable para almacenar la última dirección enviada
+        let lastDirection = 'Stop';
+
+        // Función para enviar comandos del joystick al dron
+        function sendJoystickCommand(deltaX, deltaY) {
+            const direction = joystickToDirection(deltaX, deltaY);
+            
+            // Debug: mostrar valores
+            console.log(`Debug Joystick - deltaX: ${deltaX.toFixed(1)}, deltaY: ${deltaY.toFixed(1)}, direction: ${direction}`);
+            
+            // Solo enviar comando si la dirección ha cambiado
+            if (direction !== lastDirection) {
+                console.log(`Joystick: ${direction} (deltaX: ${deltaX.toFixed(1)}, deltaY: ${deltaY.toFixed(1)})`);
+                moverDron(direction);
+                lastDirection = direction;
+            }
+        }
+
+        // Variables adicionales para tracking táctil
+        let currentTouchX = 0;
+        let currentTouchY = 0;
+
+        // Event listeners para eventos táctiles (móviles/tablets)
+        function setupJoystickTouchEvents() {
+            joystickArea.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = joystickArea.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                
+                joystickActive = true;
+                joystickStartX = x;
+                joystickStartY = y;
+                // No inicializamos currentTouchX/Y aquí, se actualizarán en touchmove
+                showJoystick(x, y);
+                
+                console.log('Touch START:', {x, y, joystickStartX, joystickStartY});
+                
+                // Iniciar envío periódico de comandos
+                joystickInterval = setInterval(() => {
+                    if (joystickActive && currentTouchX !== 0 && currentTouchY !== 0) {
+                        const deltaX = currentTouchX - joystickStartX;
+                        const deltaY = currentTouchY - joystickStartY;
+                        const limited = updateJoystickKnob(deltaX, deltaY);
+                        sendJoystickCommand(limited.x, limited.y);
+                    }
+                }, 150); // Enviar comandos cada 150ms
+            });
+
+            joystickArea.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                if (!joystickActive) return;
+                
+                const touch = e.touches[0];
+                const rect = joystickArea.getBoundingClientRect();
+                currentTouchX = touch.clientX - rect.left;
+                currentTouchY = touch.clientY - rect.top;
+                
+                const deltaX = currentTouchX - joystickStartX;
+                const deltaY = currentTouchY - joystickStartY;
+                
+                console.log('Touch MOVE:', {currentTouchX, currentTouchY, deltaX, deltaY});
+                
+                // Actualizar posición del knob inmediatamente (sin esperar al interval)
+                const limited = updateJoystickKnob(deltaX, deltaY);
+            });
+
+            joystickArea.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                console.log('Touch END');
+                // Resetear las coordenadas táctiles
+                currentTouchX = 0;
+                currentTouchY = 0;
+                hideJoystick();
+                lastDirection = 'Stop';
+            });
+        }
+
+        // Event listeners para eventos de mouse (para testing en desktop)
+        function setupJoystickMouseEvents() {
+            joystickArea.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                const rect = joystickArea.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                joystickActive = true;
+                joystickStartX = x;
+                joystickStartY = y;
+                showJoystick(x, y);
+                
+                // Iniciar envío periódico de comandos
+                joystickInterval = setInterval(() => {
+                    if (joystickActive) {
+                        // Usar las coordenadas actuales del mouse
+                        const currentRect = joystickArea.getBoundingClientRect();
+                        // Nota: para mouse necesitamos trackear la posición actual
+                    }
+                }, 150);
+            });
+
+            joystickArea.addEventListener('mousemove', function(e) {
+                if (!joystickActive) return;
+                
+                const rect = joystickArea.getBoundingClientRect();
+                const deltaX = (e.clientX - rect.left) - joystickStartX;
+                const deltaY = (e.clientY - rect.top) - joystickStartY;
+                
+                const limited = updateJoystickKnob(deltaX, deltaY);
+                sendJoystickCommand(limited.x, limited.y);
+            });
+
+            joystickArea.addEventListener('mouseup', function(e) {
+                e.preventDefault();
+                hideJoystick();
+                lastDirection = 'Stop';
+            });
+
+            // Manejar cuando el mouse sale del área
+            joystickArea.addEventListener('mouseleave', function(e) {
+                if (joystickActive) {
+                    hideJoystick();
+                    lastDirection = 'Stop';
+                }
+            });
+        }
+
+        // Inicializar el joystick cuando se carga la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Calcular y aplicar tamaños adaptativos del joystick
+            calculateJoystickSizes();
+            applyJoystickSizes();
+            
+            // Inicializar funcionalidad del joystick
+            initJoystick();
+            setupJoystickTouchEvents();
+            setupJoystickMouseEvents();
+        });
+        
+        // Recalcular tamaños cuando cambie el tamaño de ventana
+        window.addEventListener('resize', handleResize);
 
     </script>
 </body>
