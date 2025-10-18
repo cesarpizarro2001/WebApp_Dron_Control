@@ -7,11 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-     <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
     <title>Web App</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-    <!--    Necesito estos scripts para trabajar con MQTT y con websockets-->
+    <!--    Necesito estos scripts para trabajar con websockets (Socket.IO)-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -635,9 +634,7 @@
             document.getElementById('botonConectar').disabled = true;
             document.getElementById('botonDespegar').disabled = true;
 
-
-            client.publish('mobileFlask/demoDash/waypointRuta', JSON.stringify(waypoints));
-
+            socket.emit('command', { action: 'waypointRuta', waypoints: waypoints });
         }
 
         // Mover el dron al waypoint indicado
@@ -676,7 +673,7 @@
         // Función de capturar foto
         function capturarFoto() {
             console.log("Enviando comando para capturar foto");
-            client.publish('mobileFlask/demoDash/capturarFoto');
+            socket.emit('command', { action: 'capturarFoto' });
             // Mostrar feedback visual momentáneo
             const botonCapturarFoto = document.getElementById('botonCapturarFoto');
             botonCapturarFoto.classList.remove('boton-azul');
@@ -694,7 +691,7 @@
         // Inicia la grabación del vídeo de la cámara del dron
         function iniciarGrabacion() {
             console.log("Enviando comando para iniciar grabación de video");
-            client.publish('mobileFlask/demoDash/iniciarVideo');
+            socket.emit('command', { action: 'iniciarVideo' });
 
             // Mostrar feedback visual
             const botonIniciarVideo = document.getElementById('botonIniciarVideo');
@@ -707,7 +704,7 @@
          // Detiene la grabación del vídeo de la cámara del dron
         function detenerGrabacion() {
             console.log("Enviando comando para detener grabación de video");
-            client.publish('mobileFlask/demoDash/detenerVideo');
+            socket.emit('command', { action: 'detenerVideo' });
 
             // Mostrar feedback visual
             const botonIniciarVideo = document.getElementById('botonIniciarVideo');
@@ -722,28 +719,97 @@
         const ctx = canvas.getContext("2d");
         const imgStream = document.getElementById("processedStream");
         
-        // ===== CONEXIONES WEBSOCKET Y MQTT =====
+        // ===== CONEXIÓN WEBSOCKET (Socket.IO) =====
 
-        // Me conecto por websocket al servidor flask. Por ahí me enviará los frames
+        // Me conecto por websocket al servidor flask
         const socket = io();
-        console.log ("conectado al web socket");
+        console.log("Conectado al servidor via Socket.IO");
+        
+        // Recibir frames de video del dron
         socket.on('stream_frame', function(data) {
-            // cada vez que recibo un frame por el websocket lo coloco en su sitio
-            console.log ("recibo frame por web socket");
+            console.log("Recibo frame por Socket.IO");
             document.getElementById('video-stream').src = 'data:image/jpeg;base64,' + data;
         });
+        
+        // Recibir telemetría del dron
+        socket.on('telemetry_info', function(data) {
+            telemetry_info = data;
 
-        console.log ('voy a conectarme al broker');
-        // const client = mqtt.connect ('ws://broker.hivemq.com:8000/mqtt')
-        // const client = mqtt.connect ('ws://test.mosquitto.com:8000/mqtt', {
-        client = mqtt.connect ('wss://dronseetac.upc.edu:8883/mqtt', {
-          username: 'dronsEETAC',
-          password: 'mimara1456.'
-        })
+            // Actualizar posición y dirección del dron
+            if (data.lat && data.lon) {
+                updateDronePosition(data.lat, data.lon, data.heading || 0);
+            }
 
-        client.on('connect', function () {
-            console.log('Connected to MQTT broker');
-            client.subscribe('demoDash/mobileFlask/#');
+            // Actualizar telemetría en el UI
+            const telemetriaDiv = document.getElementById('datos-telemetria');
+            telemetriaDiv.innerHTML = `
+                <p><strong>Altitud:</strong> ${data.alt}m</p>
+                <p><strong>Velocidad:</strong> ${data.groundSpeed.toFixed(2)}m/s</p>
+                <p><strong>Estado:</strong> ${data.state}</p>
+            `;
+
+            // Detectar si acabamos de aterrizar
+            if ((previousDroneState === 'landing' || previousDroneState === 'returning') && 
+                data.state === 'connected') {
+                if (previousDroneState === 'landing') {
+                    showLandedState('botonAterrizar');
+                } else if (previousDroneState === 'returning') {
+                    showLandedState('botonRTL');
+                }
+            } else {
+                updateButtonStates(data.state);
+            }
+
+            if (data.state == "flying") {
+                const botonDespegar = document.getElementById('botonDespegar');
+                botonDespegar.classList.remove('boton-amarillo');
+                botonDespegar.classList.add('boton-verde');
+            }
+
+            previousDroneState = data.state;
+        });
+
+        // Recibir eventos de video
+        socket.on('video_error', function(errorMsg) {
+            console.error(`Error en grabación: ${errorMsg}`);
+            alert(`Error en grabación: ${errorMsg}`);
+            document.getElementById('botonIniciarVideo').style.display = 'block';
+            document.getElementById('botonDetenerVideo').style.display = 'none';
+        });
+
+        socket.on('flight_name_set', function(flightName) {
+            currentFlightName = flightName;
+            console.log(`Nombre del vuelo establecido: ${currentFlightName}`);
+            const webcamContainer = document.getElementById('webcam-container');
+            let flightNameDisplay = document.getElementById('flight-name-display');
+            if (!flightNameDisplay) {
+                flightNameDisplay = document.createElement('div');
+                flightNameDisplay.id = 'flight-name-display';
+                flightNameDisplay.style.position = 'absolute';
+                flightNameDisplay.style.top = '50px';
+                flightNameDisplay.style.left = '10px';
+                flightNameDisplay.style.background = 'rgba(0,0,0,0.7)';
+                flightNameDisplay.style.color = 'white';
+                flightNameDisplay.style.padding = '5px 10px';
+                flightNameDisplay.style.borderRadius = '5px';
+                flightNameDisplay.style.zIndex = '1001';
+                webcamContainer.appendChild(flightNameDisplay);
+            }
+            flightNameDisplay.textContent = `Vuelo: ${currentFlightName}`;
+        });
+
+        socket.on('foto_capturada', function(nombreFoto) {
+            let ubicacion = currentFlightName ? `${currentFlightName}/${nombreFoto}` : nombreFoto;
+            console.log(`Foto capturada: ${ubicacion}`);
+        });
+
+        socket.on('video_iniciado', function(nombreVideo) {
+            let ubicacion = currentFlightName ? `${currentFlightName}/${nombreVideo}` : nombreVideo;
+            console.log(`Grabación iniciada: ${ubicacion}`);
+        });
+
+        socket.on('video_detenido', function() {
+            console.log("Grabación detenida");
         });
 
         // Función para actualizar el estado de todos los botones según el estado del dron
@@ -855,113 +921,9 @@
         // Variable para evitar sobrescribir estado manual de despegue
         let despegando = false;
 
-        // Actualizar el event listener de MQTT para procesar la telemetría correctamente
-        client.on('message', function (topic, message) {
-            if (topic == "demoDash/mobileFlask/telemetryInfo") {
-                const data = JSON.parse(message.toString());
-                telemetry_info = data; // Guardar los datos completos
-
-                // Actualizar posición y dirección del dron
-                if (data.lat && data.lon) {
-                    updateDronePosition(
-                        data.lat,
-                        data.lon,
-                        data.heading || 0
-                    );
-                }
-
-                // Actualizar telemetría en el UI
-                const telemetriaDiv = document.getElementById('datos-telemetria');
-                telemetriaDiv.innerHTML = `
-                    <p><strong>Altitud:</strong> ${data.alt}m</p>
-                    <p><strong>Velocidad:</strong> ${data.groundSpeed.toFixed(2)}m/s</p>
-                    <p><strong>Estado:</strong> ${data.state}</p>
-                `;
-
-                // Detectar si acabamos de aterrizar (transición de landing/returning a connected)
-                if ((previousDroneState === 'landing' || previousDroneState === 'returning') && 
-                    data.state === 'connected') {
-                    // Mostrar "En Tierra" por 3 segundos antes de resetear
-                    if (previousDroneState === 'landing') {
-                        showLandedState('botonAterrizar');
-                    } else if (previousDroneState === 'returning') {
-                        showLandedState('botonRTL');
-                    }
-                } else {
-                    // Actualizar estado de todos los botones basándose en el estado del dron
-                    updateButtonStates(data.state);
-                }
-
-                // Fallback: mantener funcionalidad original para el botón despegar
-                if (data.state == "flying") {
-                    // Se ha completado el despegue. Pongo el boton en verde
-                    const botonDespegar = document.getElementById('botonDespegar');
-                    botonDespegar.classList.remove('boton-amarillo');
-                    botonDespegar.classList.add('boton-verde');
-                }
-
-                // Guardar el estado actual para la próxima comparación
-                previousDroneState = data.state;
-            }
-
-            if (topic == "demoDash/mobileFlask/frame") {
-                console.log ("recibo frame");
-                document.getElementById('video-stream2').src = 'data:image/jpeg;base64,' + message.toString();
-            }
-
-            if (topic == "demoDash/mobileFlask/videoError") {
-                const errorMsg = message.toString();
-                console.error(`Error en grabación: ${errorMsg}`);
-                // Mostrar error al usuario
-                alert(`Error en grabación: ${errorMsg}`);
-
-                // Restaurar botones
-                document.getElementById('botonIniciarVideo').style.display = 'block';
-                document.getElementById('botonDetenerVideo').style.display = 'none';
-            }
-
-            if (topic == "demoDash/mobileFlask/flightNameSet") {
-                currentFlightName = message.toString();
-                console.log(`Nombre del vuelo establecido: ${currentFlightName}`);
-                // Opcional: Mostrar el nombre del vuelo en alguna parte de la UI
-                const webcamContainer = document.getElementById('webcam-container');
-                let flightNameDisplay = document.getElementById('flight-name-display');
-                if (!flightNameDisplay) {
-                    flightNameDisplay = document.createElement('div');
-                    flightNameDisplay.id = 'flight-name-display';
-                    flightNameDisplay.style.position = 'absolute';
-                    flightNameDisplay.style.top = '50px';
-                    flightNameDisplay.style.left = '10px';
-                    flightNameDisplay.style.background = 'rgba(0,0,0,0.7)';
-                    flightNameDisplay.style.color = 'white';
-                    flightNameDisplay.style.padding = '5px 10px';
-                    flightNameDisplay.style.borderRadius = '5px';
-                    flightNameDisplay.style.zIndex = '1001';
-                    webcamContainer.appendChild(flightNameDisplay);
-                }
-                flightNameDisplay.textContent = `Vuelo: ${currentFlightName}`;
-            }
-
-            if (topic == "demoDash/mobileFlask/fotoCapturada") {
-                const nombreFoto = message.toString();
-                let ubicacion = currentFlightName ? `${currentFlightName}/${nombreFoto}` : nombreFoto;
-                console.log(`Foto capturada: ${ubicacion}`);
-            }
-
-            if (topic == "demoDash/mobileFlask/videoIniciado") {
-                const nombreVideo = message.toString();
-                let ubicacion = currentFlightName ? `${currentFlightName}/${nombreVideo}` : nombreVideo;
-                console.log(`Grabación iniciada: ${ubicacion}`);
-            }
-
-            if (topic == "demoDash/mobileFlask/videoDetenido") {
-            console.log("Grabación detenida");
-            }
-        });
-
         function conectarDron() {
-            console.log ("Voy a conectar");
-            client.publish('mobileFlask/demoDash/connect');
+            console.log("Voy a conectar");
+            socket.emit('command', { action: 'connect' });
             const botonConectar = document.getElementById('botonConectar');
             botonConectar.classList.add('boton-verde');
         }
@@ -969,9 +931,8 @@
         function despegarDron() {
             const altura = document.getElementById('altura').value;
             if (altura) {
-                client.publish('mobileFlask/demoDash/arm_takeOff', altura);
+                socket.emit('command', { action: 'arm_takeOff', altura: String(altura) });
                 
-                // Activar variable de estado y actualizar botón a estado "despegando"
                 despegando = true;
                 const botonDespegar = document.getElementById('botonDespegar');
                 botonDespegar.textContent = 'Despegando...';
@@ -988,51 +949,44 @@
             if (alturaInput) {
                 alturaInput.value = altura;
                 
-                // Activar variable de estado y actualizar botón
                 despegando = true;
                 const botonDespegar = document.getElementById('botonDespegar');
                 botonDespegar.textContent = 'Despegando...';
                 botonDespegar.classList.add('boton-amarillo');
                 botonDespegar.disabled = true;
                 
-                // Publicar el comando MQTT para que lo reciba la Estacion De Tierra
-                client.publish("mobileFlask/demoDash/arm_takeOff", String(altura));
+                socket.emit('command', { action: 'arm_takeOff', altura: String(altura) });
             } else {
                 alert("Por favor, ingrese una altura válida.");
             }
         }
 
         function aterrizarDron() {
-             client.publish('mobileFlask/demoDash/Land');
+            socket.emit('command', { action: 'Land' });
              
-             // Actualizar botón a estado "aterrizando"
-             const botonAterrizar = document.getElementById('botonAterrizar');
-             botonAterrizar.textContent = 'Aterrizando...';
-             botonAterrizar.classList.add('boton-amarillo');
-             botonAterrizar.disabled = true;
+            const botonAterrizar = document.getElementById('botonAterrizar');
+            botonAterrizar.textContent = 'Aterrizando...';
+            botonAterrizar.classList.add('boton-amarillo');
+            botonAterrizar.disabled = true;
         }
 
         function moverDron(direction) {
-            client.publish('mobileFlask/demoDash/go', direction)
+            socket.emit('command', { action: 'go', direction: direction });
         }
 
         function returnToLaunch() {
-            client.publish('mobileFlask/demoDash/RTL');
+            socket.emit('command', { action: 'RTL' });
             
-            // Actualizar botón a estado "volviendo a base"
             const botonRTL = document.getElementById('botonRTL');
             botonRTL.textContent = 'Volviendo a base...';
             botonRTL.classList.add('boton-amarillo');
             botonRTL.disabled = true;
         }
 
-        function mover_dron_a_coordenadas(lat,lng) {
-            const mensaje = JSON.stringify({
-                "lat": lat,
-                "lng": lng
-            });
-            console.log(`Enviando comando goto: ${mensaje}`);
-            client.publish('mobileFlask/demoDash/goto', mensaje)
+        function mover_dron_a_coordenadas(lat, lng) {
+            const mensaje = { lat: lat, lng: lng };
+            console.log(`Enviando comando goto: ${JSON.stringify(mensaje)}`);
+            socket.emit('command', { action: 'goto', lat: lat, lng: lng });
         }
 
         // Función para seguir una ruta de waypoints

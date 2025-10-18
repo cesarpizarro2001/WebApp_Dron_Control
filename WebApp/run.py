@@ -108,6 +108,38 @@ def handle_video_frame(data):
     print ("Recibo frame")
     socketio.emit('stream_frame', data)
 
+# Recibir comandos de la WebApp y reenviarlos a la Estación de Tierra
+@socketio.on('command')
+def handle_command(data):
+    action = data.get('action')
+    print(f"Comando recibido de WebApp: {action}")
+    
+    # Reenviar el comando a la Estación de Tierra
+    socketio.emit('ground_station_command', data, include_self=False)
+    
+# Recibir telemetría de la Estación de Tierra y enviarla al navegador
+@socketio.on('telemetry_data')
+def handle_telemetry(data):
+    # Reenviar telemetría a todos los clientes web conectados
+    socketio.emit('telemetry_info', data, include_self=False)
+
+# Recibir eventos de la Estación de Tierra
+@socketio.on('flight_event')
+def handle_flight_event(data):
+    event_type = data.get('event')
+    print(f"Evento de vuelo: {event_type}")
+    
+    if event_type == 'flight_name_set':
+        socketio.emit('flight_name_set', data.get('name'), broadcast=True)
+    elif event_type == 'foto_capturada':
+        socketio.emit('foto_capturada', data.get('filename'), broadcast=True)
+    elif event_type == 'video_iniciado':
+        socketio.emit('video_iniciado', data.get('filename'), broadcast=True)
+    elif event_type == 'video_detenido':
+        socketio.emit('video_detenido', broadcast=True)
+    elif event_type == 'video_error':
+        socketio.emit('video_error', data.get('message'), broadcast=True)
+
 # Enviar frame de video del movil procesado al navegador y a la estación de tierra
 @socketio.on("frame_from_camera")
 def handle_video(data):
@@ -252,24 +284,28 @@ def process_frame_hands(data):
         return None
 
 if __name__ == '__main__':
-    print('WebApp MQTT y WebSockets')
-    #app.run(debug=True)
-    #app.run(host='0.0.0.0', port=5000, debug=True) #para movil
-    #app.run(host='0.0.0.0', port=5000, ssl_context=('openssl/cert.pem', 'openssl/key.pem'))
-
-    # hay que poner en marcha el servidor flask, al que se conectarán el navegador, y el websocket al que se conectará la estación de tierra
-    from threading import Thread
-
-    # Pongo en marcha el servidor flask en un hilo separado
-    # Uso el el puerto 5000 para el servidor en desarrollo
-    # y el puerto 8104 para el servidor en producción (que es uno de los puertos abiertos en dronseetac.upc.edu)
-    #flask_thread = Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False))
-
-    # Thread con certificados para el uso de https
-    flask_thread = Thread(target=lambda: app.run(host='0.0.0.0', port=5004, debug=True, ssl_context=("public_certificate.pem", "private_key.pem"),use_reloader=False))
-    flask_thread.start()
-
-    # Pongo en marcha el websocket
-    # Uso  el puerto 8766 para el servidor en desarrollo
-    # y el puerto 8106 para el servidor en producción (que es uno de los puertos abiertos en dronseetac.upc.edu)
-    socketio.run(app, host='0.0.0.0', port=8766, allow_unsafe_werkzeug=True)
+    print('=' * 60)
+    print('WebApp con Socket.IO (sin MQTT)')
+    print('=' * 60)
+    print('Iniciando servidor...')
+    print('  - Servidor web (HTTPS): https://localhost:5004')
+    print('  - Socket.IO integrado en el mismo puerto')
+    print('=' * 60)
+    
+    # Crear contexto SSL para HTTPS
+    import ssl
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    
+    # socketio.run() ejecuta tanto Flask como Socket.IO en el mismo puerto
+    socketio.run(
+        app, 
+        host='0.0.0.0', 
+        port=5004,
+        debug=True,
+        allow_unsafe_werkzeug=True,
+        use_reloader=False,
+        ssl_context=ssl_context
+    )
+    
+    print('\nServidor detenido.')

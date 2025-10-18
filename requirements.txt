@@ -3,7 +3,6 @@ flask-socketio
 mediapipe
 opencv-python
 numpy
-paho-mqtt==1.6.1
 python-socketio
 requests
 websocket-client

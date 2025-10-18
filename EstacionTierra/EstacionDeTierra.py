@@ -1,9 +1,8 @@
-# IMPORTANTE: Interprete Pyhton 3.9 e instalar pymavlink, paho-mqtt (version 1.6.1), opencv-python, python-socketio, requests, websocket-client, pillow, pyserial (para conectar a Dron Real)
+# IMPORTANTE: Interprete Pyhton 3.9 e instalar pymavlink, opencv-python, python-socketio, requests, websocket-client, pillow, pyserial (para conectar a Dron Real)
 import json
 import tkinter as tk
 from dronLink.Dron import Dron
 import random
-import paho.mqtt.client as mqtt
 import socketio
 import cv2
 import base64
@@ -17,52 +16,34 @@ import numpy as np
 import re
 
 
-def allowExternal ():
-    global client
+def allowExternal():
+    global sio
     global allowExternalBtn
-    clientName = "demoDash" + str(random.randint(1000, 9000))
-    client = mqtt.Client(clientName, transport="websockets")
-
-    # broker_address = 'broker.hivemq.com'
-    broker_address = "dronseetac.upc.edu"
-    broker_port = 8000
-
-    client.username_pw_set(
-        'dronsEETAC' , 'mimara1456.'
-    )
-
-    client.on_message = on_message
-    client.on_connect = on_connect
-    client.connect(broker_address, broker_port)
-    print('Conectado al broker')
-
-    # me subscribo a cualquier mensaje  que venga del mobileFlask
-    client.subscribe('mobileFlask/demoDash/#')
-    print('demoDash esperando peticiones ')
-    client.loop_start()
-    allowExternalBtn['text'] = "Conexión a WebApp autorizada"
+    global webapp_commands_enabled
+    
+    # Activar el procesamiento de comandos desde la WebApp
+    webapp_commands_enabled = True
+    print('WebApp AUTORIZADA: Los comandos desde la web serán procesados')
+    allowExternalBtn['text'] = "WebApp autorizada"
     allowExternalBtn['fg'] = 'white'
     allowExternalBtn['bg'] = 'green'
 
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print("connected OK Returned code=", rc)
-    else:
-        print("Bad connection Returned code=", rc)
-
 def procesarTelemetria(telemetryInfo):
-    # cada vez que recibo un paquete de telemetría del dron lo envio al broker
-    client.publish('demoDash/mobileFlask/telemetryInfo', json.dumps(telemetryInfo))
+    # Enviar telemetría al servidor Flask via Socket.IO
+    sio.emit('telemetry_data', telemetryInfo)
 
-def publish_event ( event):
-    # publico en el broker el evento, que en este caso será 'flying' porque es el único que se considera en esta aplicación
-    print ('en el aire')
-    client.publish('demoDash/mobileFlask/'+event)
+def publish_event(event):
+    # Publicar evento al servidor Flask
+    print(f'Evento: {event}')
+    sio.emit('flight_event', {'event': event})
 
 
 # Variables globales para el modo de conexión
 connection_mode = "simulation"  # Por defecto simulación
 com_port = "com"  # Puerto COM por defecto
+
+# Variable global para controlar si se aceptan comandos de la WebApp
+webapp_commands_enabled = False
 
 # Variable global para controlar mensajes de estado únicos
 last_printed_state = None
@@ -305,7 +286,7 @@ def on_drone_state_change(msg):
         elif current_state in ['takingOff'] and armBtn['text'] in ["Armado", "Armando..."]:
             # Solo imprimir si es la primera vez que entra en este estado
             if last_printed_state != 'takingOff':
-                print(f'Dron en vuelo: {current_state}')
+                print(f'Dron despegando: {current_state}')
                 last_printed_state = 'takingOff'
                 
             # El botón armar mantiene "Armado" pero se deshabilita funcionalmente
@@ -319,7 +300,26 @@ def on_drone_state_change(msg):
             armBtn['command'] = comando_vacio
             takeOffBtn['command'] = comando_vacio
             
-            # Habilitar solo los botones de movimiento y control del dron cuando esté volando
+            # Actualizar botón despegar
+            takeOffBtn['text'] = "Despegando..."
+            takeOffBtn['bg'] = "yellow"
+            takeOffBtn['fg'] = "black"
+            
+            # Mantener desconectar deshabilitado mientras despega (seguridad)
+            deshabilitar_boton(disconnectBtn, "funcionando")
+            
+        elif current_state in ['flying']:
+            # Solo imprimir si es la primera vez que entra en este estado
+            if last_printed_state != 'flying':
+                print(f'Dron VOLANDO')
+                last_printed_state = 'flying'
+                
+            # Actualizar botón despegar a "Volando"
+            takeOffBtn['text'] = "Volando"
+            takeOffBtn['bg'] = "green"
+            takeOffBtn['fg'] = "white"
+            
+            # AHORA SÍ habilitar los botones de movimiento (solo cuando está volando)
             habilitar_boton(NorthBtn)   # Norte
             habilitar_boton(SouthBtn)   # Sur
             habilitar_boton(EastBtn)    # Este
@@ -544,159 +544,146 @@ def toggle_connection_mode():
         modeBtn['fg'] = 'black'
         modeBtn['bg'] = 'light blue'
 
-# aqui recibimos los mensajes de la WebApp
-def on_message(client, userdata, message):
-        global dron
-        # el formato del topic siempre será: mobileFlask/demoDash/comando
+# aqui recibimos los mensajes de la WebApp via Socket.IO
+def on_command_received(data):
+    """Procesa comandos recibidos del servidor Flask via Socket.IO"""
+    global dron
+    
+    action = data.get('action')
+    print(f'Comando recibido: {action}')
+    
+    if action == 'connect':
+        print('Conectando desde WebApp')
+            
+        # Selecciono los parámetros según el modo
+        if connection_mode == "simulation":
+            connection_string = 'tcp:127.0.0.1:5763'
+            baud = 115200
+            print('Conectando en modo SIMULACIÓN')
+        else:
+            connection_string = com_port
+            baud = 57600
+            print(f'Conectando en modo PRODUCCIÓN en puerto {com_port.upper()}')
 
-        parts = message.topic.split ('/')
-        command = parts[2]
-        print ('recibo ', command)
-        if command == 'connect':
-            # NO actualizar el botón de conectar cuando viene de WebApp
-            # Solo realizar la conexión sin feedback visual local
-            print('Conectando desde WebApp')
+        try:
+            result = dron.connect(connection_string, baud)
+            print('Conectado desde WebApp')
                 
-            # Selecciono los parámetros según el modo
-            if connection_mode == "simulation":
-                connection_string = 'tcp:127.0.0.1:5763'  # Simulación
-                baud = 115200  # Simulación
-                print('Conectando en modo SIMULACIÓN')
-            else:
-                connection_string = com_port  # Dron Real con puerto personalizado (producción)
-                baud = 57600  # Dron Real (producción)
-                print(f'Conectando en modo PRODUCCIÓN en puerto {com_port.upper()}')
+            print('Solicitando datos de telemetría')
+            dron.send_telemetry_info(procesarTelemetria)
+            
+        except Exception as e:
+            print(f'Error al conectar desde WebApp: {e}')
+            import traceback
+            traceback.print_exc()
 
+    elif action == 'arm_takeOff':
+        if dron.state == 'connected':
+            alt = int(data.get('altura', 5))
+            print(f'Armando y despegando desde WebApp a {alt}m')
+            dron.arm()
+            print('Armado desde WebApp')
+            dron.takeOff(alt, blocking=False, callback=publish_event, params='flying')
+
+    elif action == 'go':
+        if dron.state == 'flying':
+            direction = data.get('direction')
+            print(f'Moviendo al: {direction}')
+            dron.go(direction)
+
+    elif action == 'Land':
+        if dron.state == 'flying':
+            print('Aterrizando desde WebApp')
+            dron.Land(blocking=False)
+
+    elif action == 'RTL':
+        if dron.state == 'flying':
+            print('Ejecutando RTL desde WebApp')
+            dron.RTL(blocking=False)
+
+    elif action == 'goto':
+        if dron.state == 'flying':
             try:
-                result = dron.connect(connection_string, baud)
-                print('conectado desde WebApp')
-                    
-                # le pido los datos de telemetria y le indico la función a ejecutar cada vez que tenga un nuevo paquete de datos
-                print('pido datos de telemetria')
-                dron.send_telemetry_info(procesarTelemetria)
-                
+                lat = float(data.get('lat'))
+                lng = float(data.get('lng'))
+                print(f'Moviendo dron a: lat={lat}, lon={lng}')
+                dron.goto(lat, lng, dron.alt, blocking=False)
             except Exception as e:
-                print(f'Error al conectar desde WebApp: {e}')
+                print(f"Error en goto: {str(e)}")
 
-        if command == 'arm_takeOff':
-            if dron.state == 'connected':
-                # recupero la altura a alcanzar, que viene como payload del mensaje
-                alt = int( message.payload.decode("utf-8"))
-                print(f'Armando y despegando desde WebApp a {alt}m')
-                dron.arm()
-                print ('armado desde WebApp')
-                # operación no bloqueante. Cuando acabe publicará el evento correspondiente
-                dron.takeOff(alt, blocking=False, callback=publish_event, params='flying')
+    elif action == 'capturarFoto':
+        print('Capturando foto del último frame')
+        capturar_foto()
 
-        if command == 'go':
-            if dron.state == 'flying':
-                direction = message.payload.decode("utf-8")
-                print ('vamos al: ', direction)
-                dron.go(direction)
+    elif action == 'iniciarVideo':
+        print('Iniciando grabación de video')
+        start_recording()
 
-        if command == 'Land':
-            if dron.state == 'flying':
-                print ('Aterrizando desde WebApp')
-                # operación no bloqueante
-                dron.Land(blocking=False)
+    elif action == 'detenerVideo':
+        print('Deteniendo grabación de video')
+        stop_recording()
 
-        if command == 'RTL':
-            if dron.state == 'flying':
-                print('Ejecutando RTL desde WebApp')
-                # NO actualizar la interfaz de la estación de tierra cuando viene de WebApp
-                # Solo ejecutar el comando sin feedback visual local
-                dron.RTL(blocking=False)
+    elif action == 'waypointRuta':
+        if dron.state == 'flying':
+            try:
+                waypoints = data.get('waypoints', [])
 
-        if command == 'goto':
-            if dron.state == 'flying':
-                try:
-                    coords = json.loads(message.payload.decode("utf-8"))
-                    lat = float(coords["lat"])
-                    lng = float(coords["lng"])
-                    print(f'Moviendo dron a: lat={lat}, lon={lng}')
-                    dron.goto(lat, lng, dron.alt, blocking=False)
-                except Exception as e:
-                    print(f"Error en goto: {str(e)}")
+                def recorrer_ruta():
+                    for idx, wp in enumerate(waypoints):
+                        lat = wp["lat"]
+                        lng = wp["lng"]
+                        captura = wp.get("captura", "ninguna")
+                        duracion = int(wp.get("duracion", 0))
 
-        if command == 'capturarFoto':
-            print('Capturando foto del último frame')
-            capturar_foto()
+                        print(f"[{idx + 1}/{len(waypoints)}] Moviendo a waypoint: ({lat}, {lng})")
 
-        if command == 'iniciarVideo':
-            print('Iniciando grabación de video')
-            start_recording()
+                        dron.goto(lat, lng, dron.alt, blocking=False)
 
-        if command == 'detenerVideo':
-            print('Deteniendo grabación de video')
-            stop_recording()
+                        tiempo_max_espera = 30
+                        tiempo_inicio = time.time()
 
-        if command == 'waypointRuta':
-            if dron.state == 'flying':
-                try:
-                    ruta = json.loads(message.payload.decode("utf-8"))
+                        while time.time() - tiempo_inicio < tiempo_max_espera:
+                            try:
+                                dist = dron._distanceToDestinationInMeters(lat, lng)
+                                if dist <= 1.0:
+                                    print(f"El dron ha llegado al waypoint {idx + 1}")
+                                    break
+                            except:
+                                dlat = abs(dron.lat - lat)
+                                dlon = abs(dron.lon - lng)
+                                if dlat < 0.00001 and dlon < 0.00001:
+                                    break
 
-                    def recorrer_ruta():
-                        for idx, wp in enumerate(ruta):
-                            lat = wp["lat"]
-                            lng = wp["lng"]
-                            captura = wp.get("captura", "ninguna")
-                            duracion = int(wp.get("duracion", 0))
+                            time.sleep(0.5)
 
-                            print(f"[{idx + 1}/{len(ruta)}] Moviendo a waypoint: ({lat}, {lng})")
+                        time.sleep(1)
 
-                            # Usar blocking=False y esperar manualmente
-                            dron.goto(lat, lng, dron.alt, blocking=False)
-
-                            # Esperar a que llegue al waypoint usando la función interna del dron
-                            tiempo_max_espera = 30  # segundos máximo de espera
-                            tiempo_inicio = time.time()
-
-                            while time.time() - tiempo_inicio < tiempo_max_espera:
-                                # Calcular distancia usando la función del dron
-                                try:
-                                    dist = dron._distanceToDestinationInMeters(lat, lng)
-                                    if dist <= 1.0:  # Umbral de llegada en metros
-                                        print(f"El dron ha llegado al waypoint {idx + 1}")
-                                        break
-                                except:
-                                    # Si hay error calculando distancia, usar coordenadas actuales
-                                    dlat = abs(dron.lat - lat)
-                                    dlon = abs(dron.lon - lng)
-                                    if dlat < 0.00001 and dlon < 0.00001:
-                                        break
-
-                                time.sleep(0.5)  # Esperar medio segundo antes de revisar de nuevo
-
-                            # Pequeña pausa adicional para estabilizar
+                        if captura == "foto":
+                            print(f"Capturando foto en waypoint {idx + 1}")
+                            success = capturar_foto()
+                            if success:
+                                print(f"Foto {idx + 1} guardada correctamente")
+                            else:
+                                print(f"Error al capturar foto en waypoint {idx + 1}")
                             time.sleep(1)
 
-                            # Realizar la acción correspondiente
-                            if captura == "foto":
-                                print(f"Capturando foto en waypoint {idx + 1}")
-                                success = capturar_foto()
-                                if success:
-                                    print(f"Foto {idx + 1} guardada correctamente")
-                                else:
-                                    print(f"Error al capturar foto en waypoint {idx + 1}")
-                                time.sleep(1)  # Esperar tras la foto
+                        elif captura == "video":
+                            print(f"Iniciando grabación de video en waypoint {idx + 1} por {duracion} seg")
+                            success = start_recording()
+                            if success:
+                                time.sleep(duracion)
+                                stop_recording()
+                                print(f"Video de {duracion}s completado en waypoint {idx + 1}")
+                            else:
+                                print(f"Error al iniciar video en waypoint {idx + 1}")
+                            time.sleep(1)
 
-                            elif captura == "video":
-                                print(f"Iniciando grabación de video en waypoint {idx + 1} por {duracion} seg")
-                                success = start_recording()
-                                if success:
-                                    time.sleep(duracion)  # Grabar la duración especificada por el usuario
-                                    stop_recording()
-                                    print(f"Video de {duracion}s completado en waypoint {idx + 1}")
-                                else:
-                                    print(f"Error al iniciar video en waypoint {idx + 1}")
-                                time.sleep(1)  # Esperar tras el video
+                    print("Ruta completada")
 
-                        print("Ruta completada")
+                threading.Thread(target=recorrer_ruta).start()
 
-                    threading.Thread(target=recorrer_ruta).start()
-
-                except Exception as e:
-                    print(f"Error en la ruta: {e}")
+            except Exception as e:
+                print(f"Error en la ruta: {e}")
 
 # Recibir video de la cámara del dron por websockets
 def videoWebsockets():
@@ -768,7 +755,7 @@ def videoWebsockets():
                 videoWebsocketBtn['bg'] = 'green'
 
                 # Publica mensaje con el nombre del vuelo
-                client.publish('demoDash/mobileFlask/flightNameSet', current_flight_name)
+                sio.emit('flight_event', {'event': 'flight_name_set', 'name': current_flight_name})
             else:
                 messagebox.showerror("Error", "Debe introducir un nombre para el vuelo")
 
@@ -827,11 +814,11 @@ def capturar_foto():
         cv2.imwrite(filepath, last_frame)
         print(f"Foto guardada como {filepath}")
         # Envia la confirmación al cliente
-        client.publish('demoDash/mobileFlask/fotoCapturada', filename)
+        sio.emit('flight_event', {'event': 'foto_capturada', 'filename': filename})
         return True
     else:
         print("No hay frame disponible para capturar")
-        client.publish('demoDash/mobileFlask/fotoError', "No hay imagen disponible")
+        sio.emit('flight_event', {'event': 'foto_error', 'message': 'No hay imagen disponible'})
         return False
 
 # Inicia una grabación de la cámara del dron
@@ -867,11 +854,11 @@ def start_recording():
         video_thread.start()
 
         print(f"Grabación iniciada: {filepath}")
-        client.publish('demoDash/mobileFlask/videoIniciado', filename)
+        sio.emit('flight_event', {'event': 'video_iniciado', 'filename': filename})
         return True
     else:
         print("No hay frame disponible para iniciar grabación")
-        client.publish('demoDash/mobileFlask/videoError', "No hay imagen disponible")
+        sio.emit('flight_event', {'event': 'video_error', 'message': 'No hay imagen disponible'})
         return False
 
 # Detiene la grabación del video de la cámara del dron
@@ -886,7 +873,7 @@ def stop_recording():
         video_writer.release()
         video_writer = None
         print("Grabación detenida")
-        client.publish('demoDash/mobileFlask/videoDetenido')
+        sio.emit('flight_event', {'event': 'video_detenido'})
         return True
     return False
 
@@ -1368,8 +1355,8 @@ def grabar_video_en_background(duracion, flight_name, frame_inicial):
 
     writer.release()
     print(f"Video guardado en {filepath}")
-    client.publish('demoDash/mobileFlask/videoIniciado', filename)
-    client.publish('demoDash/mobileFlask/videoDetenido')
+    sio.emit('flight_event', {'event': 'video_iniciado', 'filename': filename})
+    sio.emit('flight_event', {'event': 'video_detenido'})
 
 # Recibir thread del frame de la camara del movil
 def recibirCamaraThread():
@@ -1551,10 +1538,28 @@ def wait_for_waypoint_arrival(target_lat, target_lng, timeout=30):
     return False
 
 cap = None
-sendingMQTT = False
 sendingWebsockets = False
 last_frame = None # Variable para almacenar el último frame (la foto)
-sio = socketio.Client()
+
+# Configurar cliente Socket.IO para aceptar certificados SSL autofirmados
+import ssl
+sio = socketio.Client(ssl_verify=False)  # Deshabilitar verificación SSL
+
+# Registrar handler ANTES de conectar (forma correcta en Socket.IO Python)
+@sio.on('ground_station_command')
+def handle_ground_station_command(data):
+    """Handler para comandos desde el servidor Flask"""
+    global webapp_commands_enabled
+    
+    # Verificar si los comandos de la WebApp están habilitados
+    if not webapp_commands_enabled:
+        action = data.get('action', 'desconocido')
+        print(f'COMANDO BLOQUEADO: {action} (WebApp no autorizada - haz clic en "Conectar WebApp")')
+        return
+    
+    # Si está autorizado, procesar el comando
+    on_command_received(data)
+
 recording = False
 video_writer = None
 video_thread = None
@@ -1568,11 +1573,41 @@ showing_video = False
 receivingCamera = False
 contador = 0
 
-# esto es para conectarme al websocket del servidor en desarrollo
-sio.connect('http://localhost:8766')
+# Conectar al servidor Socket.IO con reintentos automáticos
+def connect_to_socketio_server():
+    """Intenta conectarse al servidor Socket.IO con reintentos"""
+    max_retries = 10
+    retry_delay = 2  # segundos
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Intentando conectar al servidor Socket.IO (intento {attempt}/{max_retries})...")
+            # Conectar al servidor Flask+Socket.IO (ambos en el mismo puerto)
+            # DESARROLLO: HTTPS con certificado autofirmado (ssl_verify=False configurado en el cliente)
+            sio.connect('https://localhost:5004')
+            # PRODUCCIÓN: descomentar la siguiente línea
+            #sio.connect('https://dronseetac.upc.edu:8102')
+            print("Conectado exitosamente al servidor Socket.IO")
+            return True
+        except Exception as e:
+            if attempt < max_retries:
+                print(f"No se pudo conectar (intento {attempt}/{max_retries}). Reintentando en {retry_delay}s...")
+                print(f"Error: {str(e)[:100]}")
+                time.sleep(retry_delay)
+            else:
+                print(f"ERROR: No se pudo conectar al servidor Socket.IO después de {max_retries} intentos")
+                print(f"Asegúrate de que 'run.py' esté ejecutándose primero")
+                print(f"Error: {e}")
+                return False
+    
+    return False
 
-# esto es para conectarme al websocket del servidor en producción
-#sio.connect('http://dronseetac.upc.edu:8102')
+# Intentar conectar al servidor
+if not connect_to_socketio_server():
+    print("\nADVERTENCIA: Estación de Tierra ejecutándose SIN conexión Socket.IO")
+    print("    - No podrás controlar el dron desde la WebApp")
+    print("    - Solo podrás usar la interfaz local de la Estación de Tierra")
+    print("    - Para habilitar control remoto, ejecuta 'run.py' y reinicia esta aplicación\n")
 
 @sio.event
 def processed_frame(data):
@@ -1703,19 +1738,6 @@ frequencySlider = tk.Scale(
 )
 frequencySlider.set(5)
 frequencySlider.grid(row=1, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
-
-
-### Código para la recepción de peticiones a través de MQTT
-
-'''client.on_message = on_message
-client.on_connect = on_connect
-client.connect(broker_address, broker_port)
-print('Conectado a broker.hivemq.com:8000')
-
-# me subscribo a cualquier mensaje  que venga del mobileFlask
-client.subscribe('mobileFlask/demoDash/#')
-print('demoDash esperando peticiones ')
-client.loop_start()'''
 
 # Deshabilitar todos los botones excepto "Conectar" y "Conectar WebApp" al iniciar
 # Solo permitir conectar al dron y conectar a la WebApp al inicio
