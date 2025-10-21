@@ -116,53 +116,103 @@
         }
 
         .control-buttons {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            gap: 5px;
-            padding: 5px;
+            gap: 10px;
             justify-content: center;
-            background: white;
+            z-index: 10000;
+            pointer-events: none;
         }
 
         .control-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 12px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            min-width: 90px;
         }
 
-        /* Estados de botones */
-        .boton-verde { background: #4CAF50; color: white; }
-        .boton-amarillo { background: #FFD700; color: black; }
-        .boton-rojo { background: #f44336; color: white; }
+        .control-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+
+        .control-btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Estados de botones translúcidos */
+        .boton-verde { 
+            background: rgba(76, 175, 80, 0.85);
+            color: white; 
+        }
+        .boton-verde:hover:not(:disabled) {
+            background: rgba(76, 175, 80, 0.95);
+        }
+        
+        .boton-amarillo { 
+            background: rgba(255, 215, 0, 0.85);
+            color: #333; 
+        }
+        .boton-amarillo:hover:not(:disabled) {
+            background: rgba(255, 215, 0, 0.95);
+        }
+        
+        .boton-rojo { 
+            background: rgba(244, 67, 54, 0.85);
+            color: white; 
+        }
+        .boton-rojo:hover:not(:disabled) {
+            background: rgba(244, 67, 54, 0.95);
+        }
 
         .main-content {
             flex: 1;
             display: flex;
             background: white;
             min-height: 0;
+            overflow: hidden;
+            position: relative;
         }
 
         .camera-section {
-            background: black;
+            background: #f8f9fa;
             flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
             min-width: 0;
+            padding: 0;
+            z-index: 1;
+            overflow: hidden;
         }
 
         #camera-feed {
             max-width: 100%;
             max-height: 100%;
+            width: auto;
+            height: auto;
             object-fit: contain;
+            position: relative;
+            z-index: 1;
         }
 
         #camera-placeholder {
-            color: white;
-            font-size: 16px;
+            color: #adb5bd;
+            font-size: 18px;
+            position: absolute;
+            z-index: 5;
         }
 
         .minimap-container {
@@ -189,77 +239,128 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 10px;
-            background: white;
+            padding: 15px;
+            background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+            min-width: 200px;
+            max-width: 250px;
+            position: relative;
         }
 
         .joystick-container {
             text-align: center;
             position: relative;
             padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            width: 100%;
+            margin-bottom: 80px;
         }
 
         .joystick-container p {
-            margin: 0 0 8px 0;
-            font-size: 11px;
+            margin: 0 0 10px 0;
+            font-size: 12px;
             font-weight: bold;
+            color: #495057;
+            letter-spacing: 0.5px;
         }
 
         .joystick {
-            width: 120px;
-            height: 120px;
-            border: 3px solid #333;
+            width: 140px;
+            height: 140px;
+            border: 4px solid #667eea;
             border-radius: 50%;
-            background: #ddd;
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
             position: relative;
             cursor: pointer;
             margin: 0 auto;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+
+        .joystick:active {
+            box-shadow: inset 0 3px 12px rgba(0,0,0,0.15);
         }
 
         .joystick-stick {
-            width: 35px;
-            height: 35px;
-            background: #4CAF50;
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+            border: 3px solid white;
         }
 
         /* Indicadores de dirección para los joysticks */
         .joystick-label {
             position: absolute;
-            font-size: 9px;
-            font-weight: bold;
-            color: #555;
+            font-size: 10px;
+            font-weight: 600;
+            color: #6c757d;
             white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
         }
 
         .joystick-label.top {
-            top: 5px;
+            top: 8px;
             left: 50%;
             transform: translateX(-50%);
         }
 
         .joystick-label.bottom {
-            bottom: 5px;
+            bottom: 8px;
             left: 50%;
             transform: translateX(-50%);
         }
 
         .joystick-label.left {
-            left: 0px;
+            left: 5px;
             top: 50%;
             transform: translateY(-50%);
         }
 
         .joystick-label.right {
-            right: 0px;
+            right: 5px;
             top: 50%;
             transform: translateY(-50%);
+        }
+
+        /* Animación sutil para placeholder */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        #camera-placeholder {
+            color: #adb5bd;
+            font-size: 18px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Mejora visual del minimapa */
+        .minimap-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 150px;
+            height: 150px;
+            border: 3px solid rgba(255, 255, 255, 0.9);
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            z-index: 500;
+            overflow: hidden;
+        }
+
+        #minimap {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -293,15 +394,15 @@
         </div>
     </div>
 
-    <!-- BOTONES DE CONTROL -->
-    <div class="control-buttons">
-        <button id="botonDespegar" class="control-btn" onclick="despegarDron()">DESPEGAR</button>
-        <button id="botonAterrizar" class="control-btn" onclick="aterrizarDron()">ATERRIZAR</button>
-        <button id="botonRTL" class="control-btn" onclick="returnToLaunch()">RTL</button>
-    </div>
-
     <!-- CONTENIDO PRINCIPAL: JOYSTICK IZQUIERDO | CÁMARA | JOYSTICK DERECHO -->
     <div class="main-content">
+        <!-- BOTONES DE CONTROL (movidos dentro para posicionarlos sobre la cámara) -->
+        <div class="control-buttons">
+            <button id="botonDespegar" class="control-btn" onclick="despegarDron()">DESPEGAR</button>
+            <button id="botonAterrizar" class="control-btn" onclick="aterrizarDron()">ATERRIZAR</button>
+            <button id="botonRTL" class="control-btn" onclick="returnToLaunch()">RTL</button>
+        </div>
+
         <!-- JOYSTICK IZQUIERDO -->
         <div class="joystick-side">
             <div class="joystick-container">
@@ -385,11 +486,11 @@
                 zIndexOffset: 1000
             }).addTo(minimap);
 
-            // Crear flecha de dirección
+            // Crear flecha de dirección (más pequeña)
             var DirectionArrow = L.Icon.extend({
                 options: {
-                    iconSize: [140, 140],
-                    iconAnchor: [70, 70]
+                    iconSize: [100, 100],
+                    iconAnchor: [50, 50]
                 }
             });
 
@@ -405,8 +506,8 @@
             return `
             <svg width="300" height="300" viewBox="-150 -150 300 300" xmlns="http://www.w3.org/2000/svg">
                 <g transform="rotate(${angle} 0 0)">
-                    <!-- Línea roja larga de dirección -->
-                    <line x1="0" y1="0" x2="0" y2="-140" stroke="red" stroke-width="3"/>
+                    <!-- Línea roja de dirección (más corta y delgada) -->
+                    <line x1="0" y1="0" x2="0" y2="-100" stroke="red" stroke-width="2.5"/>
                 </g>
             </svg>
             `;
@@ -576,10 +677,12 @@
         // Variables para seguimiento del estado
         let previousDroneState = null;
         let despegando = false;
+        let volviendoABase = false;
+        let aterrizando = false;
 
         // Enviar comandos
         function despegarDron() {
-            const altura = 5; // Altura fija de 5 metros para modo piloto
+            const altura = 3; // Altura fija de 3 metros para modo piloto
             console.log('Despegando a', altura, 'metros');
             socket.emit('command', { action: 'arm_takeOff', altura: String(altura), pilot_mode: true });
             
@@ -596,6 +699,7 @@
             console.log('Aterrizando');
             socket.emit('pilot_action', { action: 'land' });
             
+            aterrizando = true;
             const botonAterrizar = document.getElementById('botonAterrizar');
             botonAterrizar.textContent = 'Aterrizando...';
             botonAterrizar.classList.add('boton-amarillo');
@@ -606,6 +710,7 @@
             console.log('RTL');
             socket.emit('pilot_action', { action: 'rtl' });
             
+            volviendoABase = true;
             const botonRTL = document.getElementById('botonRTL');
             botonRTL.textContent = 'Volviendo a base...';
             botonRTL.classList.add('boton-amarillo');
@@ -649,20 +754,29 @@
                 dronMarker.setLatLng(newPos);
                 minimap.setView(newPos);
                 
-                // Actualizar flecha de dirección
-                if (directionArrow && data.heading !== undefined) {
-                    directionArrow.setLatLng(newPos);
+                // Rotar el mapa para que la flecha siempre apunte hacia arriba
+                if (data.heading !== undefined) {
+                    // Rotar el contenedor del mapa en dirección opuesta al heading
+                    const mapContainer = document.getElementById('minimap');
+                    mapContainer.style.transform = `rotate(${-data.heading}deg)`;
                     
-                    var DirectionArrow = L.Icon.extend({
-                        options: {
-                            iconSize: [140, 140],
-                            iconAnchor: [70, 70]
-                        }
-                    });
-                    
-                    directionArrow.setIcon(new DirectionArrow({
-                        iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(data.heading))
-                    }));
+                    // La flecha mantiene su orientación real (heading del dron)
+                    // y rota junto con el mapa
+                    if (directionArrow) {
+                        directionArrow.setLatLng(newPos);
+                        
+                        var DirectionArrow = L.Icon.extend({
+                            options: {
+                                iconSize: [100, 100],
+                                iconAnchor: [50, 50]
+                            }
+                        });
+                        
+                        // La flecha muestra el heading real del dron
+                        directionArrow.setIcon(new DirectionArrow({
+                            iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(data.heading))
+                        }));
+                    }
                 }
             }
 
@@ -675,12 +789,12 @@
         // Función para obtener color según estado del dron
         function getStateColor(state) {
             const stateColors = {
-                'connected': '#FFD700',      // Amarillo
-                'arming': '#FFA500',         // Naranja
+                'connected': '#4CAF50',      // Verde
+                'arming': '#FFC107',         // Amarillo
                 'takingOff': '#FFA500',      // Naranja
                 'flying': '#4CAF50',         // Verde
-                'landing': '#FFA500',        // Naranja
-                'returning': '#2196F3',      // Azul
+                'landing': '#FFC107',        // Amarillo
+                'returning': '#FFC107',      // Amarillo
                 'disconnected': '#f44336'    // Rojo
             };
             return stateColors[state] || '#fff';
@@ -700,6 +814,8 @@
             switch (droneState) {
                 case 'connected':
                     // Dron conectado pero en tierra
+                    volviendoABase = false;
+                    aterrizando = false;
                     if (!despegando) {
                         botonDespegar.disabled = false;
                         botonDespegar.textContent = 'DESPEGAR';
@@ -728,17 +844,24 @@
                     resetButtonClasses(botonDespegar);
                     botonDespegar.classList.add('boton-verde');
                     
-                    botonAterrizar.disabled = false;
-                    botonAterrizar.textContent = 'ATERRIZAR';
-                    resetButtonClasses(botonAterrizar);
+                    // No resetear aterrizar si ya se ha activado
+                    if (!aterrizando) {
+                        botonAterrizar.disabled = false;
+                        botonAterrizar.textContent = 'ATERRIZAR';
+                        resetButtonClasses(botonAterrizar);
+                    }
                     
-                    botonRTL.disabled = false;
-                    botonRTL.textContent = 'RTL';
-                    resetButtonClasses(botonRTL);
+                    // No resetear RTL si ya se ha activado
+                    if (!volviendoABase) {
+                        botonRTL.disabled = false;
+                        botonRTL.textContent = 'RTL';
+                        resetButtonClasses(botonRTL);
+                    }
                     break;
 
                 case 'landing':
                     // Dron aterrizando
+                    aterrizando = true;
                     botonDespegar.disabled = true;
                     botonAterrizar.disabled = true;
                     botonAterrizar.textContent = 'Aterrizando...';
@@ -749,6 +872,7 @@
 
                 case 'returning':
                     // Dron volviendo a base (RTL)
+                    volviendoABase = true;
                     botonDespegar.disabled = true;
                     botonAterrizar.disabled = true;
                     botonRTL.disabled = true;
