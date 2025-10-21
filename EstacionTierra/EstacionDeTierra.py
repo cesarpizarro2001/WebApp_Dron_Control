@@ -20,6 +20,9 @@ def allowExternal():
     global sio
     global allowExternalBtn
     global webapp_commands_enabled
+    global videoWebsocketBtn
+    global galleryBtn
+    global cameraBtn
     
     # Activar el procesamiento de comandos desde la WebApp
     webapp_commands_enabled = True
@@ -27,6 +30,19 @@ def allowExternal():
     allowExternalBtn['text'] = "WebApp autorizada"
     allowExternalBtn['fg'] = 'white'
     allowExternalBtn['bg'] = 'green'
+    
+    # Habilitar los 3 botones de debajo (restaurar comandos y colores)
+    videoWebsocketBtn['command'] = videoWebsockets
+    videoWebsocketBtn['bg'] = 'violet'
+    videoWebsocketBtn['state'] = 'normal'
+    
+    galleryBtn['command'] = open_gallery
+    galleryBtn['bg'] = 'violet'
+    galleryBtn['state'] = 'normal'
+    
+    cameraBtn['command'] = recibirCamara
+    cameraBtn['bg'] = 'violet'
+    cameraBtn['state'] = 'normal'
 
 def procesarTelemetria(telemetryInfo):
     # Enviar telemetría al servidor Flask via Socket.IO
@@ -580,10 +596,44 @@ def on_command_received(data):
     elif action == 'arm_takeOff':
         if dron.state == 'connected':
             alt = int(data.get('altura', 5))
+            pilot_mode = data.get('pilot_mode', False)  # Detectar si es modo piloto
+            
             print(f'Armando y despegando desde WebApp a {alt}m')
             dron.arm()
             print('Armado desde WebApp')
-            dron.takeOff(alt, blocking=False, callback=publish_event, params='flying')
+            
+            if pilot_mode:
+                print('Modo piloto detectado - cambiando a LOITER después del despegue')
+                
+                # Callback para cambiar a LOITER cuando llegue a la altura
+                def on_flying_for_pilot(event):
+                    global pilot_mode_active, pilot_rc_thread, last_rc_command_time
+                    
+                    if event == 'flying':
+                        print('Dron volando - esperando estabilización...')
+                        # Esperar 1 segundo para que el dron se estabilice en la altura
+                        time.sleep(1)
+                        
+                        # PRIMERO: Iniciar el loop RC (antes de cambiar a LOITER)
+                        print('Iniciando loop RC...')
+                        pilot_mode_active = True
+                        last_rc_command_time = time.time()  # Inicializar para evitar timeout inmediato
+                        pilot_rc_thread = threading.Thread(target=pilot_rc_loop, daemon=True)
+                        pilot_rc_thread.start()
+                        
+                        # Dar tiempo al thread para arrancar
+                        time.sleep(0.2)
+                        print('Loop RC activo')
+                        
+                        # SEGUNDO: Ahora sí, cambiar a LOITER
+                        print('Cambiando a modo LOITER para control RC')
+                        dron.setFlightMode('LOITER')
+                        print('Modo LOITER activado - joysticks listos para uso')
+                
+                dron.takeOff(alt, blocking=False, callback=on_flying_for_pilot, params='flying')
+            else:
+                # Modo normal (control.html)
+                dron.takeOff(alt, blocking=False, callback=publish_event, params='flying')
 
     elif action == 'go':
         if dron.state == 'flying':
@@ -1627,6 +1677,96 @@ def handle_go(direction):
     if dron.state == "flying":
         dron.changeNavSpeed(2)  # Limita la velocidad a 2 m/s en MediaPipe
     dron.go(direction)
+
+# Variables globales para el modo piloto
+pilot_mode_active = False
+pilot_rc_values = {'throttle': 0, 'yaw': 0, 'pitch': 0, 'roll': 0}
+pilot_rc_thread = None
+last_rc_command_time = None  # Timestamp del último comando recibido
+
+def pilot_rc_loop():
+    """Loop continuo que envía comandos RC al dron mientras está en modo piloto"""
+    global pilot_mode_active, pilot_rc_values, last_rc_command_time
+    
+    while pilot_mode_active and dron.state == "flying":
+        # Si no hemos recibido comandos en los últimos 0.3 segundos, resetear a 0
+        if last_rc_command_time is not None:
+            time_since_last_command = time.time() - last_rc_command_time
+            if time_since_last_command > 0.3:
+                # No hay comandos recientes - resetear a posición neutra
+                pilot_rc_values['throttle'] = 0
+                pilot_rc_values['yaw'] = 0
+                pilot_rc_values['pitch'] = 0
+                pilot_rc_values['roll'] = 0
+        
+        # Convertir de [-1, 1] a [1100, 1900]
+        def normalize_to_pwm(value):
+            return int(1500 + (value * 400))
+        
+        throttle_pwm = normalize_to_pwm(pilot_rc_values['throttle'])
+        yaw_pwm = normalize_to_pwm(pilot_rc_values['yaw'])
+        pitch_pwm = normalize_to_pwm(pilot_rc_values['pitch'])
+        roll_pwm = normalize_to_pwm(pilot_rc_values['roll'])
+        
+        # Enviar comandos RC al dron (pitch/roll intercambiados para este controlador)
+        dron.send_rc(pitch=roll_pwm, roll=pitch_pwm, throttle=throttle_pwm, yaw=yaw_pwm)
+        
+        # Esperar 0.1 segundos (10 Hz)
+        time.sleep(0.1)
+
+@sio.on("pilot_rc")
+def handle_pilot_rc(data):
+    """Handler para datos de joystick del modo piloto: [throttle, yaw, pitch, roll]"""
+    global webapp_commands_enabled, pilot_rc_values, last_rc_command_time
+    
+    if not webapp_commands_enabled:
+        return
+    
+    # data es un array: [throttle, yaw, pitch, roll] con valores de -1 a 1
+    # Actualizar valores globales (el loop continuo los usará)
+    if dron.state == "flying":
+        throttle, yaw, pitch, roll = data
+        pilot_rc_values['throttle'] = throttle
+        pilot_rc_values['yaw'] = yaw
+        pilot_rc_values['pitch'] = pitch
+        pilot_rc_values['roll'] = roll
+        
+        # Actualizar timestamp del último comando
+        last_rc_command_time = time.time()
+
+@sio.on("pilot_action")
+def handle_pilot_action(data):
+    """Handler para acciones del modo piloto (aterrizar, RTL)"""
+    global webapp_commands_enabled, pilot_mode_active
+    
+    if not webapp_commands_enabled:
+        action = data.get('action', 'desconocido')
+        print(f'ACCIÓN BLOQUEADA: {action} (WebApp no autorizada)')
+        return
+    
+    action = data.get('action')
+    print(f"Acción del modo piloto: {action}")
+    
+    if action == 'land':
+        if dron.state == 'flying':
+            print('Aterrizando desde modo piloto')
+            # Detener loop RC
+            pilot_mode_active = False
+            print('Loop RC detenido')
+            # Cambiar a GUIDED para que el autopilot pueda controlar el aterrizaje
+            print('Cambiando a modo GUIDED para aterrizaje automático')
+            dron.setFlightMode('GUIDED')
+            dron.Land()
+    elif action == 'rtl':
+        if dron.state == 'flying':
+            print('RTL desde modo piloto')
+            # Detener loop RC
+            pilot_mode_active = False
+            print('Loop RC detenido')
+            # Cambiar a GUIDED para que el autopilot pueda controlar el RTL
+            print('Cambiando a modo GUIDED para RTL automático')
+            dron.setFlightMode('GUIDED')
+            dron.RTL()
 
 print("Conectado al websocket")
 dron = Dron()

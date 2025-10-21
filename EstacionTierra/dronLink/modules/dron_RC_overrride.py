@@ -35,8 +35,7 @@ def send_rc(self, rcin1=65535, rcin2=65535, rcin3=65535, rcin4=65535,
         video_switch or rcin11,
         rcin12, rcin13, rcin14, rcin15, rcin16, rcin17, rcin18
     )
-    print(f'send_rc')
-    print(rc_channel_values)
+    
     self.target = (self.vehicle.target_system,
                    self.vehicle.target_component)
     self.vehicle.mav.rc_channels_override_send(

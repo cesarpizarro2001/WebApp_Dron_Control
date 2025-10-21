@@ -228,6 +228,7 @@
         <button id="botonCamaraMovil" class="boton-azul" onclick="abrirVentanaCamara()">Cámara Móvil</button>
         <button id="toggleNavegacion" class="boton-azul" onclick="toggleNavegacion()">Ocultar Nav.</button>
         <button id="botonSeguirDron" class="boton-azul" onclick="toggleFollowDrone()">Seguir Dron</button>
+        <button id="botonModoPiloto" class="boton-azul" onclick="irAModoPiloto()">🎮 Modo Piloto</button>
 
     </div>
 
@@ -668,6 +669,11 @@
                 camaraContainer.style.display = 'none';
                 document.getElementById('botonCamaraMovil').textContent = 'Cámara Móvil';
             }
+        }
+
+        // Función para ir al modo piloto
+        function irAModoPiloto() {
+            window.location.href = '/piloto';
         }
 
         // Función de capturar foto

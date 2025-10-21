@@ -14,7 +14,7 @@ echo.
 
 REM === Abrir run.py en una nueva ventana minimizada ===
 echo [1/2] Iniciando servidor Flask + Socket.IO (run.py)...
-start /min cmd /k "cd /d %~dp0WebAppMQTT && call ..\.venv\Scripts\activate.bat && python run.py"
+start /min cmd /k "cd /d %~dp0WebApp && call ..\.venv\Scripts\activate.bat && python run.py"
 
 REM === Esperar a que el servidor este listo ===
 echo [*] Esperando a que el servidor este listo (puerto 5004)...

@@ -57,6 +57,7 @@ class Dron(object):
     from dronLink.modules.dron_parameters import getParams, _getParams, setParams, _setParams, _checkParameter
     from dronLink.modules.dron_geofence import  setScenario, _setScenario, getScenario, _getScenario, _buildScenario
     from dronLink.modules.dron_telemetry import send_telemetry_info, _send_telemetry_info, stop_sending_telemetry_info
+    from dronLink.modules.dron_RC_overrride import send_rc, clear_motion, get_thruster_outputs, status_loop
 
     from dronLink.modules.dron_local_telemetry import send_local_telemetry_info, _send_local_telemetry_info, stop_sending_local_telemetry_info
     from dronLink.modules.dron_mission import executeMission, _executeMission, uploadMission, _uploadMission, _getMission, getMission

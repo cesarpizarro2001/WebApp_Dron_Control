@@ -116,6 +116,21 @@ def handle_command(data):
     
     # Reenviar el comando a la Estación de Tierra
     socketio.emit('ground_station_command', data, include_self=False)
+
+# Handler para datos de joystick del modo piloto
+@socketio.on('pilot_rc')
+def handle_pilot_rc(data):
+    """Recibe datos de joystick: [throttle, yaw, pitch, roll]"""
+    # Reenviar a la Estación de Tierra
+    socketio.emit('pilot_rc', data, include_self=False)
+
+# Handler para acciones del modo piloto (aterrizar, RTL)
+@socketio.on('pilot_action')
+def handle_pilot_action(data):
+    action = data.get('action')
+    print(f"Acción del modo piloto: {action}")
+    # Reenviar a la Estación de Tierra
+    socketio.emit('pilot_action', data, include_self=False)
     
 # Recibir telemetría de la Estación de Tierra y enviarla al navegador
 @socketio.on('telemetry_data')
