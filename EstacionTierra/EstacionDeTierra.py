@@ -1708,11 +1708,11 @@ def pilot_rc_loop():
         pitch_pwm = normalize_to_pwm(pilot_rc_values['pitch'])
         roll_pwm = normalize_to_pwm(pilot_rc_values['roll'])
         
-        # Enviar comandos RC al dron (pitch/roll intercambiados para este controlador)
-        dron.send_rc(pitch=roll_pwm, roll=pitch_pwm, throttle=throttle_pwm, yaw=yaw_pwm)
-        
-        # Esperar 0.1 segundos (10 Hz)
-        time.sleep(0.1)
+        # Enviar comandos RC al dron
+        dron.send_rc(pitch=pitch_pwm, roll=roll_pwm, throttle=throttle_pwm, yaw=yaw_pwm)
+
+        # Esperar 0.05 segundos (20 Hz)
+        time.sleep(0.05)
 
 @sio.on("pilot_rc")
 def handle_pilot_rc(data):
@@ -1725,7 +1725,8 @@ def handle_pilot_rc(data):
     # data es un array: [throttle, yaw, pitch, roll] con valores de -1 a 1
     # Actualizar valores globales (el loop continuo los usará)
     if dron.state == "flying":
-        throttle, yaw, pitch, roll = data
+        # Intercambiar pitch y roll directamente al desempaquetar
+        throttle, yaw, roll, pitch = data
         pilot_rc_values['throttle'] = throttle
         pilot_rc_values['yaw'] = yaw
         pilot_rc_values['pitch'] = pitch

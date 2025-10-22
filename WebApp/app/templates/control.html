@@ -28,14 +28,18 @@
 </head>
 <style>
         /* === ESTILOS BÁSICOS === */
-        body { 
+        html, body { 
             margin: 0; 
-            padding: 0; 
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         /* === CONTENEDORES PRINCIPALES === */
         #map { 
-            height: 100vh; 
+            height: 100%; 
             width: 100%; 
         }
         
@@ -57,45 +61,277 @@
         /* === TELEMETRÍA === */
         #datos-telemetria {
             position: absolute;
-            top: 10px;
-            left: 50px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            top: 20px;
+            left: 60px;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 8px 12px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             display: flex;
-            gap: 30px;
-            font-size: 15px;
-            height: 30px;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+        }
+
+        #datos-telemetria > span {
+            display: flex;
             align-items: center;
-            overflow: hidden;
+            white-space: nowrap;
         }
         
         .dato {
-            font-weight: bold;
+            font-weight: 700;
+            color: #333;
+            margin-left: 6px;
+            font-size: 15px;
+        }
+        
+        #datos-telemetria strong {
+            color: #555;
+            font-weight: 600;
+        }
+        
+        #datos-telemetria strong::before {
+            content: '•';
+            color: #4CAF50;
+            font-size: 16px;
+            margin-right: 5px;
         }
         
         /* === CONTROLES === */
-        .controls {
+        /* Barra superior de controles principales */
+        .top-controls {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
             z-index: 1000;
-            max-width: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
         }
-        
-        .controls button, .controls input {
+
+        .top-controls button {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .top-controls button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .top-controls button:active {
+            transform: translateY(0);
+        }
+
+        .top-controls input {
+            padding: 6px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 12px;
+            width: 80px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .top-controls input:focus {
+            border-color: #2196F3;
+        }
+
+        /* Dropdown de funcionalidades */
+        .features-dropdown {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .features-dropdown .dropdown-toggle {
+            padding: 8px 14px;
+            font-size: 12px;
+        }
+
+        .features-dropdown .dropdown-menu {
+            min-width: 180px;
+        }
+
+        .features-dropdown .dropdown-menu button {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .modes-dropdown {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .modes-dropdown .dropdown-menu {
+            bottom: 100%;
+            top: auto;
+            border-radius: 12px;
+            margin-bottom: 0;
+        }
+
+        .modes-dropdown .dropdown-toggle {
+            border-radius: 12px;
+        }
+
+        .modes-dropdown .dropdown-toggle.active {
+            border-radius: 12px;
+        }
+
+        .dropdown-toggle {
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .dropdown-toggle.active {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-toggle:hover:not(.active) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .dropdown-toggle::after {
+            content: '▼';
+            font-size: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .dropdown-toggle.active::after {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 8px;
+            min-width: 200px;
+            display: none;
+            backdrop-filter: blur(10px);
+            margin-top: 0;
+        }
+
+        .dropdown-menu.show {
             display: block;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modes-dropdown .dropdown-menu.show {
+            animation: slideUp 0.2s ease;
+        }
+
+        .dropdown-menu button {
             width: 100%;
-            margin-bottom: 3px;
-            padding: 4px;
+            padding: 10px 15px;
+            margin: 3px 0;
+            border: none;
+            border-radius: 8px;
             font-size: 13px;
-            border-radius: 5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .dropdown-menu button:hover {
+            transform: translateX(5px);
+        }
+
+        /* Botón de seguimiento estilo Google Maps */
+        .follow-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .follow-button:active {
+            transform: scale(0.95);
+        }
+
+        .follow-button.active {
+            background: #4CAF50;
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+
+        .follow-button svg {
+            width: 28px;
+            height: 28px;
+            fill: #666;
+            transition: fill 0.2s ease;
+        }
+
+        .follow-button.active svg {
+            fill: white;
+        }
+
+        .controls {
+            display: none; /* Ocultamos el viejo contenedor */
         }
         
         /* === BOTONES COLOREADOS === */
@@ -118,7 +354,6 @@
             pointer-events: none;
             z-index: 1001;
             display: none;
-            animation: pulse-follow 2s infinite;
         }
         
         @keyframes pulse-follow {
@@ -187,6 +422,54 @@
             display: block;
             opacity: 0.8;
         }
+
+        /* === GRID DE NAVEGACIÓN === */
+        .navigation-grid {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(33, 150, 243, 0.4);
+        }
+
+        .nav-btn:active {
+            transform: translateY(0);
+        }
+
+        .nav-stop {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            font-size: 18px;
+        }
+
+        .nav-stop:hover {
+            box-shadow: 0 4px 10px rgba(255, 152, 0, 0.4);
+        }
         
         /* Ocultar cruceta en dispositivos táctiles */
         .navigation-grid.touch-hidden {
@@ -214,46 +497,61 @@
         }
     </style>
 <body>
-    <div class="controls">
+    <!-- Barra superior de controles principales -->
+    <div class="top-controls">
         <input type="number" id="altura" placeholder="Altura (m)" />
         <button id="botonConectar" onclick="conectarDron()">Conectar</button>
         <button id="botonDespegar" onclick="despegarDron()">Despegar</button>
         <button id="botonAterrizar" onclick="aterrizarDron()">Aterrizar</button>
         <button id="botonRTL" onclick="returnToLaunch()">RTL</button>
-        <button id="botonRuta" class="boton-azul" onclick="toggleRutaMode()">Crear Ruta</button>
-        <button id="botonImagenDron" class="boton-azul" onclick="toggleWebcamView()">Cámara Dron</button>
-        <button id="botonCapturarFoto" class="boton-azul" onclick="capturarFoto()">Hacer Foto</button>
-        <button id="botonIniciarVideo" class="boton-azul" onclick="iniciarGrabacion()">Hacer Video</button>
-        <button id="botonDetenerVideo" class="boton-rojo" style="display:none;" onclick="detenerGrabacion()">Detener Video</button>
-        <button id="botonCamaraMovil" class="boton-azul" onclick="abrirVentanaCamara()">Cámara Móvil</button>
-        <button id="toggleNavegacion" class="boton-azul" onclick="toggleNavegacion()">Ocultar Nav.</button>
-        <button id="botonSeguirDron" class="boton-azul" onclick="toggleFollowDrone()">Seguir Dron</button>
-        <button id="botonModoPiloto" class="boton-azul" onclick="irAModoPiloto()">🎮 Modo Piloto</button>
-
     </div>
 
-    <div id="navegacion" class="controls navigation-grid" style="
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
-    margin-top: 10px;
-    width: 100%;
-    max-width: 150px;
-    position: absolute;
-    top: 0px;
-    right: 130px;
-    ">
-    <button onclick="moverDron('NorthWest')" style="grid-area: 1 / 1 / 2 / 2; background-color: #2196F3; color: white;">NW</button>
-    <button onclick="moverDron('North')" style="grid-area: 1 / 2 / 2 / 3; background-color: #2196F3; color: white;">N</button>
-    <button onclick="moverDron('NorthEast')" style="grid-area: 1 / 3 / 2 / 4; background-color: #2196F3; color: white;">NE</button>
+    <!-- Dropdown de funcionalidades -->
+    <div class="features-dropdown">
+        <button class="dropdown-toggle" onclick="toggleDropdown('dropdownMenu')">
+            ⚙️ Funcionalidades
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+            <button id="botonRuta" class="boton-azul" onclick="toggleRutaMode(); closeAllDropdowns()">📍 Crear Ruta</button>
+            <button id="botonImagenDron" class="boton-azul" onclick="toggleWebcamView(); closeAllDropdowns()">📷 Cámara Dron</button>
+            <button id="botonCapturarFoto" class="boton-azul" onclick="capturarFoto(); closeAllDropdowns()">📸 Hacer Foto</button>
+            <button id="botonIniciarVideo" class="boton-azul" onclick="iniciarGrabacion(); closeAllDropdowns()">🎥 Hacer Video</button>
+            <button id="botonDetenerVideo" class="boton-rojo" style="display:none;" onclick="detenerGrabacion(); closeAllDropdowns()">⏹️ Detener Video</button>
+            <button id="botonCamaraMovil" class="boton-azul" onclick="abrirVentanaCamara(); closeAllDropdowns()">📱 Cámara Móvil</button>
+            <button id="toggleNavegacion" class="boton-azul" onclick="toggleNavegacion(); closeAllDropdowns()">🧭 Ocultar Nav.</button>
+        </div>
+    </div>
 
-    <button onclick="moverDron('West')" style="grid-area: 2 / 1 / 3 / 2; background-color: #2196F3; color: white;">W</button>
-    <button onclick="moverDron('Stop')" style="grid-area: 2 / 2 / 3 / 3; background-color: #FF9800; color: white;">Stop</button>
-    <button onclick="moverDron('East')" style="grid-area: 2 / 3 / 3 / 4; background-color: #2196F3; color: white;">E</button>
+    <!-- Dropdown de modos -->
+    <div class="modes-dropdown">
+        <button class="dropdown-toggle" onclick="toggleDropdown('modesMenu')">
+            🎮 Modos
+        </button>
+        <div class="dropdown-menu" id="modesMenu">
+            <button id="botonModoPiloto" class="boton-azul" onclick="irAModoPiloto(); closeAllDropdowns()">🎮 Modo Piloto</button>
+            <button class="boton-azul" style="opacity: 0.5; cursor: not-allowed;" disabled>🎤 Control por Voz<br><small style="font-size: 10px;">(Próximamente)</small></button>
+            <button class="boton-azul" style="opacity: 0.5; cursor: not-allowed;" disabled>📱 Control Movimiento<br><small style="font-size: 10px;">(Próximamente)</small></button>
+        </div>
+    </div>
 
-    <button onclick="moverDron('SouthWest')" style="grid-area: 3 / 1 / 4 / 2; background-color: #2196F3; color: white;">SW</button>
-    <button onclick="moverDron('South')" style="grid-area: 3 / 2 / 4 / 3; background-color: #2196F3; color: white;">S</button>
-    <button onclick="moverDron('SouthEast')" style="grid-area: 3 / 3 / 4 / 4; background-color: #2196F3; color: white;">SE</button>
+    <!-- Botón de seguimiento estilo Google Maps -->
+    <button class="follow-button" id="followButton" onclick="toggleFollowDrone()" title="Seguir dron">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path id="followIcon" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+        </svg>
+    </button>
+
+    <!-- Grid de navegación mejorado -->
+    <div id="navegacion" class="navigation-grid">
+        <button onclick="moverDron('NorthWest')" class="nav-btn">NW</button>
+        <button onclick="moverDron('North')" class="nav-btn">N</button>
+        <button onclick="moverDron('NorthEast')" class="nav-btn">NE</button>
+        <button onclick="moverDron('West')" class="nav-btn">W</button>
+        <button onclick="moverDron('Stop')" class="nav-btn nav-stop">⏹</button>
+        <button onclick="moverDron('East')" class="nav-btn">E</button>
+        <button onclick="moverDron('SouthWest')" class="nav-btn">SW</button>
+        <button onclick="moverDron('South')" class="nav-btn">S</button>
+        <button onclick="moverDron('SouthEast')" class="nav-btn">SE</button>
     </div>
 
     <div id="datos-telemetria">
@@ -562,20 +860,61 @@
         }
 
         // Función para activar/desactivar el seguimiento del dron
+        // Funciones para los dropdowns
+        function toggleDropdown(menuId) {
+            const dropdown = document.getElementById(menuId);
+            const allDropdowns = document.querySelectorAll('.dropdown-menu');
+            const allToggles = document.querySelectorAll('.dropdown-toggle');
+            
+            // Cerrar otros dropdowns
+            allDropdowns.forEach(d => {
+                if (d.id !== menuId) {
+                    d.classList.remove('show');
+                }
+            });
+            
+            allToggles.forEach(t => {
+                const parentDropdown = t.nextElementSibling;
+                if (parentDropdown && parentDropdown.id !== menuId) {
+                    t.classList.remove('active');
+                }
+            });
+            
+            // Toggle del dropdown actual
+            dropdown.classList.toggle('show');
+            const currentToggle = dropdown.previousElementSibling;
+            currentToggle.classList.toggle('active');
+        }
+
+        function closeAllDropdowns() {
+            const allDropdowns = document.querySelectorAll('.dropdown-menu');
+            const allToggles = document.querySelectorAll('.dropdown-toggle');
+            
+            allDropdowns.forEach(d => d.classList.remove('show'));
+            allToggles.forEach(t => t.classList.remove('active'));
+        }
+
+        // Cerrar dropdowns al hacer click fuera
+        document.addEventListener('click', function(event) {
+            const featuresDropdown = document.querySelector('.features-dropdown');
+            const modesDropdown = document.querySelector('.modes-dropdown');
+            
+            if ((featuresDropdown && !featuresDropdown.contains(event.target)) &&
+                (modesDropdown && !modesDropdown.contains(event.target))) {
+                closeAllDropdowns();
+            }
+        });
+
         function toggleFollowDrone() {
-            const botonSeguir = document.getElementById('botonSeguirDron');
+            const followButton = document.getElementById('followButton');
             const followIndicator = document.getElementById('follow-indicator');
             
             followDrone = !followDrone;
             
             if (followDrone) {
                 // Activar modo seguimiento
-                botonSeguir.textContent = "Dejar de Seguir";
-                botonSeguir.classList.remove('boton-azul');
-                botonSeguir.classList.add('boton-verde');
-                
-                // Mostrar indicador visual
-                // followIndicator.style.display = 'block'; // Comentado para quitar el círculo verde
+                followButton.classList.add('active');
+                followButton.title = 'Dejar de seguir';
                 
                 // Centrar inmediatamente en el dron
                 map.setView(currentPos, map.getZoom());
@@ -583,12 +922,8 @@
                 console.log('Modo seguimiento activado: El mapa seguirá al dron');
             } else {
                 // Desactivar modo seguimiento
-                botonSeguir.textContent = "Seguir Dron";
-                botonSeguir.classList.remove('boton-verde');
-                botonSeguir.classList.add('boton-azul');
-                
-                // Ocultar indicador visual
-                // followIndicator.style.display = 'none'; // Comentado para quitar el círculo verde
+                followButton.classList.remove('active');
+                followButton.title = 'Seguir dron';
                 
                 console.log('Modo seguimiento desactivado');
             }
@@ -749,9 +1084,9 @@
             // Actualizar telemetría en el UI
             const telemetriaDiv = document.getElementById('datos-telemetria');
             telemetriaDiv.innerHTML = `
-                <p><strong>Altitud:</strong> ${data.alt}m</p>
-                <p><strong>Velocidad:</strong> ${data.groundSpeed.toFixed(2)}m/s</p>
-                <p><strong>Estado:</strong> ${data.state}</p>
+                <span><strong>Altitud:</strong><span class="dato">${data.alt}m</span></span>
+                <span><strong>Velocidad:</strong><span class="dato">${data.groundSpeed.toFixed(2)}m/s</span></span>
+                <span><strong>Estado:</strong><span class="dato">${data.state}</span></span>
             `;
 
             // Detectar si acabamos de aterrizar
