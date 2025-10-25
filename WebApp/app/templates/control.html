@@ -510,67 +510,113 @@
             padding: 0 20px;
             border-radius: 28px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            border: none;
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5),
+                        0 0 0 0 rgba(102, 126, 234, 0);
             color: white;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
+            letter-spacing: 0.5px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        #voice-control-btn::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 28px;
+            padding: 3px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        #voice-control-btn:hover:not(.listening):not(.processing)::before {
+            opacity: 1;
         }
         
         #voice-control-btn:hover:not(.listening):not(.processing) {
-            transform: translateX(-50%) translateY(-3px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
-            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateX(-50%) translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 35px rgba(102, 126, 234, 0.6),
+                        0 0 0 8px rgba(102, 126, 234, 0.1);
         }
         
         #voice-control-btn.listening {
-            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
-            border-color: rgba(255, 255, 255, 0.6);
-            animation: pulse-voice 1.2s ease-in-out infinite;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #c44569 100%);
+            animation: pulse-voice 1.5s ease-in-out infinite;
+            box-shadow: 0 8px 30px rgba(255, 68, 68, 0.6),
+                        0 0 0 0 rgba(255, 68, 68, 0.7);
         }
         
         #voice-control-btn.processing {
             min-width: 280px;
-            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            box-shadow: 0 6px 25px rgba(76, 175, 80, 0.5),
+                        0 0 0 8px rgba(76, 175, 80, 0.1);
         }
         
         #voice-control-btn.error {
-            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-            animation: shake 0.5s;
+            background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
+            animation: shake 0.5s ease-in-out;
+            box-shadow: 0 8px 30px rgba(255, 94, 98, 0.5);
         }
         
         @keyframes pulse-voice {
             0%, 100% { 
-                box-shadow: 0 6px 20px rgba(255, 68, 68, 0.6),
+                box-shadow: 0 8px 30px rgba(255, 68, 68, 0.6),
                             0 0 0 0 rgba(255, 68, 68, 0.7);
+                transform: translateX(-50%) scale(1);
             }
             50% { 
-                box-shadow: 0 6px 25px rgba(255, 68, 68, 0.8),
+                box-shadow: 0 12px 40px rgba(255, 68, 68, 0.8),
                             0 0 0 20px rgba(255, 68, 68, 0);
+                transform: translateX(-50%) scale(1.05);
             }
         }
         
         @keyframes shake {
             0%, 100% { transform: translateX(-50%) translateX(0); }
-            25% { transform: translateX(-50%) translateX(-10px); }
-            75% { transform: translateX(-50%) translateX(10px); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-50%) translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(-50%) translateX(8px); }
         }
         
         .mic-icon {
             font-size: 24px;
             transition: all 0.3s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        #voice-control-btn.listening .mic-icon {
+            animation: mic-pulse 0.8s ease-in-out infinite;
+        }
+        
+        @keyframes mic-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
         
         .voice-text {
-            font-size: 15px;
+            font-size: 16px;
+            font-weight: 700;
             white-space: nowrap;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            letter-spacing: 1px;
+        }
+        
+        #voice-control-btn.processing .voice-text {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
     </style>
 <body>
@@ -606,7 +652,6 @@
         </button>
         <div class="dropdown-menu" id="modesMenu">
             <button id="botonModoPiloto" class="boton-azul" onclick="irAModoPiloto(); closeAllDropdowns()">🎮 Modo Piloto</button>
-            <button class="boton-azul" style="opacity: 0.5; cursor: not-allowed;" disabled>🎤 Control por Voz<br><small style="font-size: 10px;">(Próximamente)</small></button>
             <button class="boton-azul" style="opacity: 0.5; cursor: not-allowed;" disabled>📱 Control Movimiento<br><small style="font-size: 10px;">(Próximamente)</small></button>
         </div>
     </div>
@@ -1368,7 +1413,7 @@
         }
 
         // Función para despegar el dron mediante gesto o voz con altura específica
-        function despegarDronDesdeGesto(altura) {
+        function despegarDronConAltura(altura) {
             // Validar que la altura sea un número válido
             if (!altura || isNaN(altura) || altura <= 0) {
                 alert("Por favor, proporcione una altura válida.");
@@ -1587,7 +1632,7 @@
                     
                     console.log(`Ejecutando: Despegar a ${altura} metros`);
                     hablar(`Despegando a ${altura} metros`);
-                    despegarDronDesdeGesto(altura);
+                    despegarDronConAltura(altura);
                 } else {
                     // Si no se especifica altura con "a" o "hasta", usar la del campo input
                     console.log('Ejecutando: Despegar');
@@ -1810,7 +1855,7 @@
         // Recibo despegar desde mediapipe
         socket.on('arm_takeOff', function(data) {
             console.log ("WebApp recibe despegar");
-            despegarDronDesdeGesto(data);
+            despegarDronConAltura(data);
         });
 
         // Recibo aterrizar desde mediapipe
