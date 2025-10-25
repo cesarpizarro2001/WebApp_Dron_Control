@@ -661,6 +661,24 @@ def on_command_received(data):
             except Exception as e:
                 print(f"Error en goto: {str(e)}")
 
+    elif action == 'change_altitude':
+        if dron.state == 'flying':
+            try:
+                altitude_change = float(data.get('altitude', 0))
+                new_altitude = dron.alt + altitude_change
+                print(f'Ajustando altitud: {altitude_change}m (nueva altitud: {new_altitude}m)')
+                dron.goto(dron.lat, dron.lon, new_altitude, blocking=False)
+            except Exception as e:
+                print(f"Error al cambiar altitud: {str(e)}")
+
+    elif action == 'change_mode':
+        try:
+            mode = data.get('mode', 'LOITER')
+            print(f'Cambiando modo a: {mode}')
+            dron.setFlightMode(mode)
+        except Exception as e:
+            print(f"Error al cambiar modo: {str(e)}")
+
     elif action == 'capturarFoto':
         print('Capturando foto del último frame')
         capturar_foto()

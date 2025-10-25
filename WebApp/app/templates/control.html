@@ -495,6 +495,83 @@
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
         }
+        
+        /* === CONTROL POR VOZ === */
+        #voice-control-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            
+            /* Estado normal */
+            min-width: 140px;
+            height: 55px;
+            padding: 0 20px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        #voice-control-btn:hover:not(.listening):not(.processing) {
+            transform: translateX(-50%) translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        #voice-control-btn.listening {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            border-color: rgba(255, 255, 255, 0.6);
+            animation: pulse-voice 1.2s ease-in-out infinite;
+        }
+        
+        #voice-control-btn.processing {
+            min-width: 280px;
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        #voice-control-btn.error {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            animation: shake 0.5s;
+        }
+        
+        @keyframes pulse-voice {
+            0%, 100% { 
+                box-shadow: 0 6px 20px rgba(255, 68, 68, 0.6),
+                            0 0 0 0 rgba(255, 68, 68, 0.7);
+            }
+            50% { 
+                box-shadow: 0 6px 25px rgba(255, 68, 68, 0.8),
+                            0 0 0 20px rgba(255, 68, 68, 0);
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(-50%) translateX(0); }
+            25% { transform: translateX(-50%) translateX(-10px); }
+            75% { transform: translateX(-50%) translateX(10px); }
+        }
+        
+        .mic-icon {
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-text {
+            font-size: 15px;
+            white-space: nowrap;
+        }
     </style>
 <body>
     <!-- Barra superior de controles principales -->
@@ -577,6 +654,12 @@
     </div>
 
     <div id="map"></div>
+
+    <!-- Control por voz -->
+    <button id="voice-control-btn" onclick="iniciarControlVoz()">
+        <span class="mic-icon">🎤</span>
+        <span class="voice-text">VOZ</span>
+    </button>
 
     <!-- Indicador visual del modo seguimiento -->
     <div id="follow-indicator" class="follow-mode-indicator"></div>
@@ -1221,7 +1304,7 @@
                     botonDespegar.disabled = true;
                     botonAterrizar.disabled = true;
                     botonRTL.disabled = true;
-                    botonRTL.textContent = 'Volviendo a base...';
+                    botonRTL.textContent = 'Volviendo...';
                     resetButtonClasses(botonRTL);
                     botonRTL.classList.add('boton-amarillo');
                     break;
@@ -1284,22 +1367,29 @@
             }
         }
 
-        // Función para despegar el dron mediante gesto usando MediaPipe
+        // Función para despegar el dron mediante gesto o voz con altura específica
         function despegarDronDesdeGesto(altura) {
+            // Validar que la altura sea un número válido
+            if (!altura || isNaN(altura) || altura <= 0) {
+                alert("Por favor, proporcione una altura válida.");
+                return;
+            }
+            
+            // Actualizar el campo de altura si existe (opcional, para feedback visual)
             const alturaInput = document.getElementById("altura");
             if (alturaInput) {
                 alturaInput.value = altura;
-                
-                despegando = true;
-                const botonDespegar = document.getElementById('botonDespegar');
-                botonDespegar.textContent = 'Despegando...';
-                botonDespegar.classList.add('boton-amarillo');
-                botonDespegar.disabled = true;
-                
-                socket.emit('command', { action: 'arm_takeOff', altura: String(altura) });
-            } else {
-                alert("Por favor, ingrese una altura válida.");
             }
+            
+            // Configurar estado de despegue
+            despegando = true;
+            const botonDespegar = document.getElementById('botonDespegar');
+            botonDespegar.textContent = 'Despegando...';
+            botonDespegar.classList.add('boton-amarillo');
+            botonDespegar.disabled = true;
+            
+            // Enviar comando de despegue con la altura especificada
+            socket.emit('command', { action: 'arm_takeOff', altura: String(altura) });
         }
 
         function aterrizarDron() {
@@ -1319,9 +1409,313 @@
             socket.emit('command', { action: 'RTL' });
             
             const botonRTL = document.getElementById('botonRTL');
-            botonRTL.textContent = 'Volviendo a base...';
+            botonRTL.textContent = 'Volviendo...';
             botonRTL.classList.add('boton-amarillo');
             botonRTL.disabled = true;
+        }
+
+        function ajustarAltitud(cantidad) {
+            console.log(`Ajustando altitud: ${cantidad}m`);
+            socket.emit('command', { action: 'change_altitude', altitude: cantidad });
+        }
+
+        // ===== CONTROL POR VOZ =====
+        let recognition;
+        let recognizing = false;
+
+        function iniciarControlVoz() {
+            // Verificar soporte
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Safari.');
+                return;
+            }
+
+            const btn = document.getElementById('voice-control-btn');
+            const micIcon = btn.querySelector('.mic-icon');
+            const voiceText = btn.querySelector('.voice-text');
+
+            // Si ya está reconociendo, detener
+            if (recognizing) {
+                if (recognition) recognition.stop();
+                recognizing = false;
+                btn.classList.remove('listening', 'processing', 'error');
+                voiceText.textContent = 'VOZ';
+                return;
+            }
+
+            // Iniciar reconocimiento
+            recognition = new SpeechRecognition();
+            recognition.lang = 'es-ES';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function() {
+                recognizing = true;
+                btn.classList.add('listening');
+                voiceText.textContent = 'ESCUCHANDO...';
+                console.log('Reconocimiento de voz iniciado');
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript.toLowerCase().trim();
+                console.log('Comando reconocido:', transcript);
+                
+                btn.classList.remove('listening');
+                btn.classList.add('processing');
+                voiceText.textContent = `"${transcript}"`;
+
+                // Procesar comando
+                setTimeout(() => {
+                    const exitoso = procesarComandoVoz(transcript);
+                    
+                    if (exitoso) {
+                        setTimeout(() => {
+                            btn.classList.remove('processing');
+                            voiceText.textContent = 'VOZ';
+                            recognizing = false;
+                        }, 1500);
+                    } else {
+                        btn.classList.remove('processing');
+                        btn.classList.add('error');
+                        voiceText.textContent = 'NO ENTENDIDO';
+                        setTimeout(() => {
+                            btn.classList.remove('error');
+                            voiceText.textContent = 'VOZ';
+                            recognizing = false;
+                        }, 2000);
+                    }
+                }, 500);
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Error de reconocimiento:', event.error);
+                btn.classList.remove('listening', 'processing');
+                btn.classList.add('error');
+                voiceText.textContent = 'ERROR';
+                
+                setTimeout(() => {
+                    btn.classList.remove('error');
+                    voiceText.textContent = 'VOZ';
+                    recognizing = false;
+                }, 2000);
+            };
+
+            recognition.onend = function() {
+                console.log('Reconocimiento finalizado');
+                if (recognizing && !btn.classList.contains('processing') && !btn.classList.contains('error')) {
+                    btn.classList.remove('listening');
+                    voiceText.textContent = 'VOZ';
+                    recognizing = false;
+                }
+            };
+
+            recognition.start();
+        }
+
+        // Función para leer texto en voz alta
+        function hablar(texto) {
+            // Verificar soporte de síntesis de voz
+            if ('speechSynthesis' in window) {
+                // Cancelar cualquier habla anterior
+                window.speechSynthesis.cancel();
+                
+                // Crear el mensaje de voz
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.0; // Velocidad normal
+                utterance.pitch = 1.0; // Tono normal
+                utterance.volume = 1.0; // Volumen máximo
+                
+                // Hablar
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Función para convertir palabras numéricas a números
+        function palabraANumero(palabra) {
+            const numeros = {
+                'uno': 1, 'un': 1,
+                'dos': 2,
+                'tres': 3,
+                'cuatro': 4,
+                'cinco': 5,
+                'seis': 6,
+                'siete': 7,
+                'ocho': 8,
+                'nueve': 9,
+                'diez': 10
+            };
+            return numeros[palabra.toLowerCase()] || null;
+        }
+
+        // Función para extraer altura del comando de voz
+        function extraerAltura(comando) {
+            // Buscar cualquier palabra numérica en el comando
+            const palabras = comando.split(' ');
+            
+            for (let palabra of palabras) {
+                // Limpiar la palabra de "metros" si está pegada
+                palabra = palabra.replace(/metros?$/i, '').trim();
+                
+                const numero = palabraANumero(palabra);
+                if (numero !== null) {
+                    return numero;
+                }
+            }
+            
+            return null;
+        }
+
+        function procesarComandoVoz(comando) {
+            console.log('Procesando comando:', comando);
+
+            // Despegar con altura específica
+            if (comando.includes('despega') || comando.includes('despegar') || 
+                comando.includes('takeoff') || comando.includes('vuela')) {
+                
+                // Extraer altura del comando (dígitos o palabras)
+                const altura = extraerAltura(comando);
+                
+                if (altura !== null) {
+                    // Validar rango: solo entre 1 y 10 metros
+                    if (altura < 1 || altura > 10) {
+                        console.log(`Altura fuera de rango: ${altura} metros`);
+                        hablar('Solo se puede despegar entre 1 y 10 metros');
+                        return false;
+                    }
+                    
+                    console.log(`Ejecutando: Despegar a ${altura} metros`);
+                    hablar(`Despegando a ${altura} metros`);
+                    despegarDronDesdeGesto(altura);
+                } else {
+                    // Si no se especifica altura con "a" o "hasta", usar la del campo input
+                    console.log('Ejecutando: Despegar');
+                    hablar('Despegando');
+                    despegarDron();
+                }
+                return true;
+            }
+
+            // Aterrizar
+            if (comando.includes('aterriza') || comando.includes('aterrizas') || 
+                comando.includes('aterrizar') || comando.includes('land')) {
+                console.log('Ejecutando: Aterrizar');
+                hablar('Aterrizando');
+                aterrizarDron();
+                return true;
+            }
+
+            // RTL
+            if (comando.includes('rtl') || comando.includes('vuelve') || 
+                comando.includes('regresa') || comando.includes('base') || 
+                comando.includes('casa') || comando.includes('home')) {
+                console.log('Ejecutando: RTL');
+                hablar('Regresando a base');
+                returnToLaunch();
+                return true;
+            }
+
+            // Para (detener movimiento) - solo si es un comando de una palabra
+            const palabrasComando = comando.trim().split(/\s+/);
+            if (palabrasComando.length === 1 && 
+                (comando === 'para' || comando === 'parar' || 
+                 comando === 'quieto' || comando === 'detener' || 
+                 comando === 'alto' || comando === 'stop')) {
+                console.log('Ejecutando: Parar (detener movimiento)');
+                hablar('Deteniendo');
+                moverDron('Stop');
+                return true;
+            }
+
+            // Movimientos direccionales
+            if (comando.includes('norte') || comando.includes('adelante') || comando.includes('alante') ||
+                comando.includes('avanza') || comando.includes('recto')) {
+                console.log('Ejecutando: Mover al norte');
+                hablar('Moviendo al norte');
+                moverDron('North');
+                return true;
+            }
+
+            if (comando.includes('sur') || comando.includes('atrás') || 
+                comando.includes('retrocede') || comando.includes('backward')) {
+                console.log('Ejecutando: Mover al sur');
+                hablar('Moviendo al sur');
+                moverDron('South');
+                return true;
+            }
+
+            if (comando.includes('este') || comando.includes('derecha') || 
+                comando.includes('right')) {
+                console.log('Ejecutando: Mover al este');
+                hablar('Moviendo al este');
+                moverDron('East');
+                return true;
+            }
+
+            if (comando.includes('oeste') || comando.includes('izquierda') || 
+                comando.includes('left')) {
+                console.log('Ejecutando: Mover al oeste');
+                hablar('Moviendo al oeste');
+                moverDron('West');
+                return true;
+            }
+
+            // Ajuste de altitud - Subir
+            if (comando.includes('sube') || comando.includes('subir') || 
+                comando.includes('arriba') || comando.includes('up')) {
+                
+                // Extraer altura del comando (dígitos o palabras)
+                const altura = extraerAltura(comando);
+                
+                if (altura !== null) {
+                    // Validar rango: solo entre 1 y 10 metros
+                    if (altura < 1 || altura > 10) {
+                        console.log(`Altura fuera de rango: ${altura} metros`);
+                        hablar('Solo se puede ajustar entre 1 y 10 metros');
+                        return false;
+                    }
+                    
+                    console.log(`Ejecutando: Subir ${altura} metros`);
+                    hablar(`Subiendo ${altura} metros`);
+                    ajustarAltitud(altura);
+                } else {
+                    console.log('Ejecutando: Subir altitud (5m por defecto)');
+                    hablar('Subiendo 5 metros');
+                    ajustarAltitud(5);
+                }
+                return true;
+            }
+
+            if (comando.includes('baja') || comando.includes('bajar') || 
+                comando.includes('abajo') || comando.includes('down')) {
+                
+                // Extraer altura del comando (dígitos o palabras)
+                const altura = extraerAltura(comando);
+                
+                if (altura !== null) {
+                    // Validar rango: solo entre 1 y 10 metros
+                    if (altura < 1 || altura > 10) {
+                        console.log(`Altura fuera de rango: ${altura} metros`);
+                        hablar('Solo se puede ajustar entre 1 y 10 metros');
+                        return false;
+                    }
+                    
+                    console.log(`Ejecutando: Bajar ${altura} metros`);
+                    hablar(`Bajando ${altura} metros`);
+                    ajustarAltitud(-altura);
+                } else {
+                    console.log('Ejecutando: Bajar altitud (5m por defecto)');
+                    hablar('Bajando 5 metros');
+                    ajustarAltitud(-5);
+                }
+                return true;
+            }
+
+            // Comando no reconocido
+            console.warn('Comando no reconocido:', comando);
+            hablar('Comando no reconocido');
+            return false;
         }
 
         function mover_dron_a_coordenadas(lat, lng) {
