@@ -4,7 +4,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Web App</title>
@@ -73,6 +74,7 @@
             gap: 5px;
             font-size: 13px;
             backdrop-filter: blur(10px);
+            max-width: calc(100vw - 80px);
         }
 
         #datos-telemetria > span {
@@ -115,6 +117,9 @@
             border-radius: 10px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(10px);
+            max-width: calc(100vw - 40px);
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .top-controls button {
@@ -199,7 +204,7 @@
             background: rgba(255, 255, 255, 0.95);
             border: none;
             padding: 12px 20px;
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
@@ -376,8 +381,8 @@
         
         .joystick-container {
             position: fixed;
-            bottom: 100px;
-            left: 100px;
+            bottom: 70px;
+            left: 80px;
             width: 120px;
             height: 120px;
             background: rgba(255, 255, 255, 0.2);
@@ -433,7 +438,7 @@
             gap: 8px;
             background: rgba(255, 255, 255, 0.95);
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             backdrop-filter: blur(10px);
@@ -618,8 +623,387 @@
             font-weight: 600;
             letter-spacing: 0.5px;
         }
+
+        /* Botón de pantalla completa */
+        .fullscreen-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 80px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .fullscreen-btn:active {
+            transform: scale(0.95);
+        }
+
+        .fullscreen-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: #666;
+            transition: fill 0.3s ease;
+        }
+
+        .fullscreen-btn.active {
+            background: #4CAF50 !important;
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4) !important;
+        }
+
+        .fullscreen-btn.active svg {
+            fill: white !important;
+        }
+
+        /* Media queries para móviles */
+        @media (max-width: 768px) {
+            .top-controls {
+                padding: 4px 5px;
+                gap: 3px;
+                top: 8px;
+                max-width: calc(100vw - 16px);
+            }
+
+            .top-controls button {
+                padding: 4px 7px;
+                font-size: 9px;
+                white-space: nowrap;
+            }
+
+            .top-controls input {
+                width: 50px;
+                padding: 4px 5px;
+                font-size: 9px;
+            }
+
+            .features-dropdown,
+            .modes-dropdown {
+                right: 8px;
+            }
+
+            .features-dropdown {
+                top: 8px;
+            }
+
+            .modes-dropdown {
+                bottom: 58px;
+            }
+
+            .features-dropdown .dropdown-toggle {
+                padding: 6px 10px;
+                font-size: 11px;
+                gap: 4px;
+            }
+
+            .features-dropdown .dropdown-toggle::after {
+                font-size: 7px;
+            }
+
+            .features-dropdown .dropdown-menu {
+                min-width: 130px;
+            }
+
+            .features-dropdown .dropdown-menu button {
+                padding: 6px 8px;
+                font-size: 11px;
+            }
+
+            .modes-dropdown .dropdown-toggle {
+                padding: 6px 10px;
+                font-size: 11px;
+                gap: 4px;
+            }
+
+            .modes-dropdown .dropdown-toggle::after {
+                font-size: 7px;
+            }
+
+            .modes-dropdown .dropdown-menu {
+                min-width: 130px;
+            }
+
+            .modes-dropdown .dropdown-menu button {
+                padding: 6px 8px;
+                font-size: 11px;
+            }
+
+            #datos-telemetria {
+                top: 8px;
+                left: 58px;
+                transform: none;
+                padding: 3px 5px;
+                gap: 2px;
+                font-size: 10px;
+                max-width: 140px;
+            }
+
+            #datos-telemetria > span {
+                font-size: 10px;
+            }
+
+            .dato {
+                font-size: 10px;
+                margin-left: 3px;
+            }
+
+            #datos-telemetria strong {
+                font-size: 10px;
+            }
+
+            #datos-telemetria strong::before {
+                font-size: 10px;
+                margin-right: 2px;
+            }
+
+            .navigation-grid {
+                bottom: 8px;
+                left: 8px;
+                padding: 5px;
+                gap: 3px;
+            }
+
+            .nav-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 9px;
+            }
+
+            .nav-stop {
+                font-size: 14px;
+            }
+
+            .follow-button {
+                bottom: 8px;
+                right: 8px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .follow-button svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .fullscreen-btn {
+                bottom: 8px;
+                right: 50px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .fullscreen-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            #voice-control-btn {
+                min-width: 110px;
+                height: 40px;
+                padding: 0 12px;
+                bottom: 15px;
+                font-size: 10px;
+                border-radius: 20px;
+                gap: 6px;
+            }
+
+            .mic-icon {
+                width: 14px;
+                height: 14px;
+                font-size: 14px;
+            }
+
+            .voice-text {
+                font-size: 11px;
+            }
+
+            .joystick-container {
+                width: 90px;
+                height: 90px;
+                bottom: 50px;
+                left: 55px;
+            }
+
+            .joystick-knob {
+                width: 36px;
+                height: 36px;
+            }
+        }
+
+        /* Para pantallas muy pequeñas */
+        @media (max-width: 480px) {
+            .top-controls {
+                padding: 3px 4px;
+                gap: 2px;
+                top: 6px;
+                max-width: calc(100vw - 12px);
+            }
+
+            .top-controls button {
+                padding: 3px 5px;
+                font-size: 8px;
+            }
+
+            .top-controls input {
+                width: 45px;
+                padding: 3px 4px;
+                font-size: 8px;
+            }
+
+            #datos-telemetria {
+                top: 6px;
+                left: 56px;
+                transform: none;
+                padding: 2px 4px;
+                font-size: 9px;
+                max-width: 120px;
+            }
+
+            #datos-telemetria > span {
+                font-size: 9px;
+            }
+
+            .dato {
+                font-size: 9px;
+                margin-left: 2px;
+            }
+
+            #datos-telemetria strong {
+                font-size: 9px;
+            }
+
+            .navigation-grid {
+                padding: 4px;
+                gap: 2px;
+                bottom: 6px;
+                left: 6px;
+            }
+
+            .nav-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 8px;
+            }
+
+            .nav-stop {
+                font-size: 12px;
+            }
+
+            .features-dropdown .dropdown-toggle {
+                padding: 5px 9px;
+                font-size: 10px;
+            }
+
+            .features-dropdown .dropdown-menu {
+                min-width: 120px;
+            }
+
+            .features-dropdown .dropdown-menu button {
+                padding: 5px 7px;
+                font-size: 10px;
+            }
+
+            .modes-dropdown .dropdown-toggle {
+                padding: 5px 9px;
+                font-size: 10px;
+            }
+
+            .modes-dropdown .dropdown-menu {
+                min-width: 120px;
+            }
+
+            .modes-dropdown .dropdown-menu button {
+                padding: 5px 7px;
+                font-size: 10px;
+            }
+
+            #voice-control-btn {
+                min-width: 100px;
+                height: 36px;
+                font-size: 9px;
+                bottom: 12px;
+                border-radius: 18px;
+                padding: 0 10px;
+                gap: 5px;
+            }
+
+            .mic-icon {
+                width: 12px;
+                height: 12px;
+                font-size: 12px;
+            }
+
+            .voice-text {
+                font-size: 9px;
+                letter-spacing: 0.2px;
+            }
+
+            .follow-button {
+                bottom: 6px;
+                right: 6px;
+                width: 32px;
+                height: 32px;
+            }
+
+            .follow-button svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .fullscreen-btn {
+                bottom: 6px;
+                right: 44px;
+                width: 32px;
+                height: 32px;
+            }
+
+            .fullscreen-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .joystick-container {
+                width: 80px;
+                height: 80px;
+                bottom: 45px;
+                left: 45px;
+            }
+
+            .joystick-knob {
+                width: 32px;
+                height: 32px;
+            }
+
+            .modes-dropdown {
+                bottom: 48px;
+            }
+
+            .features-dropdown {
+                top: 6px;
+                right: 6px;
+            }
+
+            .modes-dropdown {
+                right: 6px;
+            }
+        }
     </style>
+</head>
 <body>
+    <!-- Botón de pantalla completa -->
+    <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Pantalla completa">
+        <svg id="fullscreenIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+        </svg>
+    </button>
+
     <!-- Barra superior de controles principales -->
     <div class="top-controls">
         <input type="number" id="altura" placeholder="Altura (m)" />
@@ -2035,8 +2419,28 @@
                 joystickActive = true;
                 
                 // Coordenadas fijas del joystick (solo dispositivos táctiles llegan aquí)
-                joystickStartX = 100 + 60; // left + radius
-                joystickStartY = window.innerHeight - 100 - 60; // height - bottom - radius
+                // Determinar posición según el tamaño de pantalla
+                let joystickLeft, joystickBottom, joystickRadius;
+                
+                if (window.innerWidth <= 480) {
+                    // Móviles pequeños
+                    joystickLeft = 45;
+                    joystickBottom = 45;
+                    joystickRadius = 40; // width 80px / 2
+                } else if (window.innerWidth <= 768) {
+                    // Tablets
+                    joystickLeft = 55;
+                    joystickBottom = 50;
+                    joystickRadius = 45; // width 90px / 2
+                } else {
+                    // Escritorio
+                    joystickLeft = 80;
+                    joystickBottom = 70;
+                    joystickRadius = 60; // width 120px / 2
+                }
+                
+                joystickStartX = joystickLeft + joystickRadius;
+                joystickStartY = window.innerHeight - joystickBottom - joystickRadius;
                 
                 showJoystick(x, y);
                 
@@ -2179,6 +2583,64 @@
                     navegacion.classList.remove('touch-hidden');
                 }
                 console.log('Configurado para dispositivo no táctil: Cruceta visible, joystick completamente oculto');
+            }
+        }
+
+        // ===== PANTALLA COMPLETA =====
+        let isFullscreen = false;
+
+        function toggleFullscreen() {
+            const btn = document.getElementById('fullscreenBtn');
+            const icon = document.getElementById('fullscreenIcon');
+            
+            if (!isFullscreen) {
+                // Entrar en pantalla completa
+                const elem = document.documentElement;
+                
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { // Safari
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) { // IE11
+                    elem.msRequestFullscreen();
+                }
+            } else {
+                // Salir de pantalla completa
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { // Safari
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { // IE11
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        // Detectar cambios en el estado de fullscreen
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const btn = document.getElementById('fullscreenBtn');
+            const icon = document.getElementById('fullscreenIcon');
+            
+            isFullscreen = !!(document.fullscreenElement || 
+                             document.webkitFullscreenElement || 
+                             document.msFullscreenElement);
+            
+            if (isFullscreen) {
+                // Cambiar a icono de "salir de fullscreen"
+                btn.classList.add('active');
+                icon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>';
+                btn.title = 'Salir de pantalla completa';
+                console.log('Modo pantalla completa activado');
+            } else {
+                // Cambiar a icono de "entrar en fullscreen"
+                btn.classList.remove('active');
+                icon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
+                btn.title = 'Pantalla completa';
+                console.log('Modo pantalla completa desactivado');
             }
         }
         

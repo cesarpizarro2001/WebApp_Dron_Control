@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Modo Piloto</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
@@ -27,13 +30,14 @@
 
         .top-bar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 8px 15px;
+            padding: 8px 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            min-height: 60px;
+            min-height: 50px;
             flex-shrink: 0;
+            gap: 8px;
         }
 
         .home-btn {
@@ -57,28 +61,30 @@
         }
 
         .top-bar h2 {
-            font-size: 20px;
+            font-size: 16px;
             margin: 0;
             color: white;
             font-weight: 700;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            white-space: nowrap;
         }
 
         .telemetry {
             display: flex;
-            gap: 8px;
-            font-size: 14px;
+            gap: 5px;
+            font-size: 12px;
             font-weight: 500;
+            flex-wrap: nowrap;
         }
 
         .telemetry-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
+            gap: 4px;
+            padding: 6px 10px;
             background: rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
+            border-radius: 8px;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -92,18 +98,18 @@
 
         .telemetry-label {
             color: rgba(255, 255, 255, 0.85);
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            letter-spacing: 0.3px;
+            margin-bottom: 1px;
         }
 
         .telemetry-value {
             color: #fff;
             font-weight: 800;
-            font-size: 18px;
-            min-width: 40px;
+            font-size: 14px;
+            min-width: 30px;
             text-align: left;
             display: inline-block;
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -111,7 +117,7 @@
 
         .telemetry-unit {
             color: rgba(255, 255, 255, 0.75);
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 600;
         }
 
@@ -239,36 +245,36 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 15px;
+            padding: 10px 8px;
             background: linear-gradient(to bottom, #f8f9fa, #ffffff);
-            min-width: 200px;
-            max-width: 250px;
+            min-width: 160px;
+            max-width: 180px;
             position: relative;
         }
 
         .joystick-container {
             text-align: center;
             position: relative;
-            padding: 20px;
+            padding: 15px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             width: 100%;
-            margin-bottom: 80px;
+            margin-bottom: 60px;
         }
 
         .joystick-container p {
-            margin: 0 0 10px 0;
-            font-size: 12px;
+            margin: 0 0 8px 0;
+            font-size: 11px;
             font-weight: bold;
             color: #495057;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .joystick {
-            width: 140px;
-            height: 140px;
-            border: 4px solid #667eea;
+            width: 120px;
+            height: 120px;
+            border: 3px solid #667eea;
             border-radius: 50%;
             background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
             position: relative;
@@ -283,8 +289,8 @@
         }
 
         .joystick-stick {
-            width: 45px;
-            height: 45px;
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
             position: absolute;
@@ -293,7 +299,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
-            border: 3px solid white;
+            border: 2px solid white;
         }
 
         /* Indicadores de dirección para los joysticks */
@@ -345,10 +351,10 @@
         /* Mejora visual del minimapa */
         .minimap-container {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 150px;
-            height: 150px;
+            top: 8px;
+            right: 8px;
+            width: 120px;
+            height: 120px;
             border: 3px solid rgba(255, 255, 255, 0.9);
             background: white;
             border-radius: 50%;
@@ -362,6 +368,173 @@
             height: 100%;
             border-radius: 50%;
         }
+
+        /* Botón de pantalla completa */
+        .fullscreen-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.8);
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .fullscreen-btn:active {
+            transform: scale(0.95);
+        }
+
+        .fullscreen-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+            transition: fill 0.3s ease;
+        }
+
+        .fullscreen-btn:hover svg {
+            fill: white;
+        }
+
+        /* Cuando está en fullscreen, cambiar icono */
+        .fullscreen-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .fullscreen-btn.active svg {
+            fill: white;
+        }
+
+        /* Media queries para móviles */
+        @media (max-width: 768px) {
+            .top-bar {
+                padding: 6px 8px;
+                min-height: 45px;
+            }
+
+            .top-bar h2 {
+                font-size: 14px;
+            }
+
+            .home-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .telemetry {
+                gap: 4px;
+            }
+
+            .telemetry-item {
+                padding: 4px 8px;
+            }
+
+            .telemetry-value {
+                font-size: 12px;
+                min-width: 25px;
+            }
+
+            .telemetry-label {
+                font-size: 8px;
+            }
+
+            .joystick-side {
+                min-width: 140px;
+                max-width: 160px;
+                padding: 8px 5px;
+            }
+
+            .joystick {
+                width: 100px;
+                height: 100px;
+            }
+
+            .joystick-stick {
+                width: 35px;
+                height: 35px;
+            }
+
+            .joystick-container {
+                padding: 12px;
+                margin-bottom: 50px;
+            }
+
+            .joystick-container p {
+                font-size: 10px;
+                margin-bottom: 6px;
+            }
+
+            .control-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+                min-width: 75px;
+            }
+
+            .minimap-container {
+                width: 100px;
+                height: 100px;
+                top: 6px;
+                right: 6px;
+            }
+
+            .fullscreen-btn {
+                width: 36px;
+                height: 36px;
+                margin-right: 8px;
+            }
+
+            .fullscreen-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .joystick-label {
+                font-size: 9px;
+            }
+        }
+
+        /* Para pantallas muy pequeñas (menos de 480px) */
+        @media (max-width: 480px) {
+            .joystick-side {
+                min-width: 120px;
+                max-width: 140px;
+            }
+
+            .joystick {
+                width: 90px;
+                height: 90px;
+                border: 2px solid #667eea;
+            }
+
+            .joystick-stick {
+                width: 30px;
+                height: 30px;
+            }
+
+            .control-buttons {
+                gap: 6px;
+                bottom: 15px;
+            }
+
+            .control-btn {
+                padding: 5px 10px;
+                font-size: 10px;
+                min-width: 65px;
+            }
+        }
     </style>
 </head>
 
@@ -370,7 +543,15 @@
     <div class="top-bar">
         <button class="home-btn" onclick="goHome()">🏠 Volver</button>
         <h2>MODO PILOTO</h2>
-        <div class="telemetry">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="telemetry">
+            <!-- Botón de pantalla completa -->
+            <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Pantalla completa">
+                <svg id="fullscreenIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <!-- Icono expandir (por defecto) -->
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+            </button>
             <div class="telemetry-item">
                 <div>
                     <div class="telemetry-label">Estado</div>
@@ -391,6 +572,7 @@
                     <span class="telemetry-unit">m/s</span>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 
@@ -690,6 +872,64 @@
 
         function goHome() {
             window.location.href = '/';
+        }
+
+        // Funciones de pantalla completa
+        let isFullscreen = false;
+
+        function toggleFullscreen() {
+            const btn = document.getElementById('fullscreenBtn');
+            const icon = document.getElementById('fullscreenIcon');
+            
+            if (!isFullscreen) {
+                // Entrar en pantalla completa
+                const elem = document.documentElement;
+                
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { // Safari
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) { // IE11
+                    elem.msRequestFullscreen();
+                }
+            } else {
+                // Salir de pantalla completa
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { // Safari
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { // IE11
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        // Detectar cambios en el estado de fullscreen
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const btn = document.getElementById('fullscreenBtn');
+            const icon = document.getElementById('fullscreenIcon');
+            
+            isFullscreen = !!(document.fullscreenElement || 
+                             document.webkitFullscreenElement || 
+                             document.msFullscreenElement);
+            
+            if (isFullscreen) {
+                // Cambiar a icono de "salir de fullscreen"
+                btn.classList.add('active');
+                icon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>';
+                btn.title = 'Salir de pantalla completa';
+                console.log('Modo pantalla completa activado');
+            } else {
+                // Cambiar a icono de "entrar en fullscreen"
+                btn.classList.remove('active');
+                icon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
+                btn.title = 'Pantalla completa';
+                console.log('Modo pantalla completa desactivado');
+            }
         }
 
         // Eventos Socket.IO
