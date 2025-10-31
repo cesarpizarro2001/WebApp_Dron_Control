@@ -1787,6 +1787,40 @@ def handle_pilot_action(data):
             dron.setFlightMode('GUIDED')
             dron.RTL()
 
+@sio.on("set_parameters")
+def handle_set_parameters(params):
+    """Handler para configurar parámetros del dron"""
+    global webapp_commands_enabled
+    
+    if not webapp_commands_enabled:
+        print('PARÁMETROS BLOQUEADOS: (WebApp no autorizada)')
+        return
+    
+    print('=' * 50)
+    print('Configurando parámetros del dron:')
+    for param in params:
+        print(f"  {param['ID']}: {param['Value']}")
+    print('=' * 50)
+    
+    try:
+        # Usar la función setParams del dron
+        # Esta función acepta una lista de diccionarios con 'ID' y 'Value'
+        dron.setParams(params, blocking=True)
+        print('✓ Parámetros configurados correctamente')
+        
+        # Opcionalmente, verificar que se aplicaron correctamente
+        param_names = [p['ID'] for p in params]
+        valores_actuales = dron.getParams(param_names, blocking=True)
+        print('\nVerificación de parámetros aplicados:')
+        for valor in valores_actuales:
+            for key, val in valor.items():
+                print(f"  {key}: {val}")
+        
+    except Exception as e:
+        print(f'✗ Error al configurar parámetros: {e}')
+        import traceback
+        traceback.print_exc()
+
 print("Conectado al websocket")
 dron = Dron()
 

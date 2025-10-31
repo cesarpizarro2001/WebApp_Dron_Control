@@ -131,6 +131,18 @@ def handle_pilot_action(data):
     print(f"Acción del modo piloto: {action}")
     # Reenviar a la Estación de Tierra
     socketio.emit('pilot_action', data, include_self=False)
+
+# Handler para establecer parámetros del dron
+@socketio.on('set_parameters')
+def handle_set_parameters(params):
+    """Recibe parámetros desde la WebApp y los envía a la Estación de Tierra"""
+    print(f"Parámetros recibidos para configurar:")
+    for param in params:
+        print(f"  - {param['ID']}: {param['Value']}")
+    
+    # Reenviar los parámetros a la Estación de Tierra
+    socketio.emit('set_parameters', params, include_self=False)
+    print("Parámetros enviados a la Estación de Tierra")
     
 # Recibir telemetría de la Estación de Tierra y enviarla al navegador
 @socketio.on('telemetry_data')

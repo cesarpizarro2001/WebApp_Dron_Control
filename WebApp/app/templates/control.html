@@ -663,8 +663,8 @@
             fill: white !important;
         }
 
-        /* Media queries para móviles */
-        @media (max-width: 768px) {
+        /* Media queries para móviles y tablets de alta resolución */
+        @media (max-width: 1024px) {
             .top-controls {
                 padding: 4px 5px;
                 gap: 3px;
@@ -739,28 +739,41 @@
                 top: 8px;
                 left: 58px;
                 transform: none;
-                padding: 3px 5px;
+                padding: 4px 8px;
                 gap: 2px;
-                font-size: 10px;
+                font-size: 9px;
                 max-width: 140px;
+                background: rgba(255, 255, 255, 0.5);
+                backdrop-filter: blur(10px);
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             }
 
             #datos-telemetria > span {
-                font-size: 10px;
+                font-size: 9px;
+                display: flex;
+                align-items: center;
+                white-space: nowrap;
             }
 
             .dato {
-                font-size: 10px;
-                margin-left: 3px;
+                font-size: 11px;
+                font-weight: 700;
+                color: #333;
+                margin-left: 4px;
             }
 
             #datos-telemetria strong {
-                font-size: 10px;
+                font-size: 9px;
+                color: #555;
+                font-weight: 600;
             }
 
             #datos-telemetria strong::before {
-                font-size: 10px;
-                margin-right: 2px;
+                content: '•';
+                color: #4CAF50;
+                font-size: 11px;
+                margin-right: 3px;
             }
 
             .navigation-grid {
@@ -861,22 +874,41 @@
                 top: 6px;
                 left: 56px;
                 transform: none;
-                padding: 2px 4px;
-                font-size: 9px;
+                padding: 3px 6px;
+                font-size: 8px;
                 max-width: 120px;
+                background: rgba(255, 255, 255, 0.5);
+                backdrop-filter: blur(10px);
+                border-radius: 6px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+                gap: 1px;
             }
 
             #datos-telemetria > span {
-                font-size: 9px;
+                font-size: 8px;
+                display: flex;
+                align-items: center;
+                white-space: nowrap;
             }
 
             .dato {
-                font-size: 9px;
-                margin-left: 2px;
+                font-size: 10px;
+                font-weight: 700;
+                color: #333;
+                margin-left: 3px;
             }
 
             #datos-telemetria strong {
-                font-size: 9px;
+                font-size: 8px;
+                color: #555;
+                font-weight: 600;
+            }
+
+            #datos-telemetria strong::before {
+                content: '•';
+                color: #4CAF50;
+                font-size: 10px;
+                margin-right: 2px;
             }
 
             .navigation-grid {

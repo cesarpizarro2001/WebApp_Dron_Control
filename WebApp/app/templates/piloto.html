@@ -493,7 +493,6 @@
             .fullscreen-btn {
                 width: 36px;
                 height: 36px;
-                margin-right: 8px;
             }
 
             .fullscreen-btn svg {
@@ -524,6 +523,16 @@
                 height: 30px;
             }
 
+            .fullscreen-btn {
+                width: 36px;
+                height: 36px;
+            }
+
+            .fullscreen-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+
             .control-buttons {
                 gap: 6px;
                 bottom: 15px;
@@ -533,6 +542,338 @@
                 padding: 5px 10px;
                 font-size: 10px;
                 min-width: 65px;
+            }
+        }
+
+        /* PANEL DE AJUSTES */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            max-height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+            z-index: 20000;
+            transition: right 0.4s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .settings-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .settings-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .close-settings-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            font-size: 24px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .close-settings-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .settings-content {
+            padding: 15px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .setting-label span {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .setting-value {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .setting-description {
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+
+        .slider-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .setting-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #dee2e6;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .setting-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .setting-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.6);
+        }
+
+        .setting-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .setting-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.6);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #adb5bd;
+            margin-top: 5px;
+        }
+
+        .settings-actions {
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .settings-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .apply-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .apply-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .reset-btn {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .reset-btn:hover {
+            background: #dee2e6;
+        }
+
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 19999;
+            display: none;
+            backdrop-filter: blur(2px);
+        }
+
+        .settings-overlay.open {
+            display: block;
+        }
+
+        /* Responsive para el panel de ajustes */
+        /* Para tablets y móviles de alta resolución (como Redmi Note 11 Pro) */
+        @media (max-width: 1024px) {
+            .settings-panel {
+                width: 60%;
+                right: -60%;
+            }
+
+            .settings-header {
+                padding: 15px;
+            }
+
+            .settings-header h3 {
+                font-size: 18px;
+            }
+
+            .close-settings-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 20px;
+            }
+
+            .settings-content {
+                padding: 15px;
+            }
+
+            .setting-item {
+                margin-bottom: 20px;
+                padding: 12px;
+            }
+
+            .setting-label span {
+                font-size: 13px;
+            }
+
+            .setting-value {
+                font-size: 14px;
+            }
+
+            .setting-description {
+                font-size: 10px;
+                margin-bottom: 8px;
+            }
+
+            .setting-slider {
+                height: 6px;
+            }
+
+            .setting-slider::-webkit-slider-thumb {
+                width: 18px;
+                height: 18px;
+            }
+
+            .setting-slider::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+            }
+
+            .slider-labels {
+                font-size: 9px;
+                margin-top: 4px;
+            }
+
+            .settings-actions {
+                padding: 12px 15px;
+            }
+
+            .settings-actions button {
+                padding: 10px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .settings-header {
+                padding: 12px;
+            }
+
+            .settings-header h3 {
+                font-size: 16px;
+            }
+
+            .close-settings-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 18px;
+            }
+
+            .settings-content {
+                padding: 12px;
+            }
+
+            .setting-item {
+                margin-bottom: 15px;
+                padding: 10px;
+            }
+
+            .setting-label span {
+                font-size: 12px;
+            }
+
+            .setting-value {
+                font-size: 13px;
+            }
+
+            .setting-description {
+                font-size: 9px;
+                margin-bottom: 6px;
+            }
+
+            .slider-labels {
+                font-size: 8px;
+            }
+
+            .settings-actions {
+                padding: 10px 12px;
+            }
+
+            .settings-actions button {
+                padding: 8px;
+                font-size: 12px;
             }
         }
     </style>
@@ -545,13 +886,6 @@
         <h2>MODO PILOTO</h2>
         <div style="display: flex; align-items: center; gap: 8px;">
             <div class="telemetry">
-            <!-- Botón de pantalla completa -->
-            <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Pantalla completa">
-                <svg id="fullscreenIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <!-- Icono expandir (por defecto) -->
-                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-                </svg>
-            </button>
             <div class="telemetry-item">
                 <div>
                     <div class="telemetry-label">Estado</div>
@@ -573,6 +907,147 @@
                 </div>
             </div>
         </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+            <!-- Botón de pantalla completa -->
+            <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Pantalla completa">
+                <svg id="fullscreenIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <!-- Icono expandir (por defecto) -->
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+            </button>
+            <!-- Botón de ajustes -->
+            <button class="fullscreen-btn" onclick="toggleSettings()" title="Ajustes">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- OVERLAY DEL PANEL DE AJUSTES -->
+    <div class="settings-overlay" id="settingsOverlay" onclick="toggleSettings()"></div>
+
+    <!-- PANEL DE AJUSTES -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3>⚙️ Ajustes de Vuelo</h3>
+            <button class="close-settings-btn" onclick="toggleSettings()">×</button>
+        </div>
+        
+        <div class="settings-content">
+            <!-- Velocidad de Subida -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Velocidad Subida</span>
+                    <span class="setting-value"><span id="speedUpValue">250</span> cm/s</span>
+                </div>
+                <div class="setting-description">Velocidad máxima vertical ascendente (PILOT_SPEED_UP)</div>
+                <div class="slider-container">
+                    <input type="range" class="setting-slider" id="speedUpSlider" 
+                           min="100" max="500" value="250" step="10" 
+                           oninput="updateSliderValue('speedUp', this.value)">
+                    <div class="slider-labels">
+                        <span>100 cm/s (1 m/s)</span>
+                        <span>500 cm/s (5 m/s)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Velocidad de Bajada -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Velocidad Bajada</span>
+                    <span class="setting-value"><span id="speedDnValue">150</span> cm/s</span>
+                </div>
+                <div class="setting-description">Velocidad máxima vertical descendente (PILOT_SPEED_DN)</div>
+                <div class="slider-container">
+                    <input type="range" class="setting-slider" id="speedDnSlider" 
+                           min="100" max="500" value="150" step="10" 
+                           oninput="updateSliderValue('speedDn', this.value)">
+                    <div class="slider-labels">
+                        <span>100 cm/s (1 m/s)</span>
+                        <span>500 cm/s (5 m/s)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Velocidad Horizontal -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Velocidad Horizontal</span>
+                    <span class="setting-value"><span id="loitSpeedValue">1250</span> cm/s</span>
+                </div>
+                <div class="setting-description">Velocidad máxima de desplazamiento horizontal (LOIT_SPEED)</div>
+                <div class="slider-container">
+                    <input type="range" class="setting-slider" id="loitSpeedSlider" 
+                           min="500" max="2500" value="1250" step="50" 
+                           oninput="updateSliderValue('loitSpeed', this.value)">
+                    <div class="slider-labels">
+                        <span>500 cm/s (5 m/s)</span>
+                        <span>2500 cm/s (25 m/s)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Velocidad de Yaw -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Velocidad Rotación (Yaw)</span>
+                    <span class="setting-value"><span id="yawRateValue">90</span> °/s</span>
+                </div>
+                <div class="setting-description">Velocidad máxima de rotación sobre su eje (ATC_RATE_Y_MAX)</div>
+                <div class="slider-container">
+                    <input type="range" class="setting-slider" id="yawRateSlider" 
+                           min="40" max="180" value="90" step="5" 
+                           oninput="updateSliderValue('yawRate', this.value)">
+                    <div class="slider-labels">
+                        <span>40 °/s</span>
+                        <span>180 °/s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aceleración Vertical -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Aceleración Vertical</span>
+                    <span class="setting-value"><span id="accelZValue">250</span> cm/s²</span>
+                </div>
+                <div class="setting-description">Aceleración máxima vertical (PILOT_ACCEL_Z)</div>
+                <div class="slider-container">
+                    <input type="range" class="setting-slider" id="accelZSlider" 
+                           min="100" max="500" value="250" step="10" 
+                           oninput="updateSliderValue('accelZ', this.value)">
+                    <div class="slider-labels">
+                        <span>100 cm/s²</span>
+                        <span>500 cm/s²</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aceleración Horizontal -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Aceleración Horizontal</span>
+                    <span class="setting-value"><span id="loitAccValue">500</span> cm/s²</span>
+                </div>
+                <div class="setting-description">Aceleración máxima horizontal en Loiter (LOIT_ACC_MAX)</div>
+                <div class="slider-container">
+                    <input type="range" class="setting-slider" id="loitAccSlider" 
+                           min="250" max="1000" value="500" step="25" 
+                           oninput="updateSliderValue('loitAcc', this.value)">
+                    <div class="slider-labels">
+                        <span>250 cm/s²</span>
+                        <span>1000 cm/s²</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-actions">
+            <button class="reset-btn" onclick="resetSettings()">🔄 Restaurar</button>
+            <button class="apply-btn" onclick="applySettings()">✓ Aplicar</button>
         </div>
     </div>
 
@@ -1122,7 +1597,138 @@
         // Inicializar
         window.addEventListener('load', () => {
             initMinimap();
+            loadSettings();
         });
+
+        // ========== FUNCIONES DEL PANEL DE AJUSTES ==========
+        
+        // Valores por defecto de los parámetros
+        const defaultSettings = {
+            speedUp: 250,      // PILOT_SPEED_UP (cm/s)
+            speedDn: 150,      // PILOT_SPEED_DN (cm/s)
+            loitSpeed: 1250,   // LOIT_SPEED (cm/s)
+            yawRate: 90,       // ATC_RATE_Y_MAX (deg/s)
+            accelZ: 250,       // PILOT_ACCEL_Z (cm/s²)
+            loitAcc: 500       // LOIT_ACC_MAX (cm/s²)
+        };
+
+        // Valores actuales
+        let currentSettings = {...defaultSettings};
+
+        // Abrir/Cerrar panel de ajustes
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('settingsOverlay');
+            
+            panel.classList.toggle('open');
+            overlay.classList.toggle('open');
+            
+            // Ajustar altura del panel al espacio visible real
+            if (panel.classList.contains('open')) {
+                adjustPanelHeight();
+            }
+        }
+
+        // Ajustar altura del panel al viewport visible
+        function adjustPanelHeight() {
+            const panel = document.getElementById('settingsPanel');
+            // Usar window.innerHeight en lugar de 100vh para obtener la altura real visible
+            panel.style.height = window.innerHeight + 'px';
+        }
+
+        // Ajustar cuando cambie el tamaño de la ventana o la orientación
+        window.addEventListener('resize', () => {
+            const panel = document.getElementById('settingsPanel');
+            if (panel.classList.contains('open')) {
+                adjustPanelHeight();
+            }
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                const panel = document.getElementById('settingsPanel');
+                if (panel.classList.contains('open')) {
+                    adjustPanelHeight();
+                }
+            }, 100);
+        });
+
+        // Actualizar valor del slider en tiempo real
+        function updateSliderValue(setting, value) {
+            document.getElementById(setting + 'Value').textContent = value;
+            currentSettings[setting] = parseFloat(value);
+        }
+
+        // Cargar ajustes guardados (o valores por defecto)
+        function loadSettings() {
+            // Intentar cargar desde localStorage
+            const saved = localStorage.getItem('pilotSettings');
+            if (saved) {
+                currentSettings = JSON.parse(saved);
+            }
+            
+            // Actualizar sliders y valores mostrados
+            for (let key in currentSettings) {
+                const slider = document.getElementById(key + 'Slider');
+                const valueSpan = document.getElementById(key + 'Value');
+                if (slider && valueSpan) {
+                    slider.value = currentSettings[key];
+                    valueSpan.textContent = currentSettings[key];
+                }
+            }
+        }
+
+        // Restaurar valores por defecto
+        function resetSettings() {
+            if (confirm('¿Restaurar todos los ajustes a valores por defecto?')) {
+                currentSettings = {...defaultSettings};
+                
+                // Actualizar sliders y valores
+                for (let key in currentSettings) {
+                    const slider = document.getElementById(key + 'Slider');
+                    const valueSpan = document.getElementById(key + 'Value');
+                    if (slider && valueSpan) {
+                        slider.value = currentSettings[key];
+                        valueSpan.textContent = currentSettings[key];
+                    }
+                }
+                
+                console.log('Ajustes restaurados a valores por defecto');
+            }
+        }
+
+        // Aplicar ajustes al dron
+        function applySettings() {
+            // Preparar parámetros para enviar
+            const params = [
+                {ID: 'PILOT_SPEED_UP', Value: currentSettings.speedUp},
+                {ID: 'PILOT_SPEED_DN', Value: currentSettings.speedDn},
+                {ID: 'LOIT_SPEED', Value: currentSettings.loitSpeed},
+                {ID: 'ATC_RATE_Y_MAX', Value: currentSettings.yawRate},
+                {ID: 'PILOT_ACCEL_Z', Value: currentSettings.accelZ},
+                {ID: 'LOIT_ACC_MAX', Value: currentSettings.loitAcc}
+            ];
+            
+            // Guardar en localStorage
+            localStorage.setItem('pilotSettings', JSON.stringify(currentSettings));
+            
+            // Enviar al dron via socket
+            socket.emit('set_parameters', params);
+            
+            console.log('Aplicando ajustes:', params);
+            
+            // Mostrar feedback visual
+            const applyBtn = document.querySelector('.apply-btn');
+            const originalText = applyBtn.innerHTML;
+            applyBtn.innerHTML = '✓ ¡Aplicado!';
+            applyBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+            
+            setTimeout(() => {
+                applyBtn.innerHTML = originalText;
+                applyBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                toggleSettings();
+            }, 1500);
+        }
     </script>
 </body>
 </html>
