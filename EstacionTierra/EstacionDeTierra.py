@@ -881,8 +881,14 @@ def capturar_foto():
 
         cv2.imwrite(filepath, last_frame)
         print(f"Foto guardada como {filepath}")
+        
+        # Enviar la ruta relativa completa (incluyendo subcarpeta si existe)
+        # Convertir a formato de URL (/ en lugar de \)
+        relative_path = os.path.join(current_flight_name, filename) if current_flight_name else filename
+        relative_path = relative_path.replace('\\', '/')  # Convertir barras para URLs
+        print(f"Enviando ruta: {relative_path}")
         # Envia la confirmación al cliente
-        sio.emit('flight_event', {'event': 'foto_capturada', 'filename': filename})
+        sio.emit('flight_event', {'event': 'foto_capturada', 'filename': relative_path})
         return True
     else:
         print("No hay frame disponible para capturar")

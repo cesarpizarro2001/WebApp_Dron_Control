@@ -154,18 +154,31 @@ def handle_telemetry(data):
 @socketio.on('flight_event')
 def handle_flight_event(data):
     event_type = data.get('event')
-    print(f"Evento de vuelo: {event_type}")
+    print(f"Evento de vuelo: {event_type}", flush=True)
+    print(f"Datos completos del evento: {data}", flush=True)
     
-    if event_type == 'flight_name_set':
-        socketio.emit('flight_name_set', data.get('name'), broadcast=True)
-    elif event_type == 'foto_capturada':
-        socketio.emit('foto_capturada', data.get('filename'), broadcast=True)
-    elif event_type == 'video_iniciado':
-        socketio.emit('video_iniciado', data.get('filename'), broadcast=True)
-    elif event_type == 'video_detenido':
-        socketio.emit('video_detenido', broadcast=True)
-    elif event_type == 'video_error':
-        socketio.emit('video_error', data.get('message'), broadcast=True)
+    try:
+        if event_type == 'flight_name_set':
+            socketio.emit('flight_name_set', data.get('name'))
+            print(f"✓ Emitido flight_name_set", flush=True)
+        elif event_type == 'foto_capturada':
+            filename = data.get('filename')
+            print(f"📸 Emitiendo foto_capturada con filename: '{filename}'", flush=True)
+            socketio.emit('foto_capturada', filename)
+            print(f"✓ foto_capturada emitido al navegador", flush=True)
+        elif event_type == 'video_iniciado':
+            socketio.emit('video_iniciado', data.get('filename'))
+            print(f"✓ Emitido video_iniciado", flush=True)
+        elif event_type == 'video_detenido':
+            socketio.emit('video_detenido')
+            print(f"✓ Emitido video_detenido", flush=True)
+        elif event_type == 'video_error':
+            socketio.emit('video_error', data.get('message'))
+            print(f"✓ Emitido video_error", flush=True)
+    except Exception as e:
+        print(f"❌ ERROR al emitir evento {event_type}: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
 
 # Enviar frame de video del movil procesado al navegador y a la estación de tierra
 @socketio.on("frame_from_camera")

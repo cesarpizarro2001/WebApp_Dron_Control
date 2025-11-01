@@ -196,7 +196,7 @@
             flex: 1;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: stretch;
             position: relative;
             min-width: 0;
             padding: 0;
@@ -205,13 +205,14 @@
         }
 
         #camera-feed {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
             position: relative;
             z-index: 1;
+            display: block;
+            margin: 0;
+            padding: 0;
         }
 
         #camera-placeholder {
@@ -418,131 +419,13 @@
             fill: white;
         }
 
-        /* Media queries para móviles */
-        @media (max-width: 768px) {
-            .top-bar {
-                padding: 6px 8px;
-                min-height: 45px;
-            }
-
-            .top-bar h2 {
-                font-size: 14px;
-            }
-
-            .home-btn {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-
-            .telemetry {
-                gap: 4px;
-            }
-
-            .telemetry-item {
-                padding: 4px 8px;
-            }
-
-            .telemetry-value {
-                font-size: 12px;
-                min-width: 25px;
-            }
-
-            .telemetry-label {
-                font-size: 8px;
-            }
-
-            .joystick-side {
-                min-width: 140px;
-                max-width: 160px;
-                padding: 8px 5px;
-            }
-
-            .joystick {
-                width: 100px;
-                height: 100px;
-            }
-
-            .joystick-stick {
-                width: 35px;
-                height: 35px;
-            }
-
-            .joystick-container {
-                padding: 12px;
-                margin-bottom: 50px;
-            }
-
-            .joystick-container p {
-                font-size: 10px;
-                margin-bottom: 6px;
-            }
-
-            .control-btn {
-                padding: 6px 12px;
-                font-size: 11px;
-                min-width: 75px;
-            }
-
-            .minimap-container {
-                width: 100px;
-                height: 100px;
-                top: 6px;
-                right: 6px;
-            }
-
-            .fullscreen-btn {
-                width: 36px;
-                height: 36px;
-            }
-
-            .fullscreen-btn svg {
-                width: 18px;
-                height: 18px;
-            }
-
-            .joystick-label {
-                font-size: 9px;
-            }
-        }
-
-        /* Para pantallas muy pequeñas (menos de 480px) */
-        @media (max-width: 480px) {
-            .joystick-side {
-                min-width: 120px;
-                max-width: 140px;
-            }
-
-            .joystick {
-                width: 90px;
-                height: 90px;
-                border: 2px solid #667eea;
-            }
-
-            .joystick-stick {
-                width: 30px;
-                height: 30px;
-            }
-
-            .fullscreen-btn {
-                width: 36px;
-                height: 36px;
-            }
-
-            .fullscreen-btn svg {
-                width: 18px;
-                height: 18px;
-            }
-
-            .control-buttons {
-                gap: 6px;
-                bottom: 15px;
-            }
-
-            .control-btn {
-                padding: 5px 10px;
-                font-size: 10px;
-                min-width: 65px;
-            }
+        /* Estilos cuando está en pantalla completa */
+        :fullscreen #camera-feed,
+        :-webkit-full-screen #camera-feed,
+        :-moz-full-screen #camera-feed,
+        :-ms-fullscreen #camera-feed {
+            max-height: 100vh !important;
+            height: 100vh !important;
         }
 
         /* PANEL DE AJUSTES */
@@ -756,77 +639,111 @@
         /* Responsive para el panel de ajustes */
         /* Para tablets y móviles de alta resolución (como Redmi Note 11 Pro) */
         @media (max-width: 1024px) {
+            /* Barra superior más compacta */
+            .top-bar {
+                padding: 6px 8px;
+                min-height: 40px;
+            }
+
+            .top-bar h2 {
+                font-size: 13px;
+            }
+
+            .home-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .telemetry {
+                gap: 3px;
+            }
+
+            .telemetry-item {
+                padding: 4px 6px;
+            }
+
+            .telemetry-value {
+                font-size: 11px;
+                min-width: 22px;
+            }
+
+            .telemetry-label {
+                font-size: 7px;
+            }
+
+            .telemetry-unit {
+                font-size: 8px;
+            }
+
+            /* Botones de control más pequeños */
+            .control-buttons {
+                bottom: 12px;
+                gap: 6px;
+            }
+
+            .control-btn {
+                padding: 5px 10px;
+                font-size: 10px;
+                min-width: 70px;
+            }
+
+            /* Minimapa más pequeño */
+            .minimap-container {
+                width: 110px;
+                height: 110px;
+                top: 6px;
+                right: 6px;
+                border: 2px solid rgba(255, 255, 255, 0.9);
+            }
+
+            /* Botones fullscreen y ajustes más pequeños */
+            .fullscreen-btn {
+                width: 32px;
+                height: 32px;
+            }
+
+            .fullscreen-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* Joysticks más compactos */
+            .joystick-side {
+                min-width: 130px;
+                max-width: 150px;
+                padding: 8px 5px;
+            }
+
+            .joystick {
+                width: 95px;
+                height: 95px;
+            }
+
+            .joystick-stick {
+                width: 32px;
+                height: 32px;
+            }
+
+            .joystick-container {
+                padding: 10px;
+                margin-bottom: 40px;
+            }
+
+            .joystick-container p {
+                font-size: 9px;
+                margin-bottom: 5px;
+            }
+
+            .joystick-label {
+                font-size: 8px;
+            }
+
+            /* Panel de ajustes */
             .settings-panel {
                 width: 60%;
                 right: -60%;
             }
 
-            .settings-header {
-                padding: 15px;
-            }
-
-            .settings-header h3 {
-                font-size: 18px;
-            }
-
-            .close-settings-btn {
-                width: 32px;
-                height: 32px;
-                font-size: 20px;
-            }
-
-            .settings-content {
-                padding: 15px;
-            }
-
-            .setting-item {
-                margin-bottom: 20px;
-                padding: 12px;
-            }
-
-            .setting-label span {
-                font-size: 13px;
-            }
-
-            .setting-value {
-                font-size: 14px;
-            }
-
-            .setting-description {
-                font-size: 10px;
-                margin-bottom: 8px;
-            }
-
-            .setting-slider {
-                height: 6px;
-            }
-
-            .setting-slider::-webkit-slider-thumb {
-                width: 18px;
-                height: 18px;
-            }
-
-            .setting-slider::-moz-range-thumb {
-                width: 18px;
-                height: 18px;
-            }
-
-            .slider-labels {
-                font-size: 9px;
-                margin-top: 4px;
-            }
-
-            .settings-actions {
-                padding: 12px 15px;
-            }
-
-            .settings-actions button {
-                padding: 10px;
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 480px) {
             .settings-header {
                 padding: 12px;
             }
@@ -863,8 +780,23 @@
                 margin-bottom: 6px;
             }
 
+            .setting-slider {
+                height: 6px;
+            }
+
+            .setting-slider::-webkit-slider-thumb {
+                width: 16px;
+                height: 16px;
+            }
+
+            .setting-slider::-moz-range-thumb {
+                width: 16px;
+                height: 16px;
+            }
+
             .slider-labels {
                 font-size: 8px;
+                margin-top: 3px;
             }
 
             .settings-actions {
@@ -874,6 +806,15 @@
             .settings-actions button {
                 padding: 8px;
                 font-size: 12px;
+            }
+
+            /* Pantalla completa en tablets 1024px */
+            :fullscreen #camera-feed,
+            :-webkit-full-screen #camera-feed,
+            :-moz-full-screen #camera-feed,
+            :-ms-fullscreen #camera-feed {
+                max-height: 100vh !important;
+                height: 100vh !important;
             }
         }
     </style>
@@ -1126,7 +1067,7 @@
             minimap = L.map('minimap', {
                 zoomControl: false,
                 attributionControl: false
-            }).setView([41.2764, 1.9888], 18);
+            }).setView([41.2764, 1.9888], 17);
 
             // Usar el mismo mapa satelital de Google que control.html
             L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {

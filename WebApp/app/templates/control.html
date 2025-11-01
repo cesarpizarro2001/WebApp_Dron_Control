@@ -45,18 +45,108 @@
         }
         
         #webcam-container {
-            height: 100vh;
-            width: 100%;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             display: none;
-            background-color: black;
-            justify-content: center;
-            align-items: center;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+            max-width: min(700px, 90vw);
+            max-height: 80vh;
+            animation: fadeIn 0.3s ease;
+            overflow: hidden;
+            width: fit-content;
         }
-        
-        #webcam-video {
-            max-width: 100%;
-            max-height: 100%;
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        #webcam-container h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 8px;
+        }
+
+        #video-stream {
+            width: 100%;
+            max-width: min(660px, 86vw);
+            height: auto;
+            max-height: calc(80vh - 100px);
             object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: block;
+            margin: 0 auto;
+            background: #000;
+        }
+
+        /* === MODAL DE FOTO CAPTURADA === */
+        #photo-modal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 2100;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .photo-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            max-width: min(700px, 90vw);
+            max-height: 80vh;
+            overflow: hidden;
+            width: fit-content;
+        }
+
+        #photo-modal-container h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 8px;
+        }
+
+        #captured-photo {
+            width: 100%;
+            max-width: min(660px, 86vw);
+            height: auto;
+            max-height: calc(80vh - 100px);
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: block;
+            margin: 0 auto;
+            background: #000;
         }
         
         /* === TELEMETRÍA === */
@@ -298,6 +388,20 @@
             transform: translateX(5px);
         }
 
+        /* Desactivar efectos hover/active en botones de estado */
+        #botonVerMapa,
+        #botonRecorrerRuta {
+            pointer-events: none;
+        }
+
+        #botonVerMapa:hover,
+        #botonRecorrerRuta:hover,
+        #botonVerMapa:active,
+        #botonRecorrerRuta:active {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
         /* Contenedor de botones de ruta */
         .ruta-buttons-container {
             display: none;
@@ -314,7 +418,8 @@
             margin: 0;
         }
 
-        #botonCancelarRuta {
+        #botonCancelarRuta,
+        #botonCerrarCamara {
             background: linear-gradient(135deg, #f44336, #d32f2f);
             color: white;
             min-width: 35px;
@@ -324,12 +429,14 @@
             font-weight: bold;
         }
 
-        #botonCancelarRuta:hover {
+        #botonCancelarRuta:hover,
+        #botonCerrarCamara:hover {
             transform: translateX(0) scale(1.05);
             background: linear-gradient(135deg, #e53935, #c62828);
         }
 
-        #botonRuta.compact {
+        #botonRuta.compact,
+        #botonImagenDron.compact {
             flex: 1;
         }
 
@@ -1152,7 +1259,7 @@
         }
 
         /* ============================================ */
-        /* === MEDIA QUERIES CONSOLIDADAS === */
+        /* === MEDIA QUERY === */
         /* ============================================ */
 
         /* === Tablets de alta resolución (≤1024px) === */
@@ -1263,11 +1370,17 @@
                 font-size: 11px;
             }
 
-            #botonCancelarRuta {
+            #botonCancelarRuta,
+            #botonCerrarCamara {
                 min-width: 32px;
                 flex: 0 0 32px;
                 padding: 6px 5px;
                 font-size: 13px;
+            }
+
+            #botonRecorrerRuta,
+            #botonVerMapa {
+                flex: 1;
             }
 
             .modes-dropdown .dropdown-toggle {
@@ -1431,6 +1544,47 @@
                 font-size: clamp(12px, 2vh, 14px);
                 min-width: clamp(80px, 15vw, 100px);
             }
+
+            /* Contenedor de webcam responsive */
+            #webcam-container {
+                width: fit-content;
+                max-width: 95vw;
+                max-height: 70vh;
+                padding: 12px;
+                border-radius: 12px;
+            }
+
+            #webcam-container h3 {
+                font-size: 14px;
+                margin-bottom: 10px;
+                padding-bottom: 6px;
+            }
+
+            #video-stream {
+                max-width: calc(95vw - 24px);
+                max-height: calc(70vh - 80px);
+                border-radius: 8px;
+            }
+
+            /* Modal de foto responsive */
+            .photo-modal-content {
+                max-width: 95vw;
+                max-height: 70vh;
+                padding: 12px;
+                border-radius: 12px;
+            }
+
+            #photo-modal-container h3 {
+                font-size: 14px;
+                margin-bottom: 10px;
+                padding-bottom: 6px;
+            }
+
+            #captured-photo {
+                max-width: calc(95vw - 24px);
+                max-height: calc(70vh - 80px);
+                border-radius: 8px;
+            }
         }
     </style>
 </head>
@@ -1463,6 +1617,10 @@
                 <button id="botonCancelarRuta" onclick="cancelarRuta(); closeAllDropdowns()" title="Cancelar y borrar ruta">❌</button>
             </div>
             <button id="botonImagenDron" class="boton-azul" onclick="toggleWebcamView(); closeAllDropdowns()">📷 Cámara Dron</button>
+            <div id="camaraButtonsContainer" class="ruta-buttons-container">
+                <button id="botonVerMapa" class="boton-amarillo">📷 Viendo Cámara Dron</button>
+                <button id="botonCerrarCamara" onclick="cerrarCamaraDron(); closeAllDropdowns()" title="Cerrar cámara">❌</button>
+            </div>
             <button id="botonCapturarFoto" class="boton-azul" onclick="capturarFoto(); closeAllDropdowns()">📸 Hacer Foto</button>
             <button id="botonIniciarVideo" class="boton-azul" onclick="iniciarGrabacion(); closeAllDropdowns()">🎥 Hacer Video</button>
             <button id="botonDetenerVideo" class="boton-rojo" style="display:none;" onclick="detenerGrabacion(); closeAllDropdowns()">⏹️ Detener Video</button>
@@ -1508,9 +1666,18 @@
         <span><strong>Estado:</strong> <span class="dato" id="estado">Desconocido</span></span>
     </div>
 
-    <div id="webcam-container" style="display: none; margin-top: 20px; text-align: center;">
-        <h3>Video por WebSockets</h3>
-        <img id='video-stream' style='width:100%; max-width:600px;'>
+    <!-- Contenedor de Webcam del Dron -->
+    <div id="webcam-container" style="display: none;">
+        <h3>📷 Cámara del Dron</h3>
+        <img id='video-stream' alt='Stream de video del dron'>
+    </div>
+
+    <!-- Modal de Foto Capturada -->
+    <div id="photo-modal-container" style="display: none;">
+        <div class="photo-modal-content">
+            <h3>📸 Foto Capturada</h3>
+            <img id='captured-photo' alt='Foto capturada del dron'>
+        </div>
     </div>
 
     <div id="camara-container" style="display: none; margin-top: 20px; text-align: center;">
@@ -2421,13 +2588,36 @@
         // Función para mostrar u ocultar el contenedor de video
         function toggleWebcamView() {
             const webcamContainer = document.getElementById('webcam-container');
-            if (webcamContainer.style.display === 'none') {
+            const botonImagenDron = document.getElementById('botonImagenDron');
+            const camaraButtonsContainer = document.getElementById('camaraButtonsContainer');
+            
+            if (webcamContainer.style.display === 'none' || webcamContainer.style.display === '') {
+                // Mostrar cámara con animación
                 webcamContainer.style.display = 'block';
-                document.getElementById('botonImagenDron').textContent = 'Ver Mapa';
-            } else {
-                webcamContainer.style.display = 'none';
-                document.getElementById('botonImagenDron').textContent = 'Cámara Dron';
+                
+                // Ocultar botón principal y mostrar contenedor de botones
+                botonImagenDron.style.display = 'none';
+                camaraButtonsContainer.classList.add('show');
+                
+                console.log('Modo cámara dron activado');
             }
+        }
+
+        // Función para cerrar la cámara del dron
+        function cerrarCamaraDron() {
+            const webcamContainer = document.getElementById('webcam-container');
+            const botonImagenDron = document.getElementById('botonImagenDron');
+            const camaraButtonsContainer = document.getElementById('camaraButtonsContainer');
+            
+            // Ocultar cámara
+            webcamContainer.style.display = 'none';
+            
+            // Mostrar botón principal y ocultar contenedor de botones
+            botonImagenDron.style.display = '';  // Restaurar display original
+            botonImagenDron.textContent = '📷 Cámara Dron';
+            camaraButtonsContainer.classList.remove('show');
+            
+            console.log('Modo cámara dron desactivado');
         }
 
         // Función para mostrar u ocultar el contenedor de la cámara del móvil
@@ -2460,14 +2650,57 @@
             const botonCapturarFoto = document.getElementById('botonCapturarFoto');
             botonCapturarFoto.classList.remove('boton-azul');
             botonCapturarFoto.classList.add('boton-verde');
-            botonCapturarFoto.textContent = "Foto Hecha";
+            botonCapturarFoto.textContent = "📸 Foto Hecha";
 
             // Restaurar el botón después de 2 segundos
             setTimeout(function() {
                 botonCapturarFoto.classList.remove('boton-verde');
                 botonCapturarFoto.classList.add('boton-azul');
-                botonCapturarFoto.textContent = "Hacer Foto";
+                botonCapturarFoto.textContent = "📸 Hacer Foto";
             }, 2000);
+        }
+
+        // Función para mostrar la foto capturada en un modal
+        function mostrarFotoCapturada(nombreFoto) {
+            const photoModal = document.getElementById('photo-modal-container');
+            const capturedPhoto = document.getElementById('captured-photo');
+            
+            if (!photoModal || !capturedPhoto) {
+                console.error('ERROR: No se encontró el modal o la imagen');
+                return;
+            }
+            
+            // Construir la ruta y cargar la imagen
+            const photoPath = `/static/captured_photos/${nombreFoto}`;
+            capturedPhoto.src = photoPath;
+            
+            // Mostrar el modal
+            photoModal.style.zIndex = '2100';
+            photoModal.style.display = 'block';
+            
+            // Agregar evento de clic para cerrar el modal al hacer clic fuera de la imagen
+            photoModal.onclick = function(event) {
+                if (event.target === photoModal) {
+                    cerrarFotoCapturada();
+                }
+            };
+            
+            // Agregar evento de teclado para cerrar con ESC
+            const handleEscape = function(event) {
+                if (event.key === 'Escape') {
+                    cerrarFotoCapturada();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+        }
+
+        // Función para cerrar el modal de foto
+        function cerrarFotoCapturada() {
+            const photoModal = document.getElementById('photo-modal-container');
+            if (photoModal) {
+                photoModal.style.display = 'none';
+            }
         }
 
         // Inicia la grabación del vídeo de la cámara del dron
@@ -2585,8 +2818,7 @@
         });
 
         socket.on('foto_capturada', function(nombreFoto) {
-            let ubicacion = currentFlightName ? `${currentFlightName}/${nombreFoto}` : nombreFoto;
-            console.log(`Foto capturada: ${ubicacion}`);
+            mostrarFotoCapturada(nombreFoto);
         });
 
         socket.on('video_iniciado', function(nombreVideo) {
