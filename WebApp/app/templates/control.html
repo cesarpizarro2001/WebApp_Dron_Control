@@ -170,7 +170,7 @@
         }
 
         .features-dropdown .dropdown-menu {
-            min-width: 180px;
+            min-width: 200px;
         }
 
         .features-dropdown .dropdown-menu button {
@@ -298,6 +298,41 @@
             transform: translateX(5px);
         }
 
+        /* Contenedor de botones de ruta */
+        .ruta-buttons-container {
+            display: none;
+            gap: 5px;
+            padding: 3px;
+        }
+
+        .ruta-buttons-container.show {
+            display: flex;
+        }
+
+        .ruta-buttons-container button {
+            flex: 1;
+            margin: 0;
+        }
+
+        #botonCancelarRuta {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            min-width: 35px;
+            flex: 0 0 35px;
+            padding: 8px 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #botonCancelarRuta:hover {
+            transform: translateX(0) scale(1.05);
+            background: linear-gradient(135deg, #e53935, #c62828);
+        }
+
+        #botonRuta.compact {
+            flex: 1;
+        }
+
         /* Botón de seguimiento estilo Google Maps */
         .follow-button {
             position: absolute;
@@ -375,7 +410,7 @@
             width: 50%;
             height: 100vh;
             z-index: 500;
-            pointer-events: auto;
+            pointer-events: none;
             touch-action: none;
         }
         
@@ -390,7 +425,7 @@
             border-radius: 50%;
             display: none;
             z-index: 501;
-            pointer-events: none;
+            pointer-events: auto;
             transition: opacity 0.2s ease;
         }
         
@@ -500,7 +535,460 @@
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
         }
+
+        /* === MODAL DE INSTRUCCIONES === */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 18px 20px;
+            max-width: 340px;
+            width: auto;
+            min-width: 280px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal-body {
+            color: #555;
+            line-height: 1.4;
+            font-size: 13px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-body h3 {
+            color: #2196F3;
+            font-size: 13px;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .modal-body ul {
+            margin: 6px 0;
+            padding-left: 18px;
+        }
+
+        .modal-body li {
+            margin: 5px 0;
+            font-size: 12px;
+        }
+
+        .modal-body .color-indicator {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+
+        .modal-body .yellow { background-color: #FFC107; }
+        .modal-body .blue { background-color: #2196F3; }
+        .modal-body .red { background-color: #F44336; }
+
+        .modal-footer {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .modal-button {
+            padding: 9px 22px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-button:active {
+            transform: translateY(0);
+        }
+
+        .modal-button-primary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .modal-button-secondary {
+            background: linear-gradient(135deg, #9E9E9E, #757575);
+            color: white;
+        }
+
+        /* === MODAL DE CONFIRMACIÓN PERSONALIZADO === */
+        .confirm-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .confirm-modal-overlay.show {
+            display: flex;
+        }
+
+        .confirm-modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 400px;
+            width: 85%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: confirmSlideIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            margin: 10px;
+        }
+
+        @keyframes confirmSlideIn {
+            from {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .confirm-modal-icon {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .confirm-modal-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .confirm-modal-message {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            white-space: pre-line;
+        }
+
+        .confirm-modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .confirm-modal-button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            min-width: 100px;
+        }
+
+        .confirm-modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .confirm-modal-button:active {
+            transform: translateY(0);
+        }
+
+        .confirm-modal-button-confirm {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .confirm-modal-button-cancel {
+            background: linear-gradient(135deg, #9E9E9E, #757575);
+            color: white;
+        }
+
+        .confirm-modal-button-danger {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .confirm-modal-button-info {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+        }
         
+        /* === MODAL DE WAYPOINT === */
+        .waypoint-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10001;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .waypoint-modal-overlay.show {
+            display: flex;
+        }
+
+        .waypoint-modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 20px 22px;
+            max-width: 360px;
+            width: 85%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: confirmSlideIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            margin: 10px;
+        }
+
+        .waypoint-modal-header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .waypoint-modal-icon {
+            font-size: 38px;
+            margin-bottom: 8px;
+        }
+
+        .waypoint-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .waypoint-modal-subtitle {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .waypoint-modal-body {
+            margin-bottom: 18px;
+        }
+
+        .waypoint-option-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .waypoint-options {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .waypoint-option-btn {
+            flex: 1;
+            padding: 12px 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .waypoint-option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .waypoint-option-btn.selected {
+            border-color: currentColor;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .waypoint-option-btn .option-icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .waypoint-option-btn.ninguna.selected {
+            border-color: #FFC107;
+            background: rgba(255, 193, 7, 0.1);
+            color: #F57C00;
+        }
+
+        .waypoint-option-btn.foto.selected {
+            border-color: #2196F3;
+            background: rgba(33, 150, 243, 0.1);
+            color: #1976D2;
+        }
+
+        .waypoint-option-btn.video.selected {
+            border-color: #F44336;
+            background: rgba(244, 67, 54, 0.1);
+            color: #D32F2F;
+        }
+
+        .waypoint-duration-container {
+            display: none;
+            background: rgba(244, 67, 54, 0.05);
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid rgba(244, 67, 54, 0.2);
+        }
+
+        .waypoint-duration-container.show {
+            display: block;
+        }
+
+        .waypoint-duration-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #D32F2F;
+            margin-bottom: 6px;
+        }
+
+        .waypoint-duration-input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            color: #333;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .waypoint-duration-input:focus {
+            border-color: #F44336;
+        }
+
+        .waypoint-modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .waypoint-modal-button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            min-width: 100px;
+        }
+
+        .waypoint-modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .waypoint-modal-button:active {
+            transform: translateY(0);
+        }
+
+        .waypoint-modal-button-confirm {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .waypoint-modal-button-cancel {
+            background: linear-gradient(135deg, #9E9E9E, #757575);
+            color: white;
+        }
+
         /* === CONTROL POR VOZ === */
         #voice-control-btn {
             position: fixed;
@@ -663,8 +1151,67 @@
             fill: white !important;
         }
 
-        /* Media queries para móviles y tablets de alta resolución */
+        /* ============================================ */
+        /* === MEDIA QUERIES CONSOLIDADAS === */
+        /* ============================================ */
+
+        /* === Tablets de alta resolución (≤1024px) === */
         @media (max-width: 1024px) {
+            /* Modal de instrucciones */
+            .modal-content {
+                padding: 2vh 4vw;
+                max-width: min(400px, 90vw);
+                width: auto;
+                max-height: 75vh;
+            }
+
+            .modal-header {
+                margin-bottom: 1.5vh;
+                padding-bottom: 1.5vh;
+            }
+
+            .modal-header h2 {
+                font-size: clamp(16px, 3vh, 18px);
+                gap: 1vh;
+            }
+
+            .modal-body {
+                font-size: clamp(12px, 2.2vh, 14px);
+                line-height: 1.4;
+            }
+
+            .modal-body h3 {
+                font-size: clamp(11px, 2vh, 13px);
+                margin-top: 1.5vh;
+                margin-bottom: 0.8vh;
+            }
+
+            .modal-body ul {
+                margin: 0.8vh 0;
+                padding-left: 4vw;
+            }
+
+            .modal-body li {
+                font-size: clamp(11px, 2vh, 13px);
+                margin: 0.5vh 0;
+            }
+
+            .modal-body .color-indicator {
+                width: clamp(10px, 2vh, 12px);
+                height: clamp(10px, 2vh, 12px);
+                margin-right: 1.5vw;
+            }
+
+            .modal-footer {
+                margin-top: 2vh;
+            }
+
+            .modal-button {
+                padding: 1.5vh 5vw;
+                font-size: clamp(12px, 2.2vh, 14px);
+            }
+
+            /* Controles superiores */
             .top-controls {
                 padding: 4px 5px;
                 gap: 3px;
@@ -708,12 +1255,19 @@
             }
 
             .features-dropdown .dropdown-menu {
-                min-width: 130px;
+                min-width: 185px;
             }
 
             .features-dropdown .dropdown-menu button {
                 padding: 6px 8px;
                 font-size: 11px;
+            }
+
+            #botonCancelarRuta {
+                min-width: 32px;
+                flex: 0 0 32px;
+                padding: 6px 5px;
+                font-size: 13px;
             }
 
             .modes-dropdown .dropdown-toggle {
@@ -848,182 +1402,34 @@
                 width: 36px;
                 height: 36px;
             }
-        }
 
-        /* Para pantallas muy pequeñas */
-        @media (max-width: 480px) {
-            .top-controls {
-                padding: 3px 4px;
-                gap: 2px;
-                top: 6px;
-                max-width: calc(100vw - 12px);
+            /* Modal de confirmación */
+            .confirm-modal-content {
+                padding: clamp(15px, 2.5vh, 25px);
+                max-width: min(400px, 90vw);
+                width: auto;
             }
 
-            .top-controls button {
-                padding: 3px 5px;
-                font-size: 8px;
+            .confirm-modal-icon {
+                font-size: clamp(32px, 5vh, 48px);
+                margin-bottom: clamp(10px, 1.5vh, 15px);
             }
 
-            .top-controls input {
-                width: 45px;
-                padding: 3px 4px;
-                font-size: 8px;
+            .confirm-modal-title {
+                font-size: clamp(16px, 2.5vh, 20px);
+                margin-bottom: clamp(8px, 1.2vh, 12px);
             }
 
-            #datos-telemetria {
-                top: 6px;
-                left: 56px;
-                transform: none;
-                padding: 3px 6px;
-                font-size: 8px;
-                max-width: 120px;
-                background: rgba(255, 255, 255, 0.5);
-                backdrop-filter: blur(10px);
-                border-radius: 6px;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-                gap: 1px;
+            .confirm-modal-message {
+                font-size: clamp(12px, 2vh, 14px);
+                margin-bottom: clamp(15px, 2.5vh, 25px);
+                line-height: 1.4;
             }
 
-            #datos-telemetria > span {
-                font-size: 8px;
-                display: flex;
-                align-items: center;
-                white-space: nowrap;
-            }
-
-            .dato {
-                font-size: 10px;
-                font-weight: 700;
-                color: #333;
-                margin-left: 3px;
-            }
-
-            #datos-telemetria strong {
-                font-size: 8px;
-                color: #555;
-                font-weight: 600;
-            }
-
-            #datos-telemetria strong::before {
-                content: '•';
-                color: #4CAF50;
-                font-size: 10px;
-                margin-right: 2px;
-            }
-
-            .navigation-grid {
-                padding: 4px;
-                gap: 2px;
-                bottom: 6px;
-                left: 6px;
-            }
-
-            .nav-btn {
-                width: 32px;
-                height: 32px;
-                font-size: 8px;
-            }
-
-            .nav-stop {
-                font-size: 12px;
-            }
-
-            .features-dropdown .dropdown-toggle {
-                padding: 5px 9px;
-                font-size: 10px;
-            }
-
-            .features-dropdown .dropdown-menu {
-                min-width: 120px;
-            }
-
-            .features-dropdown .dropdown-menu button {
-                padding: 5px 7px;
-                font-size: 10px;
-            }
-
-            .modes-dropdown .dropdown-toggle {
-                padding: 5px 9px;
-                font-size: 10px;
-            }
-
-            .modes-dropdown .dropdown-menu {
-                min-width: 120px;
-            }
-
-            .modes-dropdown .dropdown-menu button {
-                padding: 5px 7px;
-                font-size: 10px;
-            }
-
-            #voice-control-btn {
-                min-width: 100px;
-                height: 36px;
-                font-size: 9px;
-                bottom: 12px;
-                border-radius: 18px;
-                padding: 0 10px;
-                gap: 5px;
-            }
-
-            .mic-icon {
-                width: 12px;
-                height: 12px;
-                font-size: 12px;
-            }
-
-            .voice-text {
-                font-size: 9px;
-                letter-spacing: 0.2px;
-            }
-
-            .follow-button {
-                bottom: 6px;
-                right: 6px;
-                width: 32px;
-                height: 32px;
-            }
-
-            .follow-button svg {
-                width: 16px;
-                height: 16px;
-            }
-
-            .fullscreen-btn {
-                bottom: 6px;
-                right: 44px;
-                width: 32px;
-                height: 32px;
-            }
-
-            .fullscreen-btn svg {
-                width: 14px;
-                height: 14px;
-            }
-
-            .joystick-container {
-                width: 80px;
-                height: 80px;
-                bottom: 45px;
-                left: 45px;
-            }
-
-            .joystick-knob {
-                width: 32px;
-                height: 32px;
-            }
-
-            .modes-dropdown {
-                bottom: 48px;
-            }
-
-            .features-dropdown {
-                top: 6px;
-                right: 6px;
-            }
-
-            .modes-dropdown {
-                right: 6px;
+            .confirm-modal-button {
+                padding: clamp(8px, 1.5vh, 12px) clamp(20px, 4vw, 30px);
+                font-size: clamp(12px, 2vh, 14px);
+                min-width: clamp(80px, 15vw, 100px);
             }
         }
     </style>
@@ -1052,6 +1458,10 @@
         </button>
         <div class="dropdown-menu" id="dropdownMenu">
             <button id="botonRuta" class="boton-azul" onclick="toggleRutaMode(); closeAllDropdowns()">📍 Crear Ruta</button>
+            <div id="rutaButtonsContainer" class="ruta-buttons-container">
+                <button id="botonRecorrerRuta" class="boton-amarillo" onclick="confirmarEjecutarRuta(); closeAllDropdowns()">✅ Recorrer Ruta</button>
+                <button id="botonCancelarRuta" onclick="cancelarRuta(); closeAllDropdowns()" title="Cancelar y borrar ruta">❌</button>
+            </div>
             <button id="botonImagenDron" class="boton-azul" onclick="toggleWebcamView(); closeAllDropdowns()">📷 Cámara Dron</button>
             <button id="botonCapturarFoto" class="boton-azul" onclick="capturarFoto(); closeAllDropdowns()">📸 Hacer Foto</button>
             <button id="botonIniciarVideo" class="boton-azul" onclick="iniciarGrabacion(); closeAllDropdowns()">🎥 Hacer Video</button>
@@ -1125,6 +1535,89 @@
     <!-- Indicador visual del modo seguimiento -->
     <div id="follow-indicator" class="follow-mode-indicator"></div>
 
+    <!-- Modal de instrucciones de ruta -->
+    <div id="modal-instrucciones" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📍 Crear Ruta</h2>
+            </div>
+            <div class="modal-body">
+                <h3>🗺️ Cómo usar:</h3>
+                <ul>
+                    <li><strong>Clic en el mapa</strong> para añadir puntos</li>
+                    <li>Se unen con <strong>línea azul</strong></li>
+                </ul>
+
+                <h3>📸 Capturas:</h3>
+                <ul>
+                    <li><span class="color-indicator yellow"></span><strong>Ninguna</strong> - Solo pasa</li>
+                    <li><span class="color-indicator blue"></span><strong>Foto</strong> - Captura al llegar</li>
+                    <li><span class="color-indicator red"></span><strong>Video</strong> - Graba segundos</li>
+                </ul>
+
+                <h3>▶️ Ejecutar:</h3>
+                <ul>
+                    <li>Al terminar, clic en <strong>"Recorrer Ruta"</strong></li>
+                    <li>El dron sigue los puntos automáticamente</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button modal-button-primary" onclick="cerrarModalInstrucciones()">
+                    ¡Entendido!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación personalizado -->
+    <div id="confirm-modal" class="confirm-modal-overlay">
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-icon" id="confirm-icon">❓</div>
+            <div class="confirm-modal-title" id="confirm-title">Confirmación</div>
+            <div class="confirm-modal-message" id="confirm-message">¿Estás seguro?</div>
+            <div class="confirm-modal-buttons">
+                <button class="confirm-modal-button confirm-modal-button-cancel" id="confirm-cancel-btn">Cancelar</button>
+                <button class="confirm-modal-button confirm-modal-button-confirm" id="confirm-ok-btn">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de waypoint personalizado -->
+    <div id="waypoint-modal" class="waypoint-modal-overlay">
+        <div class="waypoint-modal-content">
+            <div class="waypoint-modal-header">
+                <div class="waypoint-modal-icon">📍</div>
+                <div class="waypoint-modal-title">Nuevo Waypoint</div>
+                <div class="waypoint-modal-subtitle">Punto <span id="waypoint-number">1</span></div>
+            </div>
+            <div class="waypoint-modal-body">
+                <label class="waypoint-option-label">Tipo de captura:</label>
+                <div class="waypoint-options">
+                    <button class="waypoint-option-btn ninguna selected" data-type="ninguna">
+                        <span class="option-icon">⭕</span>
+                        <span>Ninguna</span>
+                    </button>
+                    <button class="waypoint-option-btn foto" data-type="foto">
+                        <span class="option-icon">📷</span>
+                        <span>Foto</span>
+                    </button>
+                    <button class="waypoint-option-btn video" data-type="video">
+                        <span class="option-icon">🎥</span>
+                        <span>Video</span>
+                    </button>
+                </div>
+                <div id="waypoint-duration" class="waypoint-duration-container">
+                    <label class="waypoint-duration-label">Duración del video (segundos):</label>
+                    <input type="number" class="waypoint-duration-input" id="waypoint-duration-input" value="5" min="1" max="60">
+                </div>
+            </div>
+            <div class="waypoint-modal-buttons">
+                <button class="waypoint-modal-button waypoint-modal-button-cancel" id="waypoint-cancel-btn">Cancelar</button>
+                <button class="waypoint-modal-button waypoint-modal-button-confirm" id="waypoint-confirm-btn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Área del joystick flotante (mitad izquierda de la pantalla) -->
     <div class="joystick-area" id="joystick-area">
         <div class="joystick-container" id="joystick-container">
@@ -1144,13 +1637,20 @@
             maxZoom: 20
         }).addTo(map);
 
+        // Detectar si es móvil para ajustar tamaños
+        const isMobileDevice = window.innerWidth <= 1024;
+        const droneIconSize = isMobileDevice ? 20 : 30;
+        const arrowSize = isMobileDevice ? 200 : 300;
+        const arrowAnchor = isMobileDevice ? 100 : 150;
+        const arrowLength = isMobileDevice ? -90 : -140;
+
         // Variables globales para el seguimiento del dron
         let currentPos = [41.27624, 1.98838];
         let droneMarker = L.marker(currentPos, {
             icon: L.icon({
                 iconUrl: 'static/icono_dron.png',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15] // Centrar el icono
+                iconSize: [droneIconSize, droneIconSize],
+                iconAnchor: [droneIconSize/2, droneIconSize/2] // Centrar el icono
             }),
             zIndexOffset: 1000 // Asegurar que esté encima de otros elementos
         }).addTo(map);
@@ -1161,7 +1661,38 @@
         let waypoints = [];
         let waypointMarkers = [];
         let siguiendoRuta = false;
-        let rutaPolyline = L.polyline([], { color: 'black', weight: 3 }).addTo(map);
+        let rutaPolyline = L.polyline([], { 
+            color: '#2196F3',
+            weight: 4,
+            opacity: 0.8,
+            dashArray: '10, 5',
+            lineJoin: 'round',
+            lineCap: 'round'
+        }).addTo(map);
+        
+        // Decorador para añadir flechas en la línea de ruta
+        let rutaDecorator = null;
+        if (typeof L.polylineDecorator !== 'undefined') {
+            rutaDecorator = L.polylineDecorator(rutaPolyline, {
+                patterns: [
+                    {
+                        offset: 25,
+                        repeat: 50,
+                        symbol: L.Symbol.arrowHead({
+                            pixelSize: 12,
+                            polygon: false,
+                            pathOptions: {
+                                stroke: true,
+                                weight: 2,
+                                color: '#1976D2',
+                                opacity: 0.8
+                            }
+                        })
+                    }
+                ]
+            }).addTo(map);
+        }
+        
         let telemetry_info = null;
         
         // Variables para el seguimiento del dron
@@ -1172,11 +1703,12 @@
 
         // Función para manejar la orientación del dron
         function createArrowSVG(angle) {
+        const viewBoxSize = arrowSize / 2;
         return `
-        <svg width="300" height="300" viewBox="-150 -150 300 300" xmlns="http://www.w3.org/2000/svg">
+        <svg width="${arrowSize}" height="${arrowSize}" viewBox="-${viewBoxSize} -${viewBoxSize} ${arrowSize} ${arrowSize}" xmlns="http://www.w3.org/2000/svg">
             <g transform="rotate(${angle} 0 0)">
                 <!-- Línea roja larga de dirección -->
-                <line x1="0" y1="0" x2="0" y2="-140" stroke="red" stroke-width="3"/>
+                <line x1="0" y1="0" x2="0" y2="${arrowLength}" stroke="red" stroke-width="${isMobileDevice ? 2 : 3}"/>
             </g>
         </svg>
         `;
@@ -1184,28 +1716,71 @@
 
         // Función para crear el SVG del marcador de waypoint en forma de pin
         function createWaypointPinSVG(number, color = "#FFC107") {
+            // Determinar color de sombra basado en el color principal
+            let shadowColor = color === "#FFC107" ? "#F57C00" : 
+                            color === "#2196F3" ? "#1565C0" : "#C62828";
+            
             return `
-                <svg width="30" height="45" viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 0C9 0 0 9 0 20C0 35 20 60 20 60C20 60 40 35 40 20C40 9 31 0 20 0Z" fill="${color}" stroke="#000" stroke-width="1"/>
-                    <circle cx="20" cy="20" r="10" fill="white"/>
-                    <text x="20" y="24" font-family="Arial" font-size="12" font-weight="bold" text-anchor="middle">${number}</text>
+                <svg width="32" height="44" viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Sombra del pin -->
+                    <ellipse cx="20" cy="58" rx="8" ry="2" fill="rgba(0,0,0,0.3)"/>
+                    
+                    <!-- Pin principal con gradiente -->
+                    <defs>
+                        <linearGradient id="pinGradient${number}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${shadowColor};stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="pinShadow${number}" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                            <feOffset dx="0" dy="2" result="offsetblur"/>
+                            <feComponentTransfer>
+                                <feFuncA type="linear" slope="0.3"/>
+                            </feComponentTransfer>
+                            <feMerge>
+                                <feMergeNode/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    
+                    <!-- Forma del pin con sombra -->
+                    <path d="M20 2C10.6 2 3 9.6 3 19C3 31 20 54 20 54C20 54 37 31 37 19C37 9.6 29.4 2 20 2Z" 
+                          fill="url(#pinGradient${number})" 
+                          stroke="white" 
+                          stroke-width="2"
+                          filter="url(#pinShadow${number})"/>
+                    
+                    <!-- Círculo interno blanco -->
+                    <circle cx="20" cy="19" r="11" fill="white" opacity="0.95"/>
+                    
+                    <!-- Borde del círculo interno -->
+                    <circle cx="20" cy="19" r="11" fill="none" stroke="${shadowColor}" stroke-width="1.5" opacity="0.3"/>
+                    
+                    <!-- Número del waypoint -->
+                    <text x="20" y="25" 
+                          font-family="Arial, sans-serif" 
+                          font-size="14" 
+                          font-weight="bold" 
+                          text-anchor="middle" 
+                          fill="${shadowColor}">${number}</text>
                 </svg>
             `;
         }
 
         var DirectionArrow = L.Icon.extend({
             options: {
-                iconSize: [300, 300],
-                iconAnchor: [150, 150]
+                iconSize: [arrowSize, arrowSize],
+                iconAnchor: [arrowAnchor, arrowAnchor]
             }
         });
 
         // Definir el icono de waypoint personalizado
         var WaypointIcon = L.Icon.extend({
             options: {
-                iconSize: [30, 45],
-                iconAnchor: [15, 45],  // Punto de anclaje en la punta inferior del pin
-                popupAnchor: [0, -45]  // Punto de anclaje para popups
+                iconSize: [32, 44],
+                iconAnchor: [16, 43],  // Punto de anclaje en la punta inferior del pin
+                popupAnchor: [0, -43]  // Punto de anclaje para popups
             }
         });
 
@@ -1281,27 +1856,158 @@
         // Función que indica fin de la ruta
         function finalizarRuta() {
             siguiendoRuta = false;
+            rutaMode = false;
 
             // Limpiar la línea de la ruta
             rutaPolyline.setLatLngs([]);
 
             // Cambiar el botón de vuelta a "Crear Ruta"
             const botonRuta = document.getElementById('botonRuta');
-            botonRuta.textContent = "Crear Ruta";
-            botonRuta.classList.remove('boton-rojo');
+            const rutaButtonsContainer = document.getElementById('rutaButtonsContainer');
+            
+            botonRuta.style.display = 'block';
+            botonRuta.textContent = "📍 Crear Ruta";
+            botonRuta.classList.remove('boton-rojo', 'boton-amarillo');
             botonRuta.classList.add('boton-azul');
+            
+            rutaButtonsContainer.classList.remove('show');
 
             // Habilitar los otros botones
             document.getElementById('botonConectar').disabled = false;
             document.getElementById('botonDespegar').disabled = false;
 
-
+            // Limpiar waypoints y marcadores
             waypoints = [];
             waypointMarkers.forEach(m => map.removeLayer(m));
             waypointMarkers = [];
             rutaPolyline.setLatLngs([]);  // <-- Esta línea asegura borrar la línea negra
 
+            console.log('Ruta finalizada y limpiada');
         }
+
+        // ===== SISTEMA DE CONFIRMACIÓN PERSONALIZADO =====
+        
+        // Variable para almacenar la promesa del modal
+        let confirmResolve = null;
+
+        /**
+         * Muestra un modal de confirmación personalizado
+         * @param {string} message - Mensaje a mostrar
+         * @param {string} title - Título del modal (opcional)
+         * @param {string} icon - Emoji del icono (opcional)
+         * @param {string} type - Tipo: 'info', 'warning', 'danger', 'success' (opcional)
+         * @returns {Promise<boolean>} - true si confirma, false si cancela
+         */
+        function showConfirm(message, title = 'Confirmación', icon = '❓', type = 'info') {
+            return new Promise((resolve) => {
+                confirmResolve = resolve;
+                
+                const modal = document.getElementById('confirm-modal');
+                const iconEl = document.getElementById('confirm-icon');
+                const titleEl = document.getElementById('confirm-title');
+                const messageEl = document.getElementById('confirm-message');
+                const okBtn = document.getElementById('confirm-ok-btn');
+                const cancelBtn = document.getElementById('confirm-cancel-btn');
+                
+                // Configurar contenido
+                iconEl.textContent = icon;
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+                
+                // Configurar estilo del botón OK según el tipo
+                okBtn.className = 'confirm-modal-button';
+                switch(type) {
+                    case 'danger':
+                        okBtn.classList.add('confirm-modal-button-danger');
+                        break;
+                    case 'success':
+                        okBtn.classList.add('confirm-modal-button-confirm');
+                        break;
+                    case 'warning':
+                        okBtn.classList.add('confirm-modal-button-info');
+                        break;
+                    default:
+                        okBtn.classList.add('confirm-modal-button-info');
+                }
+                
+                // Mostrar modal
+                modal.classList.add('show');
+            });
+        }
+
+        /**
+         * Muestra una alerta personalizada (solo botón OK)
+         * @param {string} message - Mensaje a mostrar
+         * @param {string} title - Título del modal
+         * @param {string} icon - Emoji del icono
+         */
+        function showAlert(message, title = 'Aviso', icon = 'ℹ️') {
+            return new Promise((resolve) => {
+                confirmResolve = resolve;
+                
+                const modal = document.getElementById('confirm-modal');
+                const iconEl = document.getElementById('confirm-icon');
+                const titleEl = document.getElementById('confirm-title');
+                const messageEl = document.getElementById('confirm-message');
+                const okBtn = document.getElementById('confirm-ok-btn');
+                const cancelBtn = document.getElementById('confirm-cancel-btn');
+                
+                // Configurar contenido
+                iconEl.textContent = icon;
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+                
+                // Ocultar botón cancelar
+                cancelBtn.style.display = 'none';
+                okBtn.className = 'confirm-modal-button confirm-modal-button-info';
+                okBtn.textContent = 'Entendido';
+                
+                // Mostrar modal
+                modal.classList.add('show');
+            });
+        }
+
+        // Cerrar modal y resolver la promesa
+        function closeConfirmModal(result) {
+            const modal = document.getElementById('confirm-modal');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+            const okBtn = document.getElementById('confirm-ok-btn');
+            
+            modal.classList.remove('show');
+            
+            // Restaurar estados
+            cancelBtn.style.display = 'block';
+            okBtn.textContent = 'Aceptar';
+            
+            if (confirmResolve) {
+                confirmResolve(result);
+                confirmResolve = null;
+            }
+        }
+
+        // Event listeners para los botones del modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+            const modal = document.getElementById('confirm-modal');
+            
+            if (okBtn) {
+                okBtn.addEventListener('click', () => closeConfirmModal(true));
+            }
+            
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => closeConfirmModal(false));
+            }
+            
+            // Cerrar al hacer clic en el overlay (como cancelar)
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeConfirmModal(false);
+                    }
+                });
+            }
+        });
 
         // Manejar clicks en el mapa
         map.on('click', function(e) {
@@ -1322,71 +2028,166 @@
         });
 
         // Añadir Waypoint para la ruta
-       function addWaypoint(latlng) {
+        function addWaypoint(latlng) {
             const waypointNum = waypoints.length + 1;
 
-            // Crear contenedor flotante para elegir tipo de captura
-            const popupDiv = document.createElement("div");
-
-            popupDiv.innerHTML = `
-                <label style="font-size: 14px;">Captura en este waypoint:</label><br>
-                <select id="capturaTipo">
-                    <option value="ninguna" selected>Ninguna</option>
-                    <option value="foto">Foto</option>
-                    <option value="video">Vídeo</option>
-                </select><br>
-                <div id="duracionDiv" style="display:none;">
-                    <label for="duracionInput">Duración vídeo (seg):</label>
-                    <input type="number" id="duracionInput" value="5" min="1" style="width:60px;" />
-                </div>
-                <button id="confirmarWaypointBtn">Confirmar</button>
-            `;
-
-            const popup = L.popup()
-                .setLatLng(latlng)
-                .setContent(popupDiv)
-                .openOn(map);
-
-            // Mostrar para escoger duración si se elige video
-            popupDiv.querySelector("#capturaTipo").addEventListener("change", function () {
-                popupDiv.querySelector("#duracionDiv").style.display = this.value === "video" ? "block" : "none";
-            });
-
-            // Confirmar y cerrar
-            popupDiv.querySelector("#confirmarWaypointBtn").addEventListener("click", () => {
-                const tipo = popupDiv.querySelector("#capturaTipo").value;
-                const duracion = tipo === "video" ? parseInt(popupDiv.querySelector("#duracionInput").value) : 0;
-
-                // Guardar el waypoint
-                waypoints.push({
-                    lat: latlng.lat,
-                    lng: latlng.lng,
-                    num: waypointNum,
-                    captura: tipo,
-                    duracion: duracion
-                });
-
-                // Elegir color según tipo
-                let color = "#FFC107"; // Ninguna
-                if (tipo === "foto") color = "#2196F3"; // Azul
-                else if (tipo === "video") color = "#F44336"; // Rojo
-
-                const waypointIcon = new WaypointIcon({
-                    iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createWaypointPinSVG(waypointNum, color))
-                });
-
-                const marker = L.marker([latlng.lat, latlng.lng], { icon: waypointIcon }).addTo(map);
-                waypointMarkers.push(marker);
-
-                actualizarRutaPolyline();
-                map.closePopup();
-            });
+            // Mostrar modal de waypoint
+            showWaypointModal(latlng, waypointNum);
         }
 
-        // Actualiza la línea negra de la ruta
+        // Variables globales para el modal de waypoint
+        let currentWaypointLatlng = null;
+        let currentWaypointNum = 0;
+        let selectedCaptureType = 'ninguna';
+
+        // Mostrar modal de waypoint
+        function showWaypointModal(latlng, waypointNum) {
+            currentWaypointLatlng = latlng;
+            currentWaypointNum = waypointNum;
+            selectedCaptureType = 'ninguna';
+
+            const modal = document.getElementById('waypoint-modal');
+            const waypointNumberEl = document.getElementById('waypoint-number');
+            const durationContainer = document.getElementById('waypoint-duration');
+            const durationInput = document.getElementById('waypoint-duration-input');
+
+            // Actualizar número de waypoint
+            waypointNumberEl.textContent = waypointNum;
+
+            // Resetear selección
+            const optionBtns = modal.querySelectorAll('.waypoint-option-btn');
+            optionBtns.forEach(btn => btn.classList.remove('selected'));
+            modal.querySelector('.waypoint-option-btn.ninguna').classList.add('selected');
+
+            // Ocultar duración
+            durationContainer.classList.remove('show');
+            durationInput.value = 5;
+
+            // Mostrar modal
+            modal.classList.add('show');
+        }
+
+        // Cerrar modal de waypoint
+        function closeWaypointModal() {
+            const modal = document.getElementById('waypoint-modal');
+            modal.classList.remove('show');
+            currentWaypointLatlng = null;
+            currentWaypointNum = 0;
+        }
+
+        // Confirmar waypoint
+        function confirmWaypoint() {
+            const duracion = selectedCaptureType === 'video' 
+                ? parseInt(document.getElementById('waypoint-duration-input').value) 
+                : 0;
+
+            // Guardar el waypoint
+            waypoints.push({
+                lat: currentWaypointLatlng.lat,
+                lng: currentWaypointLatlng.lng,
+                num: currentWaypointNum,
+                captura: selectedCaptureType,
+                duracion: duracion
+            });
+
+            // Elegir color según tipo
+            let color = "#FFC107"; // Ninguna
+            if (selectedCaptureType === "foto") color = "#2196F3"; // Azul
+            else if (selectedCaptureType === "video") color = "#F44336"; // Rojo
+
+            const waypointIcon = new WaypointIcon({
+                iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createWaypointPinSVG(currentWaypointNum, color))
+            });
+
+            const marker = L.marker([currentWaypointLatlng.lat, currentWaypointLatlng.lng], { icon: waypointIcon }).addTo(map);
+            waypointMarkers.push(marker);
+
+            actualizarRutaPolyline();
+            closeWaypointModal();
+        }
+
+        // Event listeners para el modal de waypoint
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('waypoint-modal');
+            const optionBtns = modal.querySelectorAll('.waypoint-option-btn');
+            const durationContainer = document.getElementById('waypoint-duration');
+            const confirmBtn = document.getElementById('waypoint-confirm-btn');
+            const cancelBtn = document.getElementById('waypoint-cancel-btn');
+
+            // Manejar selección de tipo de captura
+            optionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remover selección anterior
+                    optionBtns.forEach(b => b.classList.remove('selected'));
+                    
+                    // Añadir selección actual
+                    this.classList.add('selected');
+                    selectedCaptureType = this.dataset.type;
+
+                    // Mostrar/ocultar duración según el tipo
+                    if (selectedCaptureType === 'video') {
+                        durationContainer.classList.add('show');
+                    } else {
+                        durationContainer.classList.remove('show');
+                    }
+                });
+            });
+
+            // Confirmar waypoint
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', confirmWaypoint);
+            }
+
+            // Cancelar waypoint
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', closeWaypointModal);
+            }
+
+            // Cerrar al hacer clic en el overlay
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeWaypointModal();
+                    }
+                });
+            }
+        });
+
+        // Actualiza la línea de la ruta con efecto visual
         function actualizarRutaPolyline() {
             const coordenadas = waypoints.map(wp => [wp.lat, wp.lng]);
             rutaPolyline.setLatLngs(coordenadas);
+            
+            // Actualizar decorador de flechas si existe
+            if (rutaDecorator && coordenadas.length > 1) {
+                map.removeLayer(rutaDecorator);
+                if (typeof L.polylineDecorator !== 'undefined') {
+                    rutaDecorator = L.polylineDecorator(rutaPolyline, {
+                        patterns: [
+                            {
+                                offset: 25,
+                                repeat: 50,
+                                symbol: L.Symbol.arrowHead({
+                                    pixelSize: 12,
+                                    polygon: false,
+                                    pathOptions: {
+                                        stroke: true,
+                                        weight: 2,
+                                        color: '#1976D2',
+                                        opacity: 0.8
+                                    }
+                                })
+                            }
+                        ]
+                    }).addTo(map);
+                }
+            }
+            
+            // Efecto de pulso al actualizar
+            rutaPolyline.setStyle({ weight: 6, opacity: 1 });
+            setTimeout(() => {
+                rutaPolyline.setStyle({ weight: 4, opacity: 0.8 });
+            }, 200);
         }
 
         // Muestra u oculta la botonera de navegación clásica
@@ -1476,29 +2277,115 @@
         // Cambia el botón crear ruta a otro tipo de información (Recorrer ruta)
         function toggleRutaMode() {
             const botonRuta = document.getElementById('botonRuta');
+            const rutaButtonsContainer = document.getElementById('rutaButtonsContainer');
 
             // Si ya estamos siguiendo una ruta, no hacemos nada
-            if (siguiendoRuta) return;
+            if (siguiendoRuta) {
+                showAlert(
+                    'La ruta está en ejecución. Espera a que termine.',
+                    'Ruta en Ejecución',
+                    '🚁'
+                );
+                return;
+            }
 
             if (!rutaMode) {
-                // Activar modo de creación de ruta
-                rutaMode = true;
-                botonRuta.textContent = "Recorrer Ruta";
-                botonRuta.classList.remove('boton-azul');
-                botonRuta.classList.add('boton-amarillo');
-            } else {
-                // Si hay waypoints, iniciar la ruta
-                if (waypoints.length > 0) {
-                    iniciarRuta();
-                } else {
-                    // Si no hay waypoints, volver al modo normal
-                    rutaMode = false;
-                    botonRuta.textContent = "Crear Ruta";
-                    botonRuta.classList.remove('boton-amarillo');
-                    botonRuta.classList.add('boton-azul');
-                }
+                // Mostrar modal de instrucciones y activar modo
+                mostrarModalInstrucciones();
+                // Ocultar el botón "Crear Ruta" y mostrar los botones de ruta
+                botonRuta.style.display = 'none';
+                rutaButtonsContainer.classList.add('show');
             }
         }
+
+        // Función para confirmar y ejecutar la ruta
+        async function confirmarEjecutarRuta() {
+            if (waypoints.length === 0) {
+                showAlert(
+                    'No has creado ningún waypoint. Añade puntos en el mapa primero.',
+                    'Sin Waypoints',
+                    '⚠️'
+                );
+                return;
+            }
+
+            const confirmacion = await showConfirm(
+                `¿Ejecutar ruta con ${waypoints.length} punto(s)?\n\nEl dron seguirá todos los waypoints automáticamente.`,
+                'Ejecutar Ruta',
+                '🚁',
+                'success'
+            );
+            
+            if (confirmacion) {
+                iniciarRuta();
+            }
+        }
+
+        // Función para cancelar la creación de ruta
+        async function cancelarRuta() {
+            const confirmacion = await showConfirm(
+                '¿Cancelar y borrar toda la ruta?\n\nSe eliminarán todos los waypoints creados.',
+                'Cancelar Ruta',
+                '⚠️',
+                'danger'
+            );
+            
+            if (!confirmacion) return;
+            
+            rutaMode = false;
+            
+            // Limpiar waypoints y marcadores
+            waypoints = [];
+            waypointMarkers.forEach(m => map.removeLayer(m));
+            waypointMarkers = [];
+            rutaPolyline.setLatLngs([]);
+            
+            // Restaurar botón y ocultar contenedor de botones de ruta
+            const botonRuta = document.getElementById('botonRuta');
+            const rutaButtonsContainer = document.getElementById('rutaButtonsContainer');
+            
+            botonRuta.style.display = 'block';
+            botonRuta.textContent = "📍 Crear Ruta";
+            botonRuta.classList.remove('boton-amarillo', 'boton-rojo');
+            botonRuta.classList.add('boton-azul');
+            
+            rutaButtonsContainer.classList.remove('show');
+            
+            console.log('Modo creación de ruta cancelado y limpiado');
+        }
+
+        // Mostrar modal de instrucciones
+        function mostrarModalInstrucciones() {
+            const modal = document.getElementById('modal-instrucciones');
+            modal.classList.add('show');
+        }
+
+        // Cerrar modal de instrucciones y activar modo ruta
+        function cerrarModalInstrucciones() {
+            const modal = document.getElementById('modal-instrucciones');
+            modal.classList.remove('show');
+            
+            // Activar modo de creación de ruta
+            rutaMode = true;
+            const botonRuta = document.getElementById('botonRuta');
+            botonRuta.textContent = "✅ Recorrer Ruta";
+            botonRuta.classList.remove('boton-azul');
+            botonRuta.classList.add('boton-amarillo');
+            
+            console.log('Modo creación de ruta activado');
+        }
+
+        // Cerrar modal al hacer clic en el overlay (fondo)
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('modal-instrucciones');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        cerrarModalInstrucciones();
+                    }
+                });
+            }
+        });
 
         // Función que indica el inicio de una ruta y cambia el botón a: siguiendo ruta
         function iniciarRuta() {
@@ -1506,14 +2393,20 @@
             rutaMode = false;
 
             const botonRuta = document.getElementById('botonRuta');
-            botonRuta.textContent = "Siguiendo Ruta...";
-            botonRuta.classList.remove('boton-amarillo');
+            const rutaButtonsContainer = document.getElementById('rutaButtonsContainer');
+            
+            // Ocultar los botones de ruta y mostrar el botón principal con estado "siguiendo"
+            rutaButtonsContainer.classList.remove('show');
+            botonRuta.style.display = 'block';
+            botonRuta.textContent = "🚁 Siguiendo Ruta...";
+            botonRuta.classList.remove('boton-amarillo', 'boton-azul');
             botonRuta.classList.add('boton-rojo');
 
             // Deshabilitar los otros botones
             document.getElementById('botonConectar').disabled = true;
             document.getElementById('botonDespegar').disabled = true;
 
+            console.log('Iniciando ruta con', waypoints.length, 'waypoints');
             socket.emit('command', { action: 'waypointRuta', waypoints: waypoints });
         }
 
@@ -1543,7 +2436,11 @@
             if (camaraContainer.style.display === 'none') {
                 camaraContainer.style.display = 'block';
                 document.getElementById('botonCamaraMovil').textContent = 'Ver Mapa';
-                alert("Ponga el móvil en vertical y oculte los botones de navegación para optimizar el uso de esta función.");
+                showAlert(
+                    "Ponga el móvil en vertical y oculte los botones de navegación para optimizar el uso de esta función.",
+                    "Cámara Móvil",
+                    "📱"
+                );
             } else {
                 camaraContainer.style.display = 'none';
                 document.getElementById('botonCamaraMovil').textContent = 'Cámara Móvil';
@@ -1657,7 +2554,11 @@
         // Recibir eventos de video
         socket.on('video_error', function(errorMsg) {
             console.error(`Error en grabación: ${errorMsg}`);
-            alert(`Error en grabación: ${errorMsg}`);
+            showAlert(
+                `Error en grabación: ${errorMsg}`,
+                'Error de Video',
+                '❌'
+            );
             document.getElementById('botonIniciarVideo').style.display = 'block';
             document.getElementById('botonDetenerVideo').style.display = 'none';
         });
@@ -1824,7 +2725,11 @@
                 botonDespegar.classList.add('boton-amarillo');
                 botonDespegar.disabled = true;
             } else {
-                alert("Por favor, ingrese una altura válida.");
+                showAlert(
+                    "Por favor, ingrese una altura válida.",
+                    "Altura Requerida",
+                    "⚠️"
+                );
             }
         }
 
@@ -1832,7 +2737,11 @@
         function despegarDronConAltura(altura) {
             // Validar que la altura sea un número válido
             if (!altura || isNaN(altura) || altura <= 0) {
-                alert("Por favor, proporcione una altura válida.");
+                showAlert(
+                    "Por favor, proporcione una altura válida.",
+                    "Altura Inválida",
+                    "⚠️"
+                );
                 return;
             }
             
@@ -1888,7 +2797,11 @@
             // Verificar soporte
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Safari.');
+                showAlert(
+                    'Tu navegador no soporta reconocimiento de voz. Usa Chrome o Safari.',
+                    'No Soportado',
+                    '🎤'
+                );
                 return;
             }
 
@@ -2248,7 +3161,11 @@
                         console.log("Error al acceder a la cámara: ", error);
                    });
             } else {
-                 alert("getUserMedia no está soportado por este navegador.");
+                showAlert(
+                    "getUserMedia no está soportado por este navegador.",
+                    "Navegador No Compatible",
+                    "⚠️"
+                );
             }
         }
 
@@ -2441,12 +3358,10 @@
 
         // Event listeners para eventos táctiles (móviles/tablets)
         function setupJoystickTouchEvents() {
-            joystickArea.addEventListener('touchstart', function(e) {
+            joystickContainer.addEventListener('touchstart', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 const touch = e.touches[0];
-                const rect = joystickArea.getBoundingClientRect();
-                const x = touch.clientX - rect.left;
-                const y = touch.clientY - rect.top;
                 
                 joystickActive = true;
                 
@@ -2454,13 +3369,8 @@
                 // Determinar posición según el tamaño de pantalla
                 let joystickLeft, joystickBottom, joystickRadius;
                 
-                if (window.innerWidth <= 480) {
-                    // Móviles pequeños
-                    joystickLeft = 45;
-                    joystickBottom = 45;
-                    joystickRadius = 40; // width 80px / 2
-                } else if (window.innerWidth <= 768) {
-                    // Tablets
+                if (window.innerWidth <= 1024) {
+                    // Móviles y tablets (incluyendo Redmi Note 11 Pro)
                     joystickLeft = 55;
                     joystickBottom = 50;
                     joystickRadius = 45; // width 90px / 2
@@ -2474,9 +3384,7 @@
                 joystickStartX = joystickLeft + joystickRadius;
                 joystickStartY = window.innerHeight - joystickBottom - joystickRadius;
                 
-                showJoystick(x, y);
-                
-                console.log('Touch START:', {x, y, joystickStartX, joystickStartY, isTouch: IS_TOUCH_DEVICE});
+                console.log('Touch START:', {joystickStartX, joystickStartY, isTouch: IS_TOUCH_DEVICE, screenWidth: window.innerWidth});
                 
                 // Iniciar envío periódico de comandos
                 joystickInterval = setInterval(() => {
@@ -2487,11 +3395,11 @@
                         sendJoystickCommand(limited.x, limited.y);
                     }
                 }, 150); // Enviar comandos cada 150ms
-            });
+            }, { passive: false });
 
-            joystickArea.addEventListener('touchmove', function(e) {
-                e.preventDefault();
+            document.addEventListener('touchmove', function(e) {
                 if (!joystickActive) return;
+                e.preventDefault();
                 
                 const touch = e.touches[0];
                 
@@ -2502,13 +3410,14 @@
                 const deltaX = currentTouchX - joystickStartX;
                 const deltaY = currentTouchY - joystickStartY;
                 
-                console.log('Touch MOVE:', {currentTouchX, currentTouchY, deltaX, deltaY});
+                console.log('Touch MOVE:', {currentTouchX, currentTouchY, deltaX, deltaY, screenWidth: window.innerWidth});
                 
                 // Actualizar posición del knob inmediatamente
                 const limited = updateJoystickKnob(deltaX, deltaY);
-            });
+            }, { passive: false });
 
-            joystickArea.addEventListener('touchend', function(e) {
+            document.addEventListener('touchend', function(e) {
+                if (!joystickActive) return;
                 e.preventDefault();
                 console.log('Touch END');
                 // Resetear las coordenadas táctiles
@@ -2516,55 +3425,64 @@
                 currentTouchY = 0;
                 hideJoystick();
                 lastDirection = 'Stop';
-            });
+            }, { passive: false });
+
+            // Añadir también touchcancel para cuando el toque se interrumpe
+            document.addEventListener('touchcancel', function(e) {
+                if (!joystickActive) return;
+                e.preventDefault();
+                console.log('Touch CANCEL');
+                currentTouchX = 0;
+                currentTouchY = 0;
+                hideJoystick();
+                lastDirection = 'Stop';
+            }, { passive: false });
         }
 
         // Event listeners para eventos de mouse (para testing en desktop)
         function setupJoystickMouseEvents() {
-            joystickArea.addEventListener('mousedown', function(e) {
+            joystickContainer.addEventListener('mousedown', function(e) {
                 e.preventDefault();
-                const rect = joystickArea.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+                e.stopPropagation();
                 
                 joystickActive = true;
-                joystickStartX = x;
-                joystickStartY = y;
-                showJoystick(x, y);
+                
+                // Coordenadas fijas del joystick
+                let joystickLeft = 80;
+                let joystickBottom = 70;
+                let joystickRadius = 60;
+                
+                joystickStartX = joystickLeft + joystickRadius;
+                joystickStartY = window.innerHeight - joystickBottom - joystickRadius;
                 
                 // Iniciar envío periódico de comandos
                 joystickInterval = setInterval(() => {
                     if (joystickActive) {
-                        // Usar las coordenadas actuales del mouse
-                        const currentRect = joystickArea.getBoundingClientRect();
-                        // Nota: para mouse necesitamos trackear la posición actual
+                        const deltaX = currentTouchX - joystickStartX;
+                        const deltaY = currentTouchY - joystickStartY;
+                        const limited = updateJoystickKnob(deltaX, deltaY);
+                        sendJoystickCommand(limited.x, limited.y);
                     }
                 }, 150);
             });
 
-            joystickArea.addEventListener('mousemove', function(e) {
+            document.addEventListener('mousemove', function(e) {
                 if (!joystickActive) return;
                 
-                const rect = joystickArea.getBoundingClientRect();
-                const deltaX = (e.clientX - rect.left) - joystickStartX;
-                const deltaY = (e.clientY - rect.top) - joystickStartY;
+                currentTouchX = e.clientX;
+                currentTouchY = e.clientY;
                 
-                const limited = updateJoystickKnob(deltaX, deltaY);
-                sendJoystickCommand(limited.x, limited.y);
+                const deltaX = currentTouchX - joystickStartX;
+                const deltaY = currentTouchY - joystickStartY;
+                
+                updateJoystickKnob(deltaX, deltaY);
             });
 
-            joystickArea.addEventListener('mouseup', function(e) {
+            document.addEventListener('mouseup', function(e) {
+                if (!joystickActive) return;
                 e.preventDefault();
                 hideJoystick();
                 lastDirection = 'Stop';
-            });
-
-            // Manejar cuando el mouse sale del área
-            joystickArea.addEventListener('mouseleave', function(e) {
-                if (joystickActive) {
-                    hideJoystick();
-                    lastDirection = 'Stop';
-                }
             });
         }
         
