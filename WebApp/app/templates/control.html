@@ -284,6 +284,125 @@
             margin: 0 auto;
             background: #000;
         }
+
+        /* === MODAL DE CÁMARA MÓVIL === */
+        #camara-movil-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+            max-width: min(700px, 90vw);
+            max-height: 80vh;
+            animation: fadeIn 0.3s ease;
+            overflow: hidden;
+            width: fit-content;
+        }
+
+        #camara-movil-modal.active {
+            display: block;
+        }
+
+        #camara-movil-modal h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            border-bottom: 2px solid #764ba2;
+            padding-bottom: 8px;
+        }
+
+        .camara-movil-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .camara-movil-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 10px;
+            z-index: 10;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #camara-movil-modal #botonFront {
+            background: rgba(118, 75, 162, 0.85);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        #camara-movil-modal #botonFront:hover {
+            background: rgba(118, 75, 162, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        #camara-movil-modal #botonFront:active {
+            transform: translateY(0);
+        }
+
+        #camara-movil-modal #video,
+        #camara-movil-modal #processedStream {
+            width: 100%;
+            max-width: min(660px, 86vw);
+            height: auto;
+            max-height: calc(80vh - 100px);
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: block;
+            margin: 0 auto;
+            background: #000;
+        }
+
+        #camara-movil-modal #canvas {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            #camara-movil-modal {
+                max-width: 95vw;
+                max-height: 70vh;
+                padding: 15px;
+            }
+
+            #camara-movil-modal #video,
+            #camara-movil-modal #processedStream {
+                max-width: 90vw;
+                max-height: calc(70vh - 80px);
+            }
+
+            #camara-movil-modal h3 {
+                font-size: 14px;
+            }
+
+            #camara-movil-modal #botonFront {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
         
         /* === TELEMETRÍA === */
         #datos-telemetria {
@@ -524,16 +643,13 @@
             transform: translateX(5px);
         }
 
-        /* Desactivar efectos hover/active en botones de estado */
-        #botonVerMapa,
-        #botonRecorrerRuta {
+        /* Desactivar efectos hover/active solo en boton de estado de cámara */
+        #botonVerMapa {
             pointer-events: none;
         }
 
         #botonVerMapa:hover,
-        #botonRecorrerRuta:hover,
-        #botonVerMapa:active,
-        #botonRecorrerRuta:active {
+        #botonVerMapa:active {
             transform: none !important;
             box-shadow: none !important;
         }
@@ -590,7 +706,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: 1100;
         }
 
         .follow-button:active {
@@ -1366,7 +1482,7 @@
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            z-index: 1000;
+            z-index: 1100;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1873,15 +1989,14 @@
         </div>
     </div>
 
-    <div id="camara-container" style="display: none; margin-top: 20px; text-align: center;">
-        <h3>Camara</h3>
-        <div id="button-container">
-            <button id="botonFront" class="boton" onclick="frontCamera()">Cámara frontal</button>
-            <!-- <button id="botonBack" class="boton" onclick="backCamera() disabled">Cámara trasera</button> (Opción de usar también la cámara trasera)-->
+    <!-- Modal de Cámara Móvil -->
+    <div id="camara-movil-modal">
+        <h3>📱 Cámara Móvil</h3>
+        <div class="camara-movil-wrapper">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+            <img id="processedStream" alt="Video Procesado">
         </div>
-        <video id="video" autoplay playsinline></video>
-        <canvas id="canvas" style="display:none;"></canvas>
-        <img id="processedStream" alt="Video Procesado">
     </div>
 
     <div id="map"></div>
@@ -2259,6 +2374,7 @@
          * @returns {Promise<boolean>} - true si confirma, false si cancela
          */
         function showConfirm(message, title = 'Confirmación', icon = '❓', type = 'info') {
+            console.log('showConfirm llamado:', { message, title, icon, type });
             return new Promise((resolve) => {
                 confirmResolve = resolve;
                 
@@ -2268,6 +2384,9 @@
                 const messageEl = document.getElementById('confirm-message');
                 const okBtn = document.getElementById('confirm-ok-btn');
                 const cancelBtn = document.getElementById('confirm-cancel-btn');
+                
+                console.log('Modal element:', modal);
+                console.log('Modal actual display:', modal ? window.getComputedStyle(modal).display : 'no encontrado');
                 
                 // Configurar contenido
                 iconEl.textContent = icon;
@@ -2291,7 +2410,10 @@
                 }
                 
                 // Mostrar modal
+                console.log('Añadiendo clase show al modal...');
                 modal.classList.add('show');
+                console.log('Modal classList después de add:', modal.classList);
+                console.log('Modal display después de show:', window.getComputedStyle(modal).display);
             });
         }
 
@@ -2656,6 +2778,9 @@
 
         // Función para confirmar y ejecutar la ruta
         async function confirmarEjecutarRuta() {
+            console.log('=== CONFIRMAR EJECUTAR RUTA ===');
+            console.log('Waypoints:', waypoints.length);
+            
             if (waypoints.length === 0) {
                 showAlert(
                     'No has creado ningún waypoint. Añade puntos en el mapa primero.',
@@ -2665,12 +2790,15 @@
                 return;
             }
 
+            console.log('Mostrando modal de confirmación...');
             const confirmacion = await showConfirm(
                 `¿Ejecutar ruta con ${waypoints.length} punto(s)?\n\nEl dron seguirá todos los waypoints automáticamente.`,
                 'Ejecutar Ruta',
                 '🚁',
                 'success'
             );
+            
+            console.log('Respuesta de confirmación:', confirmacion);
             
             if (confirmacion) {
                 iniciarRuta();
@@ -2811,20 +2939,41 @@
 
         // Función para mostrar u ocultar el contenedor de la cámara del móvil
         function abrirVentanaCamara() {
-            const camaraContainer = document.getElementById('camara-container');
-            if (camaraContainer.style.display === 'none') {
-                camaraContainer.style.display = 'block';
-                document.getElementById('botonCamaraMovil').textContent = 'Ver Mapa';
-                showAlert(
-                    "Ponga el móvil en vertical y oculte los botones de navegación para optimizar el uso de esta función.",
-                    "Cámara Móvil",
-                    "📱"
-                );
-            } else {
-                camaraContainer.style.display = 'none';
-                document.getElementById('botonCamaraMovil').textContent = 'Cámara Móvil';
+            const camaraModal = document.getElementById('camara-movil-modal');
+            camaraModal.classList.add('active');
+            
+            // Activar automáticamente la cámara frontal
+            cam = "user";
+            startVideo();
+        }
+
+        function cerrarCamaraMovil() {
+            const camaraModal = document.getElementById('camara-movil-modal');
+            camaraModal.classList.remove('active');
+            
+            // Detener stream de cámara si está activo
+            const video = document.getElementById('video');
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
             }
         }
+
+        // Cerrar modal de cámara móvil al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            const camaraModal = document.getElementById('camara-movil-modal');
+            if (event.target === camaraModal && camaraModal.classList.contains('active')) {
+                cerrarCamaraMovil();
+            }
+        });
+
+        // Cerrar modal de cámara móvil con ESC
+        document.addEventListener('keydown', function(event) {
+            const camaraModal = document.getElementById('camara-movil-modal');
+            if (event.key === 'Escape' && camaraModal.classList.contains('active')) {
+                cerrarCamaraMovil();
+            }
+        });
 
         // Función para ir al modo piloto
         function irAModoPiloto() {
