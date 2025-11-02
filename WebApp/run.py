@@ -170,8 +170,13 @@ def handle_flight_event(data):
             socketio.emit('video_iniciado', data.get('filename'))
             print(f"✓ Emitido video_iniciado", flush=True)
         elif event_type == 'video_detenido':
-            socketio.emit('video_detenido')
-            print(f"✓ Emitido video_detenido", flush=True)
+            filename = data.get('filename')
+            if filename:
+                socketio.emit('video_detenido', filename)
+                print(f"✓ Emitido video_detenido con filename: '{filename}'", flush=True)
+            else:
+                socketio.emit('video_detenido')
+                print(f"✓ Emitido video_detenido sin filename", flush=True)
         elif event_type == 'video_error':
             socketio.emit('video_error', data.get('message'))
             print(f"✓ Emitido video_error", flush=True)

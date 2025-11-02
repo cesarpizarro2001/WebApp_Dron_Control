@@ -19,3 +19,11 @@ def captured_photos(filename):
     photos_dir = os.path.join(base_dir, 'EstacionTierra', 'captured_photos')
     print(f"Sirviendo foto desde: {photos_dir}/{filename}")
     return send_from_directory(photos_dir, filename)
+
+# Ruta para servir videos grabados desde EstacionTierra
+@main.route('/static/captured_videos/<path:filename>')
+def captured_videos(filename):
+    # Construir ruta relativa a EstacionTierra/captured_videos
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    videos_dir = os.path.join(base_dir, 'EstacionTierra', 'captured_videos')
+    return send_from_directory(videos_dir, filename, mimetype='video/mp4')

@@ -84,6 +84,13 @@
             padding-bottom: 8px;
         }
 
+        /* Contenedor de la cámara con posición relativa */
+        .camera-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
         #video-stream {
             width: 100%;
             max-width: min(660px, 86vw);
@@ -95,6 +102,84 @@
             display: block;
             margin: 0 auto;
             background: #000;
+        }
+
+        /* Controles de la cámara - posicionados sobre la imagen */
+        /* Botones superiores del modal de cámara */
+        .camera-top-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 10px;
+            z-index: 10;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .camera-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            z-index: 10;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .camera-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Botones de solo icono */
+        .camera-btn-icon {
+            width: 55px;
+            height: 55px;
+            padding: 0;
+            font-size: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(33, 150, 243, 0.3);
+        }
+
+        .camera-btn-icon:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 1);
+            border-color: rgba(33, 150, 243, 0.6);
+        }
+
+        /* Estado de grabación activa */
+        .camera-btn-icon.recording {
+            background: #f44336;
+            border-color: #d32f2f;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 2px 15px rgba(244, 67, 54, 0.7);
+            }
         }
 
         /* === MODAL DE FOTO CAPTURADA === */
@@ -142,6 +227,57 @@
             height: auto;
             max-height: calc(80vh - 100px);
             object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: block;
+            margin: 0 auto;
+            background: #000;
+        }
+
+        /* === MODAL DE VIDEO GRABADO === */
+        #video-modal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 2100;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .video-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            max-width: min(700px, 90vw);
+            max-height: 80vh;
+            overflow: hidden;
+            width: fit-content;
+        }
+
+        #video-modal-container h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 8px;
+        }
+
+        #captured-video {
+            width: 100%;
+            max-width: min(660px, 86vw);
+            height: auto;
+            max-height: calc(80vh - 100px);
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: block;
@@ -1102,7 +1238,7 @@
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 2000;
+            z-index: 1500;
             
             /* Estado normal */
             min-width: 140px;
@@ -1548,9 +1684,9 @@
             /* Contenedor de webcam responsive */
             #webcam-container {
                 width: fit-content;
-                max-width: 95vw;
-                max-height: 70vh;
-                padding: 12px;
+                max-width: 98vw;
+                max-height: 85vh;
+                padding: 10px;
                 border-radius: 12px;
             }
 
@@ -1561,9 +1697,24 @@
             }
 
             #video-stream {
-                max-width: calc(95vw - 24px);
-                max-height: calc(70vh - 80px);
+                max-width: calc(98vw - 20px);
+                max-height: calc(85vh - 80px);
                 border-radius: 8px;
+            }
+
+            .camera-top-controls {
+                gap: 10px;
+                padding: 8px;
+            }
+
+            .camera-controls {
+                padding: 8px;
+            }
+
+            .camera-btn-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
             }
 
             /* Modal de foto responsive */
@@ -1581,6 +1732,26 @@
             }
 
             #captured-photo {
+                max-width: calc(95vw - 24px);
+                max-height: calc(70vh - 80px);
+                border-radius: 8px;
+            }
+
+            /* Modal de video responsive */
+            .video-modal-content {
+                max-width: 95vw;
+                max-height: 70vh;
+                padding: 12px;
+                border-radius: 12px;
+            }
+
+            #video-modal-container h3 {
+                font-size: 14px;
+                margin-bottom: 10px;
+                padding-bottom: 6px;
+            }
+
+            #captured-video {
                 max-width: calc(95vw - 24px);
                 max-height: calc(70vh - 80px);
                 border-radius: 8px;
@@ -1621,9 +1792,6 @@
                 <button id="botonVerMapa" class="boton-amarillo">📷 Viendo Cámara Dron</button>
                 <button id="botonCerrarCamara" onclick="cerrarCamaraDron(); closeAllDropdowns()" title="Cerrar cámara">❌</button>
             </div>
-            <button id="botonCapturarFoto" class="boton-azul" onclick="capturarFoto(); closeAllDropdowns()">📸 Hacer Foto</button>
-            <button id="botonIniciarVideo" class="boton-azul" onclick="iniciarGrabacion(); closeAllDropdowns()">🎥 Hacer Video</button>
-            <button id="botonDetenerVideo" class="boton-rojo" style="display:none;" onclick="detenerGrabacion(); closeAllDropdowns()">⏹️ Detener Video</button>
             <button id="botonCamaraMovil" class="boton-azul" onclick="abrirVentanaCamara(); closeAllDropdowns()">📱 Cámara Móvil</button>
             <button id="toggleNavegacion" class="boton-azul" onclick="toggleNavegacion(); closeAllDropdowns()">🧭 Ocultar Nav.</button>
         </div>
@@ -1669,7 +1837,21 @@
     <!-- Contenedor de Webcam del Dron -->
     <div id="webcam-container" style="display: none;">
         <h3>📷 Cámara del Dron</h3>
-        <img id='video-stream' alt='Stream de video del dron'>
+        <div class="camera-wrapper">
+            <!-- Botones superiores sobre la cámara -->
+            <div class="camera-top-controls">
+                <button class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar">🚁</button>
+                <button class="camera-btn camera-btn-icon" onclick="aterrizarDron()" title="Aterrizar">🛬</button>
+                <button class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL">🏠</button>
+            </div>
+            <img id='video-stream' alt='Stream de video del dron'>
+            <!-- Botones inferiores sobre la cámara -->
+            <div class="camera-controls">
+                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" onclick="capturarFoto()" title="Hacer foto">📸</button>
+                <button class="camera-btn camera-btn-icon" onclick="iniciarControlVoz()" title="Control por voz">🎤</button>
+                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video">🎥</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal de Foto Capturada -->
@@ -1677,6 +1859,17 @@
         <div class="photo-modal-content">
             <h3>📸 Foto Capturada</h3>
             <img id='captured-photo' alt='Foto capturada del dron'>
+        </div>
+    </div>
+
+    <!-- Modal de Video Grabado -->
+    <div id="video-modal-container" style="display: none;">
+        <div class="video-modal-content">
+            <h3>🎥 Video Grabado</h3>
+            <video id='captured-video' controls>
+                <source id='video-source' type='video/mp4'>
+                Tu navegador no soporta la reproducción de videos.
+            </video>
         </div>
     </div>
 
@@ -2188,10 +2381,6 @@
             if (siguiendoRuta) {
                 return;
             }
-
-            // Comportamiento normal: ir a la posición clickeada
-            const targetPos = [e.latlng.lat, e.latlng.lng];
-            mover_dron_a_coordenadas(targetPos[0], targetPos[1]);
         });
 
         // Añadir Waypoint para la ruta
@@ -2646,18 +2835,13 @@
         function capturarFoto() {
             console.log("Enviando comando para capturar foto");
             socket.emit('command', { action: 'capturarFoto' });
-            // Mostrar feedback visual momentáneo
+            
+            // Animación visual del botón
             const botonCapturarFoto = document.getElementById('botonCapturarFoto');
-            botonCapturarFoto.classList.remove('boton-azul');
-            botonCapturarFoto.classList.add('boton-verde');
-            botonCapturarFoto.textContent = "📸 Foto Hecha";
-
-            // Restaurar el botón después de 2 segundos
-            setTimeout(function() {
-                botonCapturarFoto.classList.remove('boton-verde');
-                botonCapturarFoto.classList.add('boton-azul');
-                botonCapturarFoto.textContent = "📸 Hacer Foto";
-            }, 2000);
+            botonCapturarFoto.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                botonCapturarFoto.style.transform = 'scale(1)';
+            }, 200);
         }
 
         // Función para mostrar la foto capturada en un modal
@@ -2703,30 +2887,96 @@
             }
         }
 
-        // Inicia la grabación del vídeo de la cámara del dron
-        function iniciarGrabacion() {
-            console.log("Enviando comando para iniciar grabación de video");
-            socket.emit('command', { action: 'iniciarVideo' });
-
-            // Mostrar feedback visual
-            const botonIniciarVideo = document.getElementById('botonIniciarVideo');
-            const botonDetenerVideo = document.getElementById('botonDetenerVideo');
-
-            botonIniciarVideo.style.display = 'none';
-            botonDetenerVideo.style.display = 'block';
+        // Función para mostrar el video grabado en un modal
+        function mostrarVideoGrabado(nombreVideo) {
+            const videoModal = document.getElementById('video-modal-container');
+            const capturedVideo = document.getElementById('captured-video');
+            const videoSource = document.getElementById('video-source');
+            
+            if (!videoModal || !capturedVideo || !videoSource) {
+                console.error('ERROR: No se encontró el modal o el video');
+                return;
+            }
+            
+            // Construir la ruta y cargar el video
+            const videoPath = `/static/captured_videos/${nombreVideo}`;
+            
+            videoSource.src = videoPath;
+            capturedVideo.load(); // Recargar el video con la nueva fuente
+            
+            // Mostrar el modal
+            videoModal.style.zIndex = '2100';
+            videoModal.style.display = 'block';
+            
+            // Agregar evento de clic para cerrar el modal al hacer clic fuera del video
+            videoModal.onclick = function(event) {
+                if (event.target === videoModal) {
+                    cerrarVideoGrabado();
+                }
+            };
+            
+            // Agregar evento de teclado para cerrar con ESC
+            const handleEscape = function(event) {
+                if (event.key === 'Escape') {
+                    cerrarVideoGrabado();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
         }
 
-         // Detiene la grabación del vídeo de la cámara del dron
+        // Función para cerrar el modal de video
+        function cerrarVideoGrabado() {
+            const videoModal = document.getElementById('video-modal-container');
+            const capturedVideo = document.getElementById('captured-video');
+            
+            if (videoModal) {
+                videoModal.style.display = 'none';
+            }
+            
+            if (capturedVideo) {
+                capturedVideo.pause(); // Pausar el video al cerrar
+                capturedVideo.currentTime = 0; // Reiniciar al inicio
+            }
+        }
+
+        // Variable para controlar el estado de grabación
+        let isRecording = false;
+
+        // Función toggle para iniciar/detener grabación
+        function toggleGrabacion() {
+            const botonGrabarVideo = document.getElementById('botonGrabarVideo');
+            
+            if (!isRecording) {
+                // Iniciar grabación
+                console.log("Enviando comando para iniciar grabación de video");
+                socket.emit('command', { action: 'iniciarVideo' });
+                
+                botonGrabarVideo.classList.add('recording');
+                botonGrabarVideo.title = 'Detener grabación';
+                isRecording = true;
+            } else {
+                // Detener grabación
+                console.log("Enviando comando para detener grabación de video");
+                socket.emit('command', { action: 'detenerVideo' });
+                
+                botonGrabarVideo.classList.remove('recording');
+                botonGrabarVideo.title = 'Grabar video';
+                isRecording = false;
+            }
+        }
+
+        // Funciones antiguas mantenidas por compatibilidad
+        function iniciarGrabacion() {
+            if (!isRecording) {
+                toggleGrabacion();
+            }
+        }
+
         function detenerGrabacion() {
-            console.log("Enviando comando para detener grabación de video");
-            socket.emit('command', { action: 'detenerVideo' });
-
-            // Mostrar feedback visual
-            const botonIniciarVideo = document.getElementById('botonIniciarVideo');
-            const botonDetenerVideo = document.getElementById('botonDetenerVideo');
-
-            botonIniciarVideo.style.display = 'block';
-            botonDetenerVideo.style.display = 'none';
+            if (isRecording) {
+                toggleGrabacion();
+            }
         }
 
         const video = document.getElementById("video");
@@ -2799,22 +3049,7 @@
         socket.on('flight_name_set', function(flightName) {
             currentFlightName = flightName;
             console.log(`Nombre del vuelo establecido: ${currentFlightName}`);
-            const webcamContainer = document.getElementById('webcam-container');
-            let flightNameDisplay = document.getElementById('flight-name-display');
-            if (!flightNameDisplay) {
-                flightNameDisplay = document.createElement('div');
-                flightNameDisplay.id = 'flight-name-display';
-                flightNameDisplay.style.position = 'absolute';
-                flightNameDisplay.style.top = '50px';
-                flightNameDisplay.style.left = '10px';
-                flightNameDisplay.style.background = 'rgba(0,0,0,0.7)';
-                flightNameDisplay.style.color = 'white';
-                flightNameDisplay.style.padding = '5px 10px';
-                flightNameDisplay.style.borderRadius = '5px';
-                flightNameDisplay.style.zIndex = '1001';
-                webcamContainer.appendChild(flightNameDisplay);
-            }
-            flightNameDisplay.textContent = `Vuelo: ${currentFlightName}`;
+            // Ya no mostramos el nombre del vuelo en el modal de cámara
         });
 
         socket.on('foto_capturada', function(nombreFoto) {
@@ -2826,8 +3061,13 @@
             console.log(`Grabación iniciada: ${ubicacion}`);
         });
 
-        socket.on('video_detenido', function() {
+        socket.on('video_detenido', function(nombreVideo) {
             console.log("Grabación detenida");
+            
+            // Si se proporciona el nombre del video, mostrar el modal
+            if (nombreVideo) {
+                mostrarVideoGrabado(nombreVideo);
+            }
         });
 
         // Función para actualizar el estado de todos los botones según el estado del dron

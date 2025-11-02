@@ -897,7 +897,7 @@ def capturar_foto():
 
 # Inicia una grabación de la cámara del dron
 def start_recording():
-    global recording, video_writer, last_frame, current_flight_name
+    global recording, video_writer, last_frame, current_flight_name, current_video_filename
 
     if recording:
         return False  # Ya estamos grabando
@@ -913,21 +913,40 @@ def start_recording():
 
     # Genera nombre de archivo con timestamp
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    filename = f"video_dron_{timestamp}.avi"
+    filename = f"video_dron_{timestamp}.mp4"
     filepath = os.path.join(videos_dir, filename)
 
     # Configura el VideoWriter
     if last_frame is not None:
         height, width = last_frame.shape[:2]
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        video_writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+        # Intentar con diferentes codecs según disponibilidad
+        # H264 es el mejor para navegadores, pero puede no estar disponible
+        # X264 es alternativa, si no MJPG es más compatible
+        try:
+            fourcc = cv2.VideoWriter_fourcc(*'H264')
+            video_writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+            if not video_writer.isOpened():
+                raise Exception("H264 no disponible")
+        except:
+            try:
+                fourcc = cv2.VideoWriter_fourcc(*'X264')
+                video_writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+                if not video_writer.isOpened():
+                    raise Exception("X264 no disponible")
+            except:
+                # Fallback a MJPG que es más compatible pero genera archivos más grandes
+                fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+                video_writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+
+        # Guarda el nombre del archivo con la ruta relativa (incluyendo flight_name si existe)
+        relative_path = os.path.join(current_flight_name, filename) if current_flight_name else filename
+        current_video_filename = relative_path.replace('\\', '/')
 
         # Inicia grabación en un hilo separado
         recording = True
         video_thread = threading.Thread(target=record_video_thread, args=(filepath,))
         video_thread.start()
 
-        print(f"Grabación iniciada: {filepath}")
         sio.emit('flight_event', {'event': 'video_iniciado', 'filename': filename})
         return True
     else:
@@ -937,7 +956,7 @@ def start_recording():
 
 # Detiene la grabación del video de la cámara del dron
 def stop_recording():
-    global recording, video_writer
+    global recording, video_writer, current_video_filename, current_flight_name
 
     if not recording:
         return False  # No estamos grabando
@@ -946,8 +965,14 @@ def stop_recording():
     if video_writer is not None:
         video_writer.release()
         video_writer = None
-        print("Grabación detenida")
-        sio.emit('flight_event', {'event': 'video_detenido'})
+        
+        # Enviar la ruta relativa que ya fue construida en start_recording()
+        if current_video_filename:
+            sio.emit('flight_event', {'event': 'video_detenido', 'filename': current_video_filename})
+            current_video_filename = None  # Resetear después de enviar
+        else:
+            sio.emit('flight_event', {'event': 'video_detenido'})
+        
         return True
     return False
 
@@ -1412,13 +1437,25 @@ def grabar_video_en_background(duracion, flight_name, frame_inicial):
 
     # Nombre del archivo
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    filename = f"video_dron_{timestamp}.avi"
+    filename = f"video_dron_{timestamp}.mp4"
     filepath = os.path.join(videos_dir, filename)
 
     # VideoWriter independiente
     height, width = frame_inicial.shape[:2]
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+    try:
+        fourcc = cv2.VideoWriter_fourcc(*'H264')
+        writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+        if not writer.isOpened():
+            raise Exception("H264 no disponible")
+    except:
+        try:
+            fourcc = cv2.VideoWriter_fourcc(*'X264')
+            writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+            if not writer.isOpened():
+                raise Exception("X264 no disponible")
+        except:
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
 
     # Grabación en bucle
     start_time = time.time()
@@ -1637,6 +1674,7 @@ def handle_ground_station_command(data):
 recording = False
 video_writer = None
 video_thread = None
+current_video_filename = None  # Variable para almacenar el nombre del video actual
 current_flight_name = None  # Variable para almacenar el nombre del vuelo actual
 gallery_window = None
 selected_flight = None
