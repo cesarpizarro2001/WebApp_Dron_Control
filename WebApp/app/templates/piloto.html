@@ -226,8 +226,8 @@
             position: absolute;
             top: 5px;
             right: 5px;
-            width: 140px;
-            height: 140px;
+            width: 180px;
+            height: 180px;
             border: 2px solid white;
             background: white;
             border-radius: 8px;
@@ -426,6 +426,18 @@
         :-ms-fullscreen #camera-feed {
             max-height: 100vh !important;
             height: 100vh !important;
+        }
+
+        /* Minimapa más pequeño en pantalla completa */
+        :fullscreen .minimap-container,
+        :-webkit-full-screen .minimap-container,
+        :-moz-full-screen .minimap-container,
+        :-ms-fullscreen .minimap-container,
+        body.is-fullscreen .minimap-container {
+            width: 110px !important;
+            height: 110px !important;
+            top: 10px !important;
+            right: 10px !important;
         }
 
         /* PANEL DE AJUSTES */
@@ -686,14 +698,40 @@
                 font-size: 10px;
                 min-width: 70px;
             }
+            
+            /* Cámara ajustada al alto visible en móviles (solo CSS) */
+            .camera-section {
+                /* Fallback general */
+                height: calc(100vh - 40px);
+            }
+            /* Preferir svh si está disponible */
+            @supports (height: 100svh) {
+                .camera-section { height: calc(100svh - 40px); }
+            }
+            /* Y dvh (dinámico) en navegadores modernos */
+            @supports (height: 100dvh) {
+                .camera-section { height: calc(100dvh - 40px); }
+            }
 
-            /* Minimapa más pequeño */
+            #camera-feed {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            /* Minimapa más pequeño en móviles */
             .minimap-container {
-                width: 110px;
-                height: 110px;
+                width: 95px;
+                height: 95px;
                 top: 6px;
                 right: 6px;
                 border: 2px solid rgba(255, 255, 255, 0.9);
+            }
+            
+            /* Minimapa un poco más grande en fullscreen en móviles */
+            body.is-fullscreen .minimap-container {
+                width: 105px !important;
+                height: 105px !important;
             }
 
             /* Botones fullscreen y ajustes más pequeños */
@@ -815,6 +853,19 @@
             :-ms-fullscreen #camera-feed {
                 max-height: 100vh !important;
                 height: 100vh !important;
+                object-fit: contain !important;
+            }
+
+            /* Minimapa aún más pequeño en pantalla completa para móviles */
+            :fullscreen .minimap-container,
+            :-webkit-full-screen .minimap-container,
+            :-moz-full-screen .minimap-container,
+            :-ms-fullscreen .minimap-container,
+            body.is-fullscreen .minimap-container {
+                width: 90px !important;
+                height: 90px !important;
+                top: 8px !important;
+                right: 8px !important;
             }
         }
     </style>
@@ -881,16 +932,16 @@
             <div class="setting-item">
                 <div class="setting-label">
                     <span>Velocidad Subida</span>
-                    <span class="setting-value"><span id="speedUpValue">250</span> cm/s</span>
+                    <span class="setting-value"><span id="speedUpValue">150</span> cm/s</span>
                 </div>
                 <div class="setting-description">Velocidad máxima vertical ascendente (PILOT_SPEED_UP)</div>
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="speedUpSlider" 
-                           min="100" max="500" value="250" step="10" 
+                           min="50" max="300" value="150" step="10" 
                            oninput="updateSliderValue('speedUp', this.value)">
                     <div class="slider-labels">
-                        <span>100 cm/s (1 m/s)</span>
-                        <span>500 cm/s (5 m/s)</span>
+                        <span>50 cm/s (0,5 m/s)</span>
+                        <span>300 cm/s (3 m/s)</span>
                     </div>
                 </div>
             </div>
@@ -904,11 +955,11 @@
                 <div class="setting-description">Velocidad máxima vertical descendente (PILOT_SPEED_DN)</div>
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="speedDnSlider" 
-                           min="100" max="500" value="150" step="10" 
+                           min="50" max="300" value="150" step="10" 
                            oninput="updateSliderValue('speedDn', this.value)">
                     <div class="slider-labels">
-                        <span>100 cm/s (1 m/s)</span>
-                        <span>500 cm/s (5 m/s)</span>
+                        <span>50 cm/s (0,5 m/s)</span>
+                        <span>300 cm/s (3 m/s)</span>
                     </div>
                 </div>
             </div>
@@ -922,11 +973,11 @@
                 <div class="setting-description">Velocidad máxima de desplazamiento horizontal (LOIT_SPEED)</div>
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="loitSpeedSlider" 
-                           min="500" max="2500" value="1250" step="50" 
+                           min="50" max="2500" value="1250" step="50" 
                            oninput="updateSliderValue('loitSpeed', this.value)">
                     <div class="slider-labels">
-                        <span>500 cm/s (5 m/s)</span>
-                        <span>2500 cm/s (25 m/s)</span>
+                        <span>50 cm/s (0,5 m/s)</span>
+                        <span>250 cm/s (2,5 m/s)</span>
                     </div>
                 </div>
             </div>
@@ -940,10 +991,10 @@
                 <div class="setting-description">Velocidad máxima de rotación sobre su eje (ATC_RATE_Y_MAX)</div>
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="yawRateSlider" 
-                           min="40" max="180" value="90" step="5" 
+                           min="10" max="180" value="90" step="5" 
                            oninput="updateSliderValue('yawRate', this.value)">
                     <div class="slider-labels">
-                        <span>40 °/s</span>
+                        <span>10 °/s</span>
                         <span>180 °/s</span>
                     </div>
                 </div>
@@ -1067,7 +1118,7 @@
             minimap = L.map('minimap', {
                 zoomControl: false,
                 attributionControl: false
-            }).setView([41.2764, 1.9888], 17);
+            }).setView([41.2764, 1.9888], 18);
 
             // Usar el mismo mapa satelital de Google que control.html
             L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
@@ -1334,17 +1385,21 @@
                              document.msFullscreenElement);
             
             if (isFullscreen) {
+                // Añadir clase al body para que CSS haga el resto
+                document.body.classList.add('is-fullscreen');
+                
                 // Cambiar a icono de "salir de fullscreen"
                 btn.classList.add('active');
                 icon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>';
                 btn.title = 'Salir de pantalla completa';
-                console.log('Modo pantalla completa activado');
             } else {
+                // Quitar clase del body para volver al tamaño normal
+                document.body.classList.remove('is-fullscreen');
+                
                 // Cambiar a icono de "entrar en fullscreen"
                 btn.classList.remove('active');
                 icon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
                 btn.title = 'Pantalla completa';
-                console.log('Modo pantalla completa desactivado');
             }
         }
 
@@ -1540,6 +1595,8 @@
             initMinimap();
             loadSettings();
         });
+
+        // (CSS-only) Eliminado el ajuste JS de viewport; usamos 100vh/svh/dvh en CSS
 
         // ========== FUNCIONES DEL PANEL DE AJUSTES ==========
         
