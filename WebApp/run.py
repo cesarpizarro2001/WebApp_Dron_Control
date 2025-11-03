@@ -143,6 +143,20 @@ def handle_set_parameters(params):
     # Reenviar los parámetros a la Estación de Tierra
     socketio.emit('set_parameters', params, include_self=False)
     print("Parámetros enviados a la Estación de Tierra")
+
+# Handler para configuración de video (calidad y fps)
+@socketio.on('video_settings')
+def handle_video_settings(settings):
+    """Recibe configuración de video desde la WebApp y la envía a la Estación de Tierra"""
+    quality = settings.get('quality', 50)
+    fps = settings.get('fps', 5)
+    print(f"📹 Configuración de video recibida:")
+    print(f"  - Calidad: {quality}%")
+    print(f"  - FPS: {fps}")
+    
+    # Reenviar la configuración a la Estación de Tierra
+    socketio.emit('video_settings', settings, include_self=False)
+    print("✓ Configuración de video enviada a la Estación de Tierra")
     
 # Recibir telemetría de la Estación de Tierra y enviarla al navegador
 @socketio.on('telemetry_data')

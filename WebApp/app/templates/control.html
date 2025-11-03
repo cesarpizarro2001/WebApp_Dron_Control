@@ -76,7 +76,7 @@
 
         #webcam-container h3 {
             margin: 0 0 12px 0;
-            font-size: 16px;
+            font-size: 22px;
             font-weight: 600;
             color: #333;
             text-align: center;
@@ -113,11 +113,24 @@
             right: 0;
             display: flex;
             justify-content: center;
+            align-items: center;
             gap: 15px;
             padding: 10px;
             z-index: 10;
             width: 100%;
             box-sizing: border-box;
+        }
+
+        .camera-top-controls-left {
+            display: flex;
+            gap: 15px;
+        }
+
+        .camera-top-controls-right {
+            position: absolute;
+            right: 10px;
+            display: flex;
+            gap: 10px;
         }
 
         .camera-controls {
@@ -401,6 +414,42 @@
             #camara-movil-modal #botonFront {
                 padding: 6px 12px;
                 font-size: 12px;
+            }
+
+            /* Ajustes para botones del modal de cámara en móvil */
+            .camera-top-controls {
+                padding: 5px;
+                gap: 5px;
+            }
+
+            .camera-top-controls-left {
+                gap: 5px;
+            }
+
+            .camera-top-controls-right {
+                gap: 5px;
+            }
+
+            .camera-btn-icon {
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 16px !important;
+            }
+
+            #voice-control-modal-btn {
+                width: 32px !important;
+                height: 32px !important;
+                padding: 0 !important;
+            }
+
+            #voice-control-modal-btn .mic-icon {
+                font-size: 14px !important;
+                line-height: 1 !important;
+            }
+
+            .camera-controls {
+                padding: 5px;
+                gap: 5px;
             }
         }
         
@@ -1471,6 +1520,67 @@
             letter-spacing: 0.5px;
         }
 
+        /* Botón de voz dentro del modal de cámara */
+        #voice-control-modal-btn {
+            position: relative;
+            overflow: visible;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #voice-control-modal-btn .mic-icon {
+            font-size: 28px;
+            transition: transform 0.3s ease;
+        }
+
+        #voice-control-modal-btn.listening {
+            background: rgba(76, 175, 80, 0.9) !important;
+            animation: pulse-green 1.5s infinite;
+            border-color: rgba(76, 175, 80, 0.5) !important;
+        }
+
+        #voice-control-modal-btn.processing {
+            background: rgba(33, 150, 243, 0.9) !important;
+            border-color: rgba(33, 150, 243, 0.5) !important;
+        }
+
+        #voice-control-modal-btn.error {
+            background: rgba(244, 67, 54, 0.9) !important;
+            border-color: rgba(244, 67, 54, 0.5) !important;
+        }
+
+        #voice-control-modal-btn.listening .mic-icon {
+            animation: mic-pulse 1s infinite;
+        }
+
+        /* Tooltip para mostrar el comando reconocido */
+        #voice-control-modal-btn::after {
+            content: attr(data-text);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(100, 181, 246, 0.55);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #voice-control-modal-btn.listening::after,
+        #voice-control-modal-btn.processing::after,
+        #voice-control-modal-btn.error::after {
+            opacity: 1;
+        }
+
         /* Botón de pantalla completa */
         .fullscreen-btn {
             position: fixed;
@@ -1510,12 +1620,282 @@
             fill: white !important;
         }
 
+        /* PANEL DE AJUSTES */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            max-height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+            z-index: 20000;
+            transition: right 0.4s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .settings-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .settings-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .close-settings-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            font-size: 24px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .close-settings-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .settings-content {
+            padding: 15px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .setting-label span {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .setting-value {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .setting-description {
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+
+        .slider-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .setting-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #dee2e6;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .setting-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .setting-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.6);
+        }
+
+        .setting-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .setting-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.6);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #adb5bd;
+            margin-top: 5px;
+        }
+
+        .settings-actions {
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .settings-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .apply-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .apply-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .reset-btn {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .reset-btn:hover {
+            background: #dee2e6;
+        }
+
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 19999;
+            display: none;
+            backdrop-filter: blur(2px);
+        }
+
+        .settings-overlay.open {
+            display: block;
+        }
+
         /* ============================================ */
         /* === MEDIA QUERY === */
         /* ============================================ */
 
         /* === Tablets de alta resolución (≤1024px) === */
         @media (max-width: 1024px) {
+            /* Panel de ajustes en tablets y móviles */
+            .settings-panel {
+                width: 60%;
+                right: -60%;
+            }
+
+            .settings-header {
+                padding: 10px;
+            }
+
+            .settings-header h3 {
+                font-size: 16px;
+            }
+
+            .close-settings-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 20px;
+            }
+
+            .settings-content {
+                padding: 10px;
+            }
+
+            .setting-item {
+                margin-bottom: 10px;
+                padding: 8px;
+            }
+
+            .setting-label span {
+                font-size: 12px;
+            }
+
+            .setting-value {
+                font-size: 14px;
+            }
+
+            .setting-description {
+                font-size: 10px;
+                margin-bottom: 6px;
+            }
+
+            .slider-labels {
+                font-size: 9px;
+            }
+
+            .settings-actions {
+                padding: 8px 10px;
+            }
+
+            .settings-actions button {
+                padding: 8px;
+                font-size: 12px;
+            }
+
+            .fullscreen-btn {
+                bottom: 15px;
+                right: 70px;
+                width: 45px;
+                height: 45px;
+            }
+
             /* Modal de instrucciones */
             .modal-content {
                 padding: 2vh 4vw;
@@ -1883,6 +2263,62 @@
         </svg>
     </button>
 
+    <!-- Overlay del panel de ajustes -->
+    <div class="settings-overlay" id="settingsOverlay" onclick="toggleSettings()"></div>
+
+    <!-- Panel de ajustes -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3>⚙️ Configuración de Video</h3>
+            <button class="close-settings-btn" onclick="toggleSettings()">×</button>
+        </div>
+
+        <div class="settings-content">
+            <!-- Calidad del Video -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Calidad del Video</span>
+                    <span class="setting-value"><span id="videoQualityValue">50</span> %</span>
+                </div>
+                <div class="setting-description">Calidad de compresión del stream de video (mayor = mejor calidad)</div>
+                <div class="slider-container">
+                    <input type="range" class="setting-slider" id="videoQualitySlider" 
+                           min="0" max="100" step="10" value="50"
+                           oninput="updateSliderValue('videoQuality', this.value)">
+                    <div class="slider-labels">
+                        <span>Baja</span>
+                        <span>Media</span>
+                        <span>Alta</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Frames por Segundo -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <span>Frames por Segundo</span>
+                    <span class="setting-value"><span id="videoFpsValue">5</span> fps</span>
+                </div>
+                <div class="setting-description">Fluidez del video (mayor = más fluido pero más consumo)</div>
+                <div class="slider-container">
+                    <input type="range" class="setting-slider" id="videoFpsSlider" 
+                           min="1" max="30" step="1" value="5"
+                           oninput="updateSliderValue('videoFps', this.value)">
+                    <div class="slider-labels">
+                        <span>1 fps</span>
+                        <span>15 fps</span>
+                        <span>30 fps</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-actions">
+            <button class="reset-btn" onclick="resetSettings()">🔄 Restablecer</button>
+            <button class="apply-btn" onclick="applySettings()">✅ Aplicar</button>
+        </div>
+    </div>
+
     <!-- Barra superior de controles principales -->
     <div class="top-controls">
         <input type="number" id="altura" placeholder="Altura (m)" />
@@ -1956,15 +2392,22 @@
         <div class="camera-wrapper">
             <!-- Botones superiores sobre la cámara -->
             <div class="camera-top-controls">
-                <button class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar">🚁</button>
-                <button class="camera-btn camera-btn-icon" onclick="aterrizarDron()" title="Aterrizar">🛬</button>
-                <button class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL">🏠</button>
+                <div class="camera-top-controls-left">
+                    <button class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar">✈️</button>
+                    <button class="camera-btn camera-btn-icon" onclick="aterrizarDron()" title="Aterrizar">🛬</button>
+                    <button class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL">🏠</button>
+                </div>
+                <div class="camera-top-controls-right">
+                    <button class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Configuración de Video">⚙️</button>
+                </div>
             </div>
             <img id='video-stream' alt='Stream de video del dron'>
             <!-- Botones inferiores sobre la cámara -->
             <div class="camera-controls">
                 <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" onclick="capturarFoto()" title="Hacer foto">📸</button>
-                <button class="camera-btn camera-btn-icon" onclick="iniciarControlVoz()" title="Control por voz">🎤</button>
+                <button id="voice-control-modal-btn" class="camera-btn camera-btn-icon" onclick="iniciarControlVoz()" title="Control por voz">
+                    <span class="mic-icon">🎤</span>
+                </button>
                 <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video">🎥</button>
             </div>
         </div>
@@ -3427,6 +3870,7 @@
             }
 
             const btn = document.getElementById('voice-control-btn');
+            const modalBtn = document.getElementById('voice-control-modal-btn');
             const micIcon = btn.querySelector('.mic-icon');
             const voiceText = btn.querySelector('.voice-text');
 
@@ -3435,6 +3879,8 @@
                 if (recognition) recognition.stop();
                 recognizing = false;
                 btn.classList.remove('listening', 'processing', 'error');
+                modalBtn.classList.remove('listening', 'processing', 'error');
+                modalBtn.removeAttribute('data-text');
                 voiceText.textContent = 'VOZ';
                 return;
             }
@@ -3448,6 +3894,8 @@
             recognition.onstart = function() {
                 recognizing = true;
                 btn.classList.add('listening');
+                modalBtn.classList.add('listening');
+                modalBtn.setAttribute('data-text', 'ESCUCHANDO...');
                 voiceText.textContent = 'ESCUCHANDO...';
                 console.log('Reconocimiento de voz iniciado');
             };
@@ -3458,6 +3906,9 @@
                 
                 btn.classList.remove('listening');
                 btn.classList.add('processing');
+                modalBtn.classList.remove('listening');
+                modalBtn.classList.add('processing');
+                modalBtn.setAttribute('data-text', `"${transcript}"`);
                 voiceText.textContent = `"${transcript}"`;
 
                 // Procesar comando
@@ -3467,15 +3918,22 @@
                     if (exitoso) {
                         setTimeout(() => {
                             btn.classList.remove('processing');
+                            modalBtn.classList.remove('processing');
+                            modalBtn.removeAttribute('data-text');
                             voiceText.textContent = 'VOZ';
                             recognizing = false;
                         }, 1500);
                     } else {
                         btn.classList.remove('processing');
                         btn.classList.add('error');
+                        modalBtn.classList.remove('processing');
+                        modalBtn.classList.add('error');
+                        modalBtn.setAttribute('data-text', 'NO ENTENDIDO');
                         voiceText.textContent = 'NO ENTENDIDO';
                         setTimeout(() => {
                             btn.classList.remove('error');
+                            modalBtn.classList.remove('error');
+                            modalBtn.removeAttribute('data-text');
                             voiceText.textContent = 'VOZ';
                             recognizing = false;
                         }, 2000);
@@ -3487,10 +3945,15 @@
                 console.error('Error de reconocimiento:', event.error);
                 btn.classList.remove('listening', 'processing');
                 btn.classList.add('error');
+                modalBtn.classList.remove('listening', 'processing');
+                modalBtn.classList.add('error');
+                modalBtn.setAttribute('data-text', 'ERROR');
                 voiceText.textContent = 'ERROR';
                 
                 setTimeout(() => {
                     btn.classList.remove('error');
+                    modalBtn.classList.remove('error');
+                    modalBtn.removeAttribute('data-text');
                     voiceText.textContent = 'VOZ';
                     recognizing = false;
                 }, 2000);
@@ -4186,6 +4649,107 @@
                 }
             }
         }
+
+        // ========== SISTEMA DE AJUSTES DE VIDEO ==========
+        let currentSettings = {
+            videoQuality: 50,
+            videoFps: 5
+        };
+
+        // Cargar ajustes al iniciar
+        function loadSettings() {
+            const saved = localStorage.getItem('controlSettings');
+            if (saved) {
+                try {
+                    currentSettings = JSON.parse(saved);
+                    
+                    // Actualizar sliders
+                    document.getElementById('videoQualitySlider').value = currentSettings.videoQuality;
+                    document.getElementById('videoFpsSlider').value = currentSettings.videoFps;
+                    
+                    // Actualizar valores mostrados
+                    document.getElementById('videoQualityValue').textContent = currentSettings.videoQuality;
+                    document.getElementById('videoFpsValue').textContent = currentSettings.videoFps;
+                    
+                    console.log('⚙️ Configuración cargada:', currentSettings);
+                } catch (e) {
+                    console.error('Error al cargar configuración:', e);
+                }
+            }
+        }
+
+        // Abrir/Cerrar panel de ajustes
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('settingsOverlay');
+            
+            panel.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        // Actualizar valor del slider en tiempo real
+        function updateSliderValue(setting, value) {
+            const numValue = parseInt(value);
+            
+            if (setting === 'videoQuality') {
+                currentSettings.videoQuality = numValue;
+                document.getElementById('videoQualityValue').textContent = numValue;
+            } else if (setting === 'videoFps') {
+                currentSettings.videoFps = numValue;
+                document.getElementById('videoFpsValue').textContent = numValue;
+            }
+        }
+
+        // Aplicar configuración
+        function applySettings() {
+            // Guardar en localStorage
+            localStorage.setItem('controlSettings', JSON.stringify(currentSettings));
+            
+            // Enviar configuración de video al servidor
+            socket.emit('video_settings', {
+                quality: currentSettings.videoQuality,
+                fps: currentSettings.videoFps
+            });
+            
+            console.log('✅ Configuración aplicada y enviada:', currentSettings);
+            
+            // Cerrar panel
+            toggleSettings();
+            
+            // Mostrar confirmación visual
+            const applyBtn = document.querySelector('.apply-btn');
+            const originalText = applyBtn.textContent;
+            applyBtn.textContent = '✅ Guardado';
+            applyBtn.style.background = '#4CAF50';
+            
+            setTimeout(() => {
+                applyBtn.textContent = originalText;
+                applyBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            }, 2000);
+        }
+
+        // Restablecer valores por defecto
+        function resetSettings() {
+            currentSettings = {
+                videoQuality: 50,
+                videoFps: 5
+            };
+            
+            // Actualizar sliders
+            document.getElementById('videoQualitySlider').value = 50;
+            document.getElementById('videoFpsSlider').value = 5;
+            
+            // Actualizar valores mostrados
+            document.getElementById('videoQualityValue').textContent = 50;
+            document.getElementById('videoFpsValue').textContent = 5;
+            
+            console.log('🔄 Configuración restablecida a valores por defecto');
+        }
+
+        // Cargar configuración al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+        });
 
         // Detectar cambios en el estado de fullscreen
         document.addEventListener('fullscreenchange', handleFullscreenChange);

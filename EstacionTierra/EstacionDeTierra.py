@@ -1865,6 +1865,37 @@ def handle_set_parameters(params):
         import traceback
         traceback.print_exc()
 
+@sio.on("video_settings")
+def handle_video_settings(settings):
+    """Handler para configurar calidad y fps del video"""
+    global qualitySlider, frequencySlider, webapp_commands_enabled
+    
+    if not webapp_commands_enabled:
+        print('CONFIGURACIÓN DE VIDEO BLOQUEADA: (WebApp no autorizada)')
+        return
+    
+    quality = settings.get('quality', 50)
+    fps = settings.get('fps', 5)
+    
+    print('=' * 50)
+    print('📹 Configuración de video recibida desde WebApp:')
+    print(f'  Calidad: {quality}%')
+    print(f'  FPS: {fps}')
+    print('=' * 50)
+    
+    try:
+        # Actualizar los sliders de la interfaz de EstacionDeTierra
+        qualitySlider.set(quality)
+        frequencySlider.set(fps)
+        print('✓ Configuración de video aplicada correctamente')
+        print(f'  - Slider de calidad actualizado a: {quality}%')
+        print(f'  - Slider de FPS actualizado a: {fps} fps')
+        
+    except Exception as e:
+        print(f'✗ Error al configurar video: {e}')
+        import traceback
+        traceback.print_exc()
+
 print("Conectado al websocket")
 dron = Dron()
 
