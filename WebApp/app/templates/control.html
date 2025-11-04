@@ -720,7 +720,8 @@
         }
 
         #botonCancelarRuta,
-        #botonCerrarCamara {
+        #botonCerrarCamara,
+        #botonCerrarCamaraMovil {
             background: linear-gradient(135deg, #f44336, #d32f2f);
             color: white;
             min-width: 35px;
@@ -731,13 +732,15 @@
         }
 
         #botonCancelarRuta:hover,
-        #botonCerrarCamara:hover {
+        #botonCerrarCamara:hover,
+        #botonCerrarCamaraMovil:hover {
             transform: translateX(0) scale(1.05);
             background: linear-gradient(135deg, #e53935, #c62828);
         }
 
         #botonRuta.compact,
-        #botonImagenDron.compact {
+        #botonImagenDron.compact,
+        #botonCamaraMovil.compact {
             flex: 1;
         }
 
@@ -2003,7 +2006,8 @@
             }
 
             #botonCancelarRuta,
-            #botonCerrarCamara {
+            #botonCerrarCamara,
+            #botonCerrarCamaraMovil {
                 min-width: 32px;
                 flex: 0 0 32px;
                 padding: 6px 5px;
@@ -2011,7 +2015,8 @@
             }
 
             #botonRecorrerRuta,
-            #botonVerMapa {
+            #botonVerMapa,
+            #botonVerCamaraMovil {
                 flex: 1;
             }
 
@@ -2345,6 +2350,10 @@
                 <button id="botonCerrarCamara" onclick="cerrarCamaraDron(); closeAllDropdowns()" title="Cerrar cámara">❌</button>
             </div>
             <button id="botonCamaraMovil" class="boton-azul" onclick="abrirVentanaCamara(); closeAllDropdowns()">📱 Cámara Móvil</button>
+            <div id="camaraMovilButtonsContainer" class="ruta-buttons-container">
+                <button id="botonVerCamaraMovil" class="boton-amarillo">📱 Viendo Cámara Móvil</button>
+                <button id="botonCerrarCamaraMovil" onclick="cerrarCamaraMovil(); closeAllDropdowns()" title="Cerrar cámara móvil">❌</button>
+            </div>
             <button id="toggleNavegacion" class="boton-azul" onclick="toggleNavegacion(); closeAllDropdowns()">🧭 Ocultar Nav.</button>
         </div>
     </div>
@@ -3383,7 +3392,14 @@
         // Función para mostrar u ocultar el contenedor de la cámara del móvil
         function abrirVentanaCamara() {
             const camaraModal = document.getElementById('camara-movil-modal');
+            const botonCamaraMovil = document.getElementById('botonCamaraMovil');
+            const camaraMovilButtonsContainer = document.getElementById('camaraMovilButtonsContainer');
+            
             camaraModal.classList.add('active');
+            
+            // Ocultar botón principal y mostrar contenedor de botones
+            botonCamaraMovil.style.display = 'none';
+            camaraMovilButtonsContainer.classList.add('show');
             
             // Activar automáticamente la cámara frontal
             cam = "user";
@@ -3392,7 +3408,14 @@
 
         function cerrarCamaraMovil() {
             const camaraModal = document.getElementById('camara-movil-modal');
+            const botonCamaraMovil = document.getElementById('botonCamaraMovil');
+            const camaraMovilButtonsContainer = document.getElementById('camaraMovilButtonsContainer');
+            
             camaraModal.classList.remove('active');
+            
+            // Mostrar botón principal y ocultar contenedor de botones
+            botonCamaraMovil.style.display = '';  // Restaurar display original
+            camaraMovilButtonsContainer.classList.remove('show');
             
             // Detener stream de cámara si está activo
             const video = document.getElementById('video');

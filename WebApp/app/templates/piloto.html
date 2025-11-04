@@ -485,8 +485,8 @@
         .settings-panel {
             position: fixed;
             top: 0;
-            right: -400px;
-            width: 400px;
+            right: -500px;
+            width: 500px;
             height: 100%;
             max-height: 100vh;
             background: white;
@@ -505,7 +505,7 @@
         .settings-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
+            padding: 20px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -514,7 +514,7 @@
 
         .settings-header h3 {
             margin: 0;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
         }
 
@@ -522,9 +522,9 @@
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid rgba(255, 255, 255, 0.5);
             color: white;
-            font-size: 24px;
-            width: 36px;
-            height: 36px;
+            font-size: 28px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -540,42 +540,51 @@
         }
 
         .settings-content {
-            padding: 15px;
+            padding: 20px;
             flex: 1;
             overflow-y: auto;
         }
 
         .setting-item {
-            margin-bottom: 15px;
-            padding: 12px;
+            margin-bottom: 20px;
+            padding: 16px;
             background: #f8f9fa;
             border-radius: 10px;
             border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        /* Resaltado cuando se navega con gamepad */
+        .setting-item.gamepad-selected {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            border: 2px solid #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+            transform: scale(1.02);
         }
 
         .setting-label {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .setting-label span {
             font-weight: 600;
             color: #495057;
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .setting-value {
             font-weight: 700;
             color: #667eea;
-            font-size: 16px;
+            font-size: 18px;
         }
 
         .setting-description {
-            font-size: 11px;
+            font-size: 13px;
             color: #6c757d;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .slider-container {
@@ -585,7 +594,7 @@
 
         .setting-slider {
             width: 100%;
-            height: 8px;
+            height: 10px;
             border-radius: 5px;
             background: #dee2e6;
             outline: none;
@@ -596,8 +605,8 @@
         .setting-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             cursor: pointer;
@@ -611,8 +620,8 @@
         }
 
         .setting-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             cursor: pointer;
@@ -629,27 +638,27 @@
         .slider-labels {
             display: flex;
             justify-content: space-between;
-            font-size: 10px;
+            font-size: 12px;
             color: #adb5bd;
-            margin-top: 5px;
+            margin-top: 6px;
         }
 
         .settings-actions {
-            padding: 12px 15px;
+            padding: 16px 20px;
             background: #f8f9fa;
             border-top: 2px solid #e9ecef;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-shrink: 0;
         }
 
         .settings-actions button {
             flex: 1;
-            padding: 12px;
+            padding: 14px;
             border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -687,6 +696,64 @@
 
         .settings-overlay.open {
             display: block;
+        }
+
+        /* Estilos para mapeo de botones */
+        .button-mapping-item {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .button-mapping-item .setting-label {
+            margin-bottom: 0;
+        }
+
+        .button-mapping-item .setting-label span {
+            font-weight: 600;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        .remap-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            white-space: nowrap;
+            width: 100%;
+        }
+
+        .remap-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .remap-button.listening {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            animation: pulse-remap 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-remap {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+        }
+
+        .remap-icon {
+            font-size: 18px;
         }
 
         /* Responsive para el panel de ajustes */
@@ -819,22 +886,22 @@
 
             /* Panel de ajustes */
             .settings-panel {
-                width: 60%;
-                right: -60%;
+                width: 400px;
+                right: -400px;
             }
 
             .settings-header {
-                padding: 12px;
+                padding: 12px 15px;
             }
 
             .settings-header h3 {
-                font-size: 16px;
+                font-size: 18px;
             }
 
             .close-settings-btn {
-                width: 28px;
-                height: 28px;
-                font-size: 18px;
+                width: 32px;
+                height: 32px;
+                font-size: 22px;
             }
 
             .settings-content {
@@ -885,6 +952,29 @@
             .settings-actions button {
                 padding: 8px;
                 font-size: 12px;
+            }
+
+            /* Estilos responsive para remapeo de botones */
+            .button-mapping-item {
+                gap: 6px;
+            }
+
+            .button-mapping-item .setting-label span {
+                font-size: 13px;
+            }
+
+            .remap-button {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+
+            .remap-icon {
+                font-size: 14px;
+            }
+
+            /* Ocultar sección de mapeo de botones en tablets/móviles */
+            #gamepad-mapping-section {
+                display: none;
             }
 
             /* Pantalla completa en tablets 1024px */
@@ -976,6 +1066,142 @@
             to { 
                 opacity: 1;
                 transform: translateY(0);
+            }
+        }
+
+        /* === MODAL DE INSTRUCCIONES DE GAMEPAD === */
+        .gamepad-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 30000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .gamepad-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .gamepad-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 650px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.4s ease;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gamepad-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .gamepad-modal-header h3 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .gamepad-modal-body {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+            text-align: center;
+        }
+
+        .gamepad-modal-body img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .gamepad-modal-footer {
+            padding: 16px 24px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .gamepad-ok-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 36px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .gamepad-ok-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .gamepad-ok-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Responsive para el modal de gamepad */
+        @media (max-width: 768px) {
+            .gamepad-modal-content {
+                max-width: 95%;
+                border-radius: 16px;
+            }
+
+            .gamepad-modal-header {
+                padding: 16px 20px;
+            }
+
+            .gamepad-modal-header h3 {
+                font-size: 20px;
+            }
+
+            .gamepad-close-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 24px;
+            }
+
+            .gamepad-modal-body {
+                padding: 20px;
+            }
+
+            .gamepad-modal-footer {
+                padding: 12px 20px;
+            }
+
+            .gamepad-ok-btn {
+                padding: 12px 28px;
+                font-size: 14px;
             }
         }
     </style>
@@ -1174,7 +1400,7 @@
                 <div class="setting-description">Calidad de compresión del stream de video (mayor = mejor calidad)</div>
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="videoQualitySlider" 
-                           min="0" max="100" step="10" value="50"
+                           min="0" max="100" step="5" value="50"
                            oninput="updateSliderValue('videoQuality', this.value)">
                     <div class="slider-labels">
                         <span>Baja (0%)</span>
@@ -1198,6 +1424,63 @@
                         <span>1 fps</span>
                         <span>30 fps</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- Sección de mapeo de botones (solo desktop) -->
+            <div id="gamepad-mapping-section">
+                <div style="border-top: 2px solid #667eea; margin: 20px 0; padding-top: 10px;">
+                    <h4 style="color: #667eea; text-align: center; margin-bottom: 15px;">🎮 Mapeo de Botones del Mando</h4>
+                </div>
+
+                <!-- Botón Despegar -->
+                <div class="setting-item button-mapping-item">
+                    <div class="setting-label">
+                        <span>Despegar</span>
+                    </div>
+                    <button class="remap-button" onclick="startRemapping('takeoff')" id="takeoffRemapButton">
+                        <span class="remap-icon">🎯</span> <span id="takeoffButtonLabel">Botón 1 (Arriba)</span>
+                    </button>
+                </div>
+
+                <!-- Botón Aterrizar -->
+                <div class="setting-item button-mapping-item">
+                    <div class="setting-label">
+                        <span>Aterrizar</span>
+                    </div>
+                    <button class="remap-button" onclick="startRemapping('land')" id="landRemapButton">
+                        <span class="remap-icon">🎯</span> <span id="landButtonLabel">Botón 2 (Derecha)</span>
+                    </button>
+                </div>
+
+                <!-- Botón RTL -->
+                <div class="setting-item button-mapping-item">
+                    <div class="setting-label">
+                        <span>Volver a Casa</span>
+                    </div>
+                    <button class="remap-button" onclick="startRemapping('rtl')" id="rtlRemapButton">
+                        <span class="remap-icon">🎯</span> <span id="rtlButtonLabel">Botón 3 (Abajo)</span>
+                    </button>
+                </div>
+
+                <!-- Botón Foto -->
+                <div class="setting-item button-mapping-item">
+                    <div class="setting-label">
+                        <span>Capturar Foto</span>
+                    </div>
+                    <button class="remap-button" onclick="startRemapping('photo')" id="photoRemapButton">
+                        <span class="remap-icon">🎯</span> <span id="photoButtonLabel">Botón 4 (Izquierda)</span>
+                    </button>
+                </div>
+
+                <!-- Botón Video -->
+                <div class="setting-item button-mapping-item">
+                    <div class="setting-label">
+                        <span>Grabar Video</span>
+                    </div>
+                    <button class="remap-button" onclick="startRemapping('video')" id="videoRemapButton">
+                        <span class="remap-icon">🎯</span> <span id="videoButtonLabel">Start</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1282,6 +1565,21 @@
         </div>
     </div>
 
+    <!-- MODAL DE INSTRUCCIONES DE GAMEPAD -->
+    <div id="gamepad-instructions-modal" class="gamepad-modal">
+        <div class="gamepad-modal-content">
+            <div class="gamepad-modal-header">
+                <h3>🎮 Controles del Mando</h3>
+            </div>
+            <div class="gamepad-modal-body">
+                <img src="{{ url_for('static', filename='MANDO_botones.png') }}" alt="Instrucciones del mando">
+            </div>
+            <div class="gamepad-modal-footer">
+                <button class="gamepad-ok-btn" onclick="closeGamepadModal()">¡Entendido!</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const socket = io();
         let minimap = null;
@@ -1306,6 +1604,8 @@
         // Variables para grabación de video
         let isRecording = false;
         let anyModalOpen = false;
+        let gamepadInstructionsModalOpen = false; // Para detectar si el modal de instrucciones está abierto
+        let gamepadInstructionsShown = false; // Para saber si ya se mostraron las instrucciones alguna vez
 
         // Detectar si estamos en desktop (no móvil)
         function isDesktop() {
@@ -1793,6 +2093,7 @@
         window.addEventListener('load', () => {
             initMinimap();
             loadSettings();
+            loadButtonMapping();  // Cargar mapeo de botones personalizado
             
             // Inicializar soporte de gamepad solo en desktop
             if (isDesktop()) {
@@ -1865,12 +2166,17 @@
                 // 0: Stick izquierdo horizontal (Yaw)
                 // 1: Stick izquierdo vertical (Throttle)
                 // 2: Stick derecho horizontal (Roll)
-                // 5: Stick derecho vertical (Pitch)
+                // 3 o 5: Stick derecho vertical (Pitch) - depende del modelo de mando
                 
                 const yaw = gamepad.axes[0] || 0;          // Stick izquierdo X
                 const throttle = -(gamepad.axes[1] || 0);  // Stick izquierdo Y
                 const roll = gamepad.axes[2] || 0;         // Stick derecho X
-                const pitch = gamepad.axes[5] || 0;        // Stick derecho Y 
+                
+                // Auto-detectar si el mando usa eje 3 o 5 para pitch
+                let pitch = gamepad.axes[5] || 0;          // Intentar primero eje 5
+                if (Math.abs(pitch) < 0.05 && gamepad.axes[3] !== undefined) {
+                    pitch = gamepad.axes[3] || 0;          // Si eje 5 está inactivo, usar eje 3
+                } 
 
                 // Aplicar zona muerta (deadzone) para evitar drift
                 const deadzone = 0.1;
@@ -1879,6 +2185,41 @@
                 joystickState.throttle = Math.abs(throttle) < deadzone ? 0 : throttle;
                 joystickState.roll = Math.abs(roll) < deadzone ? 0 : roll;
                 joystickState.pitch = Math.abs(pitch) < deadzone ? 0 : pitch;
+
+                // Si el panel de ajustes está abierto, usar joystick para navegar
+                if (settingsNavigationActive && !isRemapping) {
+                    // Joystick izquierdo vertical (throttle) para navegar arriba/abajo
+                    if (Math.abs(joystickState.throttle) > inputThreshold) {
+                        if (joystickState.throttle > inputThreshold && lastVerticalInput !== 1) {
+                            navigateSettings('up');
+                            lastVerticalInput = 1;
+                        } else if (joystickState.throttle < -inputThreshold && lastVerticalInput !== -1) {
+                            navigateSettings('down');
+                            lastVerticalInput = -1;
+                        }
+                    } else {
+                        lastVerticalInput = 0;
+                    }
+                    
+                    // Joystick izquierdo horizontal (yaw) para ajustar sliders
+                    // Ajuste continuo cuando el joystick se mantiene presionado
+                    if (Math.abs(joystickState.yaw) > inputThreshold) {
+                        if (joystickState.yaw < -inputThreshold) {
+                            adjustCurrentSliderContinuous('left');
+                            lastHorizontalInput = -1;
+                        } else if (joystickState.yaw > inputThreshold) {
+                            adjustCurrentSliderContinuous('right');
+                            lastHorizontalInput = 1;
+                        }
+                    } else {
+                        lastHorizontalInput = 0;
+                    }
+                    
+                    // No enviar datos de movimiento al dron cuando estamos navegando ajustes
+                } else {
+                    // Enviar datos al dron solo si no estamos en ajustes
+                    sendJoystickData();
+                }
 
                 // Actualizar displays
                 document.getElementById('yaw-value').textContent = joystickState.yaw.toFixed(2);
@@ -1907,8 +2248,10 @@
                 // Guardar estado actual para la próxima iteración
                 previousButtonStates = currentButtonStates;
 
-                // Enviar datos al dron
-                sendJoystickData();
+                // Enviar datos al dron solo si no estamos navegando ajustes
+                if (!settingsNavigationActive) {
+                    sendJoystickData();
+                }
 
                 gamepadAnimationId = requestAnimationFrame(updateGamepad);
             }
@@ -1975,10 +2318,210 @@
             if (connected) {
                 statusElement.textContent = 'Conectado';
                 statusElement.style.color = '#4CAF50'; // Verde
+                
+                // Mostrar modal de instrucciones cuando se conecta (solo la primera vez)
+                if (!gamepadInstructionsShown && isDesktop()) {
+                    showGamepadModal();
+                }
             } else {
                 statusElement.textContent = 'Desconectado';
                 statusElement.style.color = '#f44336'; // Rojo
             }
+        }
+
+        // ========== FUNCIONES PARA MODAL DE INSTRUCCIONES DE GAMEPAD ==========
+        
+        function showGamepadModal() {
+            const modal = document.getElementById('gamepad-instructions-modal');
+            if (modal) {
+                modal.classList.add('show');
+                gamepadInstructionsModalOpen = true;
+                gamepadInstructionsShown = true; // Marcar que ya se mostraron las instrucciones
+                console.log('📖 Mostrando instrucciones del mando');
+            }
+        }
+
+        function closeGamepadModal() {
+            const modal = document.getElementById('gamepad-instructions-modal');
+            if (modal) {
+                modal.classList.remove('show');
+                gamepadInstructionsModalOpen = false;
+                console.log('✅ Instrucciones cerradas');
+            }
+        }
+
+        // Cerrar modal con tecla ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeGamepadModal();
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera del contenido
+        document.getElementById('gamepad-instructions-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'gamepad-instructions-modal') {
+                closeGamepadModal();
+            }
+        });
+
+        // ========== SISTEMA DE REMAPEO DE BOTONES ==========
+        
+        // Mapeo de botones por defecto
+        let buttonMapping = {
+            takeoff: 9,    // Start
+            land: 1,       // Botón 2 
+            rtl: 0,        // Botón 1 
+            photo: 2,      // Botón 3
+            video: 3       // Botón 4
+        };
+
+        // Nombres de botones genéricos (mando USB estándar)
+        const buttonNames = {
+            0: 'Botón 1 / Botón Y',
+            1: 'Botón 2 / Botón B',
+            2: 'Botón 3 / Botón A',
+            3: 'Botón 4 / Botón X',
+            4: 'L1 / LB',
+            5: 'R1 / RB',
+            6: 'L2 / LT',
+            7: 'R2 / RT',
+            8: 'Select',
+            9: 'Start',
+            10: 'L3',
+            11: 'R3',
+            12: 'D-Pad Arriba',
+            13: 'D-Pad Abajo',
+            14: 'D-Pad Izquierda',
+            15: 'D-Pad Derecha',
+            16: 'Home'
+        };
+
+        // Estado del remapeo
+        let isRemapping = false;
+        let currentRemapAction = null;
+        let remapStartTime = null;
+
+        // ========== NAVEGACIÓN POR AJUSTES CON GAMEPAD ==========
+        let settingsNavigationActive = false;
+        let currentSettingIndex = 0;
+        let settingsItems = [];
+        let lastVerticalInput = 0;
+        let lastHorizontalInput = 0;
+        const inputThreshold = 0.5; // Umbral para detectar movimiento del joystick
+        const navigationCooldown = 200; // Milisegundos entre navegación arriba/abajo
+        const sliderContinuousSpeed = 50; // Milisegundos entre ajustes continuos del slider
+        let lastNavigationTime = 0;
+        let lastSliderAdjustTime = 0;
+
+        // Cargar mapeo guardado del localStorage
+        function loadButtonMapping() {
+            const saved = localStorage.getItem('piloto_button_mapping');
+            if (saved) {
+                try {
+                    buttonMapping = JSON.parse(saved);
+                    updateAllButtonLabels();
+                    console.log('🎮 Mapeo de botones cargado:', buttonMapping);
+                } catch (e) {
+                    console.error('Error al cargar mapeo:', e);
+                }
+            }
+        }
+
+        // Guardar mapeo en localStorage
+        function saveButtonMapping() {
+            localStorage.setItem('piloto_button_mapping', JSON.stringify(buttonMapping));
+            console.log('💾 Mapeo de botones guardado');
+        }
+
+        // Actualizar todas las etiquetas de botones
+        function updateAllButtonLabels() {
+            updateButtonLabel('takeoff', buttonMapping.takeoff);
+            updateButtonLabel('land', buttonMapping.land);
+            updateButtonLabel('rtl', buttonMapping.rtl);
+            updateButtonLabel('photo', buttonMapping.photo);
+            updateButtonLabel('video', buttonMapping.video);
+        }
+
+        // Actualizar etiqueta de un botón específico
+        function updateButtonLabel(action, buttonIndex) {
+            const label = document.getElementById(`${action}ButtonLabel`);
+            const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
+            if (label) {
+                label.textContent = buttonName;
+            }
+        }
+
+        // Iniciar proceso de remapeo
+        function startRemapping(action) {
+            if (!gamepadConnected) {
+                alert('⚠️ No hay ningún mando conectado. Por favor, conecta un mando USB para remapear los botones.');
+                return;
+            }
+
+            isRemapping = true;
+            currentRemapAction = action;
+            remapStartTime = Date.now();
+
+            // Encontrar el botón específico y ponerlo en estado "escuchando"
+            const button = document.getElementById(`${action}RemapButton`);
+            if (button) {
+                button.classList.add('listening');
+                button.innerHTML = '<span class="remap-icon">⏳</span> Presiona un botón...';
+            }
+
+            console.log(`🎯 Esperando botón para: ${action}`);
+
+            // Auto-cancelar después de 10 segundos
+            setTimeout(() => {
+                if (isRemapping && currentRemapAction === action) {
+                    cancelRemapping();
+                }
+            }, 10000);
+        }
+
+        // Cancelar remapeo
+        function cancelRemapping() {
+            if (!isRemapping) return;
+
+            const action = currentRemapAction;
+            isRemapping = false;
+            currentRemapAction = null;
+
+            // Restaurar el botón específico a su estado normal
+            const button = document.getElementById(`${action}RemapButton`);
+            if (button) {
+                button.classList.remove('listening');
+                const buttonName = buttonNames[buttonMapping[action]] || `Botón ${buttonMapping[action]}`;
+                button.innerHTML = `<span class="remap-icon">🎯</span> <span id="${action}ButtonLabel">${buttonName}</span>`;
+            }
+
+            console.log('❌ Remapeo cancelado');
+        }
+
+        // Completar remapeo
+        function completeRemapping(buttonIndex) {
+            if (!isRemapping) return;
+
+            const action = currentRemapAction;
+
+            // Guardar el nuevo mapeo
+            buttonMapping[action] = buttonIndex;
+            saveButtonMapping();
+
+            // Restaurar el botón con el nuevo nombre
+            const button = document.getElementById(`${action}RemapButton`);
+            if (button) {
+                button.classList.remove('listening');
+                const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
+                button.innerHTML = `<span class="remap-icon">🎯</span> <span id="${action}ButtonLabel">${buttonName}</span>`;
+            }
+
+            // Mostrar confirmación visual
+            const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
+            console.log(`✅ ${action} remapeado a ${buttonName}`);
+
+            isRemapping = false;
+            currentRemapAction = null;
         }
 
         // ========== MANEJO DE BOTONES DEL GAMEPAD ==========
@@ -1986,47 +2529,83 @@
         function handleGamepadButton(buttonIndex) {
             console.log(`🎮 Botón ${buttonIndex} presionado`);
             
-            // Si hay algún modal abierto, cerrarlo con cualquier botón
+            // Si las instrucciones nunca se han mostrado, mostrarlas y NO ejecutar la acción
+            if (!gamepadInstructionsShown) {
+                console.log('🎮 Primer botón detectado - Mostrando instrucciones sin ejecutar acción');
+                showGamepadModal();
+                return; // Salir sin ejecutar ninguna acción
+            }
+            
+            // Si estamos en modo remapeo, capturar el botón
+            if (isRemapping) {
+                completeRemapping(buttonIndex);
+                return;
+            }
+            
+            // Si el modal de instrucciones de gamepad está abierto, cerrarlo
+            if (gamepadInstructionsModalOpen) {
+                closeGamepadModal();
+                return;
+            }
+            
+            // Si hay algún otro modal abierto (foto/video), cerrarlo con cualquier botón
             if (anyModalOpen) {
                 closePhotoModal();
                 closeVideoModal();
                 return;
             }
             
-            // Mapeo de botones:
-            switch(buttonIndex) {
-                case 9: // Start -> Despegar
-                    console.log('🎮 START: Despegar');
-                    despegarDron();
-                    break;
-                    
-                case 8: // Select -> Ajustes
-                    console.log('🎮 SELECT: Abrir ajustes');
+            // Si estamos navegando por ajustes
+            if (settingsNavigationActive) {
+                // Botón 2 (A/Cross) - Activar elemento actual
+                if (buttonIndex === buttonMapping.land || buttonIndex === 2) {
+                    activateCurrentButton();
+                    return;
+                }
+                
+                // Select - Cerrar ajustes
+                if (buttonIndex === 8) {
+                    console.log('🎮 SELECT: Cerrar ajustes');
                     toggleSettings();
-                    break;
-                    
-                case 0: // B0 -> RTL
-                    console.log('🎮 B0: Return to Launch');
-                    returnToLaunch();
-                    break;
-                    
-                case 1: // B1 -> Aterrizar
-                    console.log('🎮 B1: Aterrizar');
-                    aterrizarDron();
-                    break;
-                    
-                case 2: // B2 -> Hacer Foto
-                    console.log('🎮 B2: Capturar foto');
-                    capturarFoto();
-                    break;
-                    
-                case 3: // B3 -> Grabar/Detener Video
-                    console.log('🎮 B3: Toggle grabación');
-                    toggleGrabacion();
-                    break;
-                    
-                default:
-                    console.log(`🎮 Botón ${buttonIndex} no mapeado`);
+                    return;
+                }
+                
+                // Start - Aplicar ajustes
+                if (buttonIndex === 9) {
+                    console.log('🎮 START: Aplicar ajustes');
+                    applySettings();
+                    return;
+                }
+                
+                // Otros botones no hacen nada en modo ajustes
+                return;
+            }
+            
+            // Select - Abrir ajustes (solo si están cerrados)
+            if (buttonIndex === 8) {
+                console.log('🎮 SELECT: Abrir ajustes');
+                toggleSettings();
+                return;
+            }
+            
+            // Usar el mapeo configurado (solo cuando ajustes están cerrados)
+            if (buttonIndex === buttonMapping.takeoff) {
+                console.log('🎮 DESPEGAR');
+                despegarDron();
+            } else if (buttonIndex === buttonMapping.land) {
+                console.log('🎮 ATERRIZAR');
+                aterrizarDron();
+            } else if (buttonIndex === buttonMapping.rtl) {
+                console.log('🎮 VOLVER A CASA (RTL)');
+                returnToLaunch();
+            } else if (buttonIndex === buttonMapping.photo) {
+                console.log('🎮 CAPTURAR FOTO');
+                capturarFoto();
+            } else if (buttonIndex === buttonMapping.video) {
+                console.log('🎮 TOGGLE GRABACIÓN VIDEO');
+                toggleGrabacion();
+            } else {
+                console.log(`🎮 Botón ${buttonIndex} no mapeado`);
             }
         }
 
@@ -2164,6 +2743,189 @@
             // Ajustar altura del panel al espacio visible real
             if (panel.classList.contains('open')) {
                 adjustPanelHeight();
+                initSettingsNavigation();
+            } else {
+                deactivateSettingsNavigation();
+            }
+        }
+
+        // Inicializar navegación por ajustes con gamepad
+        function initSettingsNavigation() {
+            if (!isDesktop()) return; // Solo en desktop
+            
+            settingsNavigationActive = true;
+            currentSettingIndex = 0;
+            
+            // Recopilar todos los elementos navegables (sliders y botones de remapeo)
+            settingsItems = [];
+            
+            // Añadir sliders
+            const sliders = document.querySelectorAll('.setting-item:not(.button-mapping-item)');
+            sliders.forEach(item => {
+                const slider = item.querySelector('.setting-slider');
+                if (slider) {
+                    settingsItems.push({
+                        type: 'slider',
+                        element: item,
+                        slider: slider,
+                        setting: slider.id.replace('Slider', '')
+                    });
+                }
+            });
+            
+            // Añadir botones de remapeo (solo si gamepad está conectado)
+            if (gamepadConnected) {
+                const remapItems = document.querySelectorAll('.button-mapping-item');
+                remapItems.forEach(item => {
+                    const button = item.querySelector('.remap-button');
+                    if (button) {
+                        const action = button.id.replace('RemapButton', '');
+                        settingsItems.push({
+                            type: 'remap',
+                            element: item,
+                            button: button,
+                            action: action
+                        });
+                    }
+                });
+            }
+            
+            // Resaltar el primer elemento
+            if (settingsItems.length > 0) {
+                highlightSettingItem(0);
+            }
+            
+            console.log('🎮 Navegación de ajustes activada:', settingsItems.length, 'elementos');
+        }
+
+        // Desactivar navegación por ajustes
+        function deactivateSettingsNavigation() {
+            settingsNavigationActive = false;
+            
+            // Quitar resaltado de todos los elementos
+            settingsItems.forEach(item => {
+                item.element.classList.remove('gamepad-selected');
+            });
+            
+            settingsItems = [];
+            currentSettingIndex = 0;
+            
+            console.log('🎮 Navegación de ajustes desactivada');
+        }
+
+        // Resaltar elemento seleccionado
+        function highlightSettingItem(index) {
+            // Quitar resaltado anterior
+            settingsItems.forEach(item => {
+                item.element.classList.remove('gamepad-selected');
+            });
+            
+            // Resaltar nuevo elemento
+            if (index >= 0 && index < settingsItems.length) {
+                const item = settingsItems[index];
+                item.element.classList.add('gamepad-selected');
+                
+                // Hacer scroll para que sea visible
+                item.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                currentSettingIndex = index;
+            }
+        }
+
+        // Navegar arriba/abajo por los ajustes
+        function navigateSettings(direction) {
+            if (!settingsNavigationActive || settingsItems.length === 0) return;
+            
+            const now = Date.now();
+            if (now - lastNavigationTime < navigationCooldown) return;
+            lastNavigationTime = now;
+            
+            let newIndex = currentSettingIndex;
+            
+            if (direction === 'up') {
+                newIndex = Math.max(0, currentSettingIndex - 1);
+            } else if (direction === 'down') {
+                newIndex = Math.min(settingsItems.length - 1, currentSettingIndex + 1);
+            }
+            
+            if (newIndex !== currentSettingIndex) {
+                highlightSettingItem(newIndex);
+            }
+        }
+
+        // Ajustar valor del slider actual (versión antigua - un toque)
+        function adjustCurrentSlider(direction) {
+            if (!settingsNavigationActive || settingsItems.length === 0) return;
+            
+            const now = Date.now();
+            if (now - lastNavigationTime < navigationCooldown) return;
+            lastNavigationTime = now;
+            
+            const currentItem = settingsItems[currentSettingIndex];
+            
+            if (currentItem.type === 'slider') {
+                const slider = currentItem.slider;
+                const step = parseFloat(slider.step) || 1;
+                const min = parseFloat(slider.min);
+                const max = parseFloat(slider.max);
+                let value = parseFloat(slider.value);
+                
+                if (direction === 'left') {
+                    value = Math.max(min, value - step);
+                } else if (direction === 'right') {
+                    value = Math.min(max, value + step);
+                }
+                
+                slider.value = value;
+                updateSliderValue(currentItem.setting, value);
+                
+                console.log(`🎮 Ajustado ${currentItem.setting} a ${value}`);
+            }
+        }
+
+        // Ajustar valor del slider actual de forma continua
+        function adjustCurrentSliderContinuous(direction) {
+            if (!settingsNavigationActive || settingsItems.length === 0) return;
+            
+            const now = Date.now();
+            if (now - lastSliderAdjustTime < sliderContinuousSpeed) return;
+            lastSliderAdjustTime = now;
+            
+            const currentItem = settingsItems[currentSettingIndex];
+            
+            if (currentItem.type === 'slider') {
+                const slider = currentItem.slider;
+                const step = parseFloat(slider.step) || 1;
+                const min = parseFloat(slider.min);
+                const max = parseFloat(slider.max);
+                let value = parseFloat(slider.value);
+                
+                if (direction === 'left') {
+                    value = Math.max(min, value - step);
+                } else if (direction === 'right') {
+                    value = Math.min(max, value + step);
+                }
+                
+                slider.value = value;
+                updateSliderValue(currentItem.setting, value);
+                
+                // Solo mostrar log cada 10 ajustes para no saturar la consola
+                if (Math.round(value) % 10 === 0) {
+                    console.log(`🎮 Ajustado ${currentItem.setting} a ${value}`);
+                }
+            }
+        }
+
+        // Activar botón actual (para remapeo o aplicar/restaurar)
+        function activateCurrentButton() {
+            if (!settingsNavigationActive || settingsItems.length === 0) return;
+            
+            const currentItem = settingsItems[currentSettingIndex];
+            
+            if (currentItem.type === 'remap') {
+                // Activar remapeo
+                startRemapping(currentItem.action);
+                console.log(`🎮 Activando remapeo para: ${currentItem.action}`);
             }
         }
 
@@ -2218,7 +2980,8 @@
 
         // Restaurar valores por defecto
         function resetSettings() {
-            if (confirm('¿Restaurar todos los ajustes a valores por defecto?')) {
+            if (confirm('¿Restaurar todos los ajustes (parámetros y mapeo de botones) a valores por defecto?')) {
+                // Restaurar parámetros de vuelo
                 currentSettings = {...defaultSettings};
                 
                 // Actualizar sliders y valores
@@ -2231,7 +2994,18 @@
                     }
                 }
                 
-                console.log('Ajustes restaurados a valores por defecto');
+                // Restaurar mapeo de botones a valores por defecto
+                buttonMapping = {
+                    takeoff: 9,     // Start
+                    land: 1,        // Botón 2 
+                    rtl: 0,         // Botón 1
+                    photo: 2,       // Botón 3
+                    video: 3        // Botón 4
+                };
+                saveButtonMapping();
+                updateAllButtonLabels();
+                
+                console.log('✅ Ajustes y mapeo restaurados a valores por defecto');
             }
         }
 
