@@ -3858,7 +3858,115 @@
             botonAterrizar.disabled = true;
         }
 
-        function moverDron(direction) {
+        // ===== SISTEMA DE MOVIMIENTO CON DISTANCIA ESPECÍFICA =====
+        
+        // Variables globales para monitoreo de distancia
+        let movimientoConDistancia = {
+            activo: false,
+            direccion: null,
+            distanciaObjetivo: 0,  // En metros
+            posicionInicial: { lat: 0, lon: 0 },
+            distanciaRecorrida: 0,
+            intervaloMonitoreo: null
+        };
+
+        // Función para calcular distancia entre dos puntos GPS (fórmula de Haversine)
+        function calcularDistanciaGPS(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Radio de la Tierra en metros
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // Distancia en metros
+        }
+
+        // Función para monitorear distancia recorrida
+        function monitorearDistancia() {
+            if (!movimientoConDistancia.activo || !telemetry_info) {
+                return;
+            }
+
+            // Calcular distancia recorrida desde posición inicial
+            const distanciaActual = calcularDistanciaGPS(
+                movimientoConDistancia.posicionInicial.lat,
+                movimientoConDistancia.posicionInicial.lon,
+                telemetry_info.lat,
+                telemetry_info.lon
+            );
+
+            movimientoConDistancia.distanciaRecorrida = distanciaActual;
+
+            console.log(`📏 Distancia recorrida: ${distanciaActual.toFixed(2)}m / ${movimientoConDistancia.distanciaObjetivo}m`);
+
+            // Verificar si se alcanzó la distancia objetivo (con tolerancia de 0.5m)
+            if (distanciaActual >= movimientoConDistancia.distanciaObjetivo - 0.5) {
+                detenerMovimientoConDistancia(true);
+            }
+        }
+
+        // Función para detener movimiento con distancia
+        function detenerMovimientoConDistancia(exitoso = false) {
+            if (movimientoConDistancia.activo) {
+                // Detener monitoreo
+                if (movimientoConDistancia.intervaloMonitoreo) {
+                    clearInterval(movimientoConDistancia.intervaloMonitoreo);
+                    movimientoConDistancia.intervaloMonitoreo = null;
+                }
+
+                // Detener movimiento del dron
+                socket.emit('command', { action: 'go', direction: 'Stop' });
+
+                if (exitoso) {
+                    const distanciaFinal = movimientoConDistancia.distanciaRecorrida.toFixed(2);
+                    console.log(`✅ Distancia objetivo alcanzada: ${distanciaFinal}m`);
+                    hablar(`Distancia alcanzada: ${distanciaFinal} metros`);
+                } else {
+                    console.log('🛑 Movimiento con distancia cancelado');
+                }
+
+                // Resetear estado
+                movimientoConDistancia.activo = false;
+                movimientoConDistancia.direccion = null;
+                movimientoConDistancia.distanciaObjetivo = 0;
+                movimientoConDistancia.distanciaRecorrida = 0;
+            }
+        }
+
+        // Función mejorada para mover el dron (con soporte de distancia)
+        function moverDron(direction, distanciaMetros = null) {
+            // Si hay un movimiento con distancia activo, detenerlo primero
+            if (movimientoConDistancia.activo) {
+                detenerMovimientoConDistancia(false);
+            }
+
+            // Si se especifica distancia, activar monitoreo
+            if (distanciaMetros !== null && distanciaMetros > 0) {
+                if (!telemetry_info || !telemetry_info.lat || !telemetry_info.lon) {
+                    console.error('❌ No hay telemetría GPS disponible');
+                    hablar('Error: No hay GPS disponible');
+                    return;
+                }
+
+                // Guardar posición inicial
+                movimientoConDistancia.posicionInicial = {
+                    lat: telemetry_info.lat,
+                    lon: telemetry_info.lon
+                };
+                movimientoConDistancia.direccion = direction;
+                movimientoConDistancia.distanciaObjetivo = distanciaMetros;
+                movimientoConDistancia.distanciaRecorrida = 0;
+                movimientoConDistancia.activo = true;
+
+                console.log(`🎯 Iniciando movimiento al ${direction} por ${distanciaMetros}m`);
+                console.log(`📍 Posición inicial: ${telemetry_info.lat.toFixed(6)}, ${telemetry_info.lon.toFixed(6)}`);
+
+                // Iniciar monitoreo cada 100ms
+                movimientoConDistancia.intervaloMonitoreo = setInterval(monitorearDistancia, 100);
+            }
+
+            // Enviar comando de movimiento
             socket.emit('command', { action: 'go', direction: direction });
         }
 
@@ -3876,9 +3984,232 @@
             socket.emit('command', { action: 'change_altitude', altitude: cantidad });
         }
 
+        // Función para ir a una altura absoluta específica
+        function irAAlturaAbsoluta(alturaObjetivo) {
+            if (!telemetry_info || telemetry_info.alt === undefined) {
+                console.error('❌ No hay telemetría de altitud disponible');
+                hablar('Error: No hay información de altitud');
+                return;
+            }
+            
+            const alturaActual = telemetry_info.alt;
+            const diferencia = alturaObjetivo - alturaActual;
+            
+            console.log(`📊 Altura actual: ${alturaActual.toFixed(2)}m, Objetivo: ${alturaObjetivo}m, Diferencia: ${diferencia.toFixed(2)}m`);
+            
+            if (Math.abs(diferencia) < 0.5) {
+                hablar('Ya estoy a esa altura');
+                return;
+            }
+            
+            // Enviar ajuste de altitud relativo para alcanzar la altura absoluta
+            socket.emit('command', { action: 'change_altitude', altitude: diferencia });
+            console.log(`🎯 Ajustando ${diferencia.toFixed(2)}m para alcanzar ${alturaObjetivo}m`);
+        }
+
         // ===== CONTROL POR VOZ =====
         let recognition;
         let recognizing = false;
+
+        // ===== SISTEMA DE ÓRDENES COMPUESTAS =====
+        let colaComandos = [];
+        let ejecutandoComando = false;
+
+        // Función para dividir comando compuesto en comandos individuales
+        function dividirComandoCompuesto(comando) {
+            // Detectar conectores: "y luego", "y después", "después", "y"
+            const conectores = [
+                ' y luego ',
+                ' y después ',
+                ' y despues ',
+                ' luego ',
+                ' después ',
+                ' despues ',
+                ' tambien ',
+                ' también ',
+                ' ademas ',
+                ' además ',
+                ' y '  // Este debe ir al final porque es el más genérico
+            ];
+            
+            // Reemplazar TODOS los conectores por un separador único
+            let comandoTemp = comando;
+            for (let conector of conectores) {
+                // Reemplazar todas las ocurrencias del conector por un separador
+                comandoTemp = comandoTemp.split(conector).join('|||SEPARADOR|||');
+            }
+            
+            // Dividir por el separador
+            let comandos = comandoTemp.split('|||SEPARADOR|||').map(c => {
+                // Limpiar cada subcomando: eliminar comas y puntos
+                return c.replace(/[.,;:!?]+/g, '').trim();
+            }).filter(c => c.length > 0); // Eliminar comandos vacíos
+            
+            console.log(`📋 Comando dividido en ${comandos.length} partes:`, comandos);
+            return comandos;
+        }
+
+        // Función para determinar el tipo de comando y esperar su completitud
+        async function esperarCompletitudComando(comando) {
+            const comandoLower = comando.toLowerCase();
+            
+            // DESPEGAR: Esperar hasta que el estado sea 'flying'
+            if (comandoLower.includes('despega') || comandoLower.includes('despegar') || 
+                comandoLower.includes('takeoff') || comandoLower.includes('vuela')) {
+                console.log('⏳ Esperando a que el dron esté volando...');
+                
+                // Esperar hasta que el estado sea 'flying' (máximo 60 segundos)
+                const tiempoInicio = Date.now();
+                const timeout = 60000; // 60 segundos
+                
+                while (Date.now() - tiempoInicio < timeout) {
+                    if (telemetry_info && telemetry_info.state === 'flying') {
+                        console.log('✅ Dron volando - comando completado');
+                        await new Promise(resolve => setTimeout(resolve, 500)); // Pequeña pausa extra
+                        return true;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 200)); // Check cada 200ms
+                }
+                
+                console.warn('⚠️ Timeout esperando despegue');
+                return false;
+            }
+            
+            // MOVIMIENTOS CON DISTANCIA: Esperar hasta que se complete el movimiento
+            if ((comandoLower.includes('norte') || comandoLower.includes('adelante') || 
+                 comandoLower.includes('avanza') || comandoLower.includes('sur') || 
+                 comandoLower.includes('atrás') || comandoLower.includes('retrocede') ||
+                 comandoLower.includes('este') || comandoLower.includes('derecha') ||
+                 comandoLower.includes('oeste') || comandoLower.includes('izquierda')) &&
+                 extraerDistancia(comando) !== null) {
+                
+                console.log('⏳ Esperando a que se complete el movimiento con distancia...');
+                
+                // Esperar hasta que movimientoConDistancia.activo sea false
+                const tiempoInicio = Date.now();
+                const timeout = 60000; // 60 segundos para movimientos
+                
+                while (Date.now() - tiempoInicio < timeout) {
+                    if (!movimientoConDistancia.activo) {
+                        console.log('✅ Movimiento completado');
+                        await new Promise(resolve => setTimeout(resolve, 500)); // Pequeña pausa extra
+                        return true;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 200)); // Check cada 200ms
+                }
+                
+                console.warn('⚠️ Timeout esperando completar movimiento');
+                return false;
+            }
+            
+            // CAMBIOS DE ALTITUD: Esperar un poco más (ajuste dinámico)
+            if (comandoLower.includes('sube') || comandoLower.includes('subir') ||
+                comandoLower.includes('baja') || comandoLower.includes('bajar')) {
+                
+                const altura = extraerAltura(comando);
+                if (altura !== null) {
+                    // Tiempo proporcional a la altura (1 segundo por metro + 1 segundo base)
+                    const tiempoEspera = Math.min((altura * 1000) + 1000, 10000); // Máximo 10 segundos
+                    console.log(`⏳ Esperando ${tiempoEspera}ms para cambio de altitud de ${altura}m...`);
+                    await new Promise(resolve => setTimeout(resolve, tiempoEspera));
+                    return true;
+                }
+            }
+            
+            // ATERRIZAR: Esperar hasta que el estado sea 'connected' o 'landed'
+            if (comandoLower.includes('aterriza') || comandoLower.includes('aterrizas') || 
+                comandoLower.includes('aterrizar') || comandoLower.includes('land')) {
+                console.log('⏳ Esperando a que el dron aterrice...');
+                
+                const tiempoInicio = Date.now();
+                const timeout = 60000; // 60 segundos
+
+                while (Date.now() - tiempoInicio < timeout) {
+                    if (telemetry_info && 
+                        (telemetry_info.state === 'connected' || telemetry_info.state === 'landed')) {
+                        console.log('✅ Dron aterrizado - comando completado');
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        return true;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                console.warn('⚠️ Timeout esperando aterrizaje');
+                return false;
+            }
+            
+            // RTL (Return to Launch): Esperar hasta que el dron vuelva y aterrice
+            if (comandoLower.includes('rtl') || comandoLower.includes('vuelve') || 
+                comandoLower.includes('regresa') || comandoLower.includes('base') || 
+                comandoLower.includes('casa') || comandoLower.includes('home')) {
+                console.log('⏳ Esperando a que el dron regrese a casa y aterrice...');
+                
+                const tiempoInicio = Date.now();
+                const timeout = 120000; // 120 segundos (2 minutos, puede tardar más que aterrizar)
+                
+                while (Date.now() - tiempoInicio < timeout) {
+                    if (telemetry_info && 
+                        (telemetry_info.state === 'connected' || telemetry_info.state === 'landed')) {
+                        console.log('✅ Dron regresó a casa y aterrizó - comando completado');
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        return true;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                console.warn('⚠️ Timeout esperando RTL');
+                return false;
+            }
+            
+            // FOTO/VIDEO/TELEMETRÍA: Comandos instantáneos, pausa mínima
+            if (comandoLower.includes('foto') || comandoLower.includes('graba') || 
+                comandoLower.includes('altura') || comandoLower.includes('velocidad') ||
+                comandoLower.includes('cómo estás')) {
+                console.log('⏳ Pausa mínima para comando instantáneo...');
+                await new Promise(resolve => setTimeout(resolve, 5000)); // 5 segundos
+                return true;
+            }
+
+            // OTROS COMANDOS: Espera por defecto de 1 minuto
+            console.log('⏳ Espera estándar de 1 minuto...');
+            await new Promise(resolve => setTimeout(resolve, 60000));
+            return true;
+        }
+
+        // Función para ejecutar cola de comandos secuencialmente
+        async function ejecutarColaComandos() {
+            if (ejecutandoComando || colaComandos.length === 0) {
+                return;
+            }
+            
+            ejecutandoComando = true;
+            
+            while (colaComandos.length > 0) {
+                const comando = colaComandos.shift();
+                console.log(`▶️ Ejecutando comando de la cola: "${comando}"`);
+                
+                const exitoso = await procesarComandoVozIndividual(comando);
+                
+                if (!exitoso) {
+                    console.warn(`⚠️ Comando falló, limpiando cola`);
+                    colaComandos = []; // Limpiar cola si hay error
+                    break;
+                }
+                
+                // Esperar a que se complete el comando antes de continuar
+                if (colaComandos.length > 0) {
+                    const completado = await esperarCompletitudComando(comando);
+                    if (!completado) {
+                        console.warn(`⚠️ Timeout en comando, limpiando cola`);
+                        colaComandos = [];
+                        break;
+                    }
+                }
+            }
+            
+            ejecutandoComando = false;
+            console.log(`✅ Cola de comandos completada`);
+        }
 
         function iniciarControlVoz() {
             // Verificar soporte
@@ -3934,7 +4265,7 @@
                 modalBtn.setAttribute('data-text', `"${transcript}"`);
                 voiceText.textContent = `"${transcript}"`;
 
-                // Procesar comando
+                // Procesar comando (puede ser simple o compuesto)
                 setTimeout(() => {
                     const exitoso = procesarComandoVoz(transcript);
                     
@@ -4013,8 +4344,11 @@
             }
         }
 
-        // Función para convertir palabras numéricas a números
+        // Función para convertir palabras numéricas a números (soporta 1-50)
         function palabraANumero(palabra) {
+            palabra = palabra.toLowerCase().trim();
+            
+            // Diccionario de números básicos
             const numeros = {
                 'uno': 1, 'un': 1,
                 'dos': 2,
@@ -4025,14 +4359,69 @@
                 'siete': 7,
                 'ocho': 8,
                 'nueve': 9,
-                'diez': 10
+                'diez': 10,
+                'once': 11,
+                'doce': 12,
+                'trece': 13,
+                'catorce': 14,
+                'quince': 15,
+                'dieciséis': 16, 'dieciseis': 16,
+                'diecisiete': 17,
+                'dieciocho': 18,
+                'diecinueve': 19,
+                'veinte': 20,
+                'veintiuno': 21, 'veintiún': 21,
+                'veintidós': 22, 'veintidos': 22,
+                'veintitrés': 23, 'veintitres': 23,
+                'veinticuatro': 24,
+                'veinticinco': 25,
+                'veintiséis': 26, 'veintiseis': 26,
+                'veintisiete': 27,
+                'veintiocho': 28,
+                'veintinueve': 29,
+                'treinta': 30,
+                'cuarenta': 40,
+                'cincuenta': 50
             };
-            return numeros[palabra.toLowerCase()] || null;
+            
+            // Buscar número directo
+            if (numeros[palabra] !== undefined) {
+                return numeros[palabra];
+            }
+            
+            // Buscar compuestos con "y" (treinta y cinco, cuarenta y dos, etc.)
+            if (palabra.includes(' y ')) {
+                const partes = palabra.split(' y ');
+                if (partes.length === 2) {
+                    const decena = numeros[partes[0].trim()];
+                    const unidad = numeros[partes[1].trim()];
+                    if (decena && unidad && unidad < 10) {
+                        return decena + unidad;
+                    }
+                }
+            }
+            
+            return null;
         }
 
         // Función para extraer altura del comando de voz
         function extraerAltura(comando) {
-            // Buscar cualquier palabra numérica en el comando
+            // Primero buscar números escritos en dígitos CON "metros"
+            const regexDigitosConMetros = /(\d+)\s*metros?/i;
+            const matchDigitosConMetros = comando.match(regexDigitosConMetros);
+            if (matchDigitosConMetros) {
+                return parseInt(matchDigitosConMetros[1]);
+            }
+            
+            // Buscar números sueltos en dígitos (para cuando se omite "metros")
+            // Ejemplos: "sube 5", "baja a 3", "despega 7"
+            const regexDigitosSueltos = /(?:sube|baja|despega|despegar|vuela|a|hasta)\s+(\d+)/i;
+            const matchDigitosSueltos = comando.match(regexDigitosSueltos);
+            if (matchDigitosSueltos) {
+                return parseInt(matchDigitosSueltos[1]);
+            }
+            
+            // Buscar números escritos en palabras
             const palabras = comando.split(' ');
             
             for (let palabra of palabras) {
@@ -4045,11 +4434,128 @@
                 }
             }
             
+            // Buscar compuestos "treinta y cinco"
+            const palabrasArray = comando.toLowerCase().split(/\s+/);
+            for (let i = 0; i < palabrasArray.length - 2; i++) {
+                if (palabrasArray[i + 1] === 'y') {
+                    const compuesto = `${palabrasArray[i]} y ${palabrasArray[i + 2]}`;
+                    const numero = palabraANumero(compuesto);
+                    if (numero !== null) {
+                        return numero;
+                    }
+                }
+            }
+            
             return null;
         }
 
+        // Función para extraer distancia de comandos de voz (para movimientos)
+        function extraerDistancia(comando) {
+            // Buscar patrón: número + "metros" o "metro"
+            // Ejemplos: "avanza 5 metros", "ve al norte 10 metros", "retrocede 3 metros"
+            
+            // Primero buscar números escritos en dígitos CON "metros" (1-50)
+            const regexDigitosConMetros = /(\d+)\s*metros?/i;
+            const matchDigitosConMetros = comando.match(regexDigitosConMetros);
+            if (matchDigitosConMetros) {
+                const distancia = parseInt(matchDigitosConMetros[1]);
+                // Validar rango: 1-50 metros (seguridad)
+                if (distancia >= 1 && distancia <= 50) {
+                    return distancia;
+                }
+            }
+            
+            // Buscar números sueltos en dígitos (para cuando se omite "metros")
+            // Ejemplos: "avanza 5", "norte 10", "retrocede 3"
+            const regexDigitosSueltos = /(?:avanza|avanzar|norte|adelante|sur|atrás|retrocede|este|derecha|oeste|izquierda)\s+(\d+)/i;
+            const matchDigitosSueltos = comando.match(regexDigitosSueltos);
+            if (matchDigitosSueltos) {
+                const distancia = parseInt(matchDigitosSueltos[1]);
+                if (distancia >= 1 && distancia <= 50) {
+                    return distancia;
+                }
+            }
+            
+            // Buscar números escritos en palabras
+            const palabras = comando.toLowerCase().split(/\s+/);
+            
+            for (let i = 0; i < palabras.length; i++) {
+                let palabra = palabras[i];
+                
+                // Limpiar la palabra de "metros" si está pegada
+                palabra = palabra.replace(/metros?$/i, '').trim();
+                
+                // Intentar convertir palabra individual
+                let numero = palabraANumero(palabra);
+                
+                // Si no funcionó, intentar combinar con siguiente palabra para compuestos "treinta y cinco"
+                if (numero === null && i + 2 < palabras.length && palabras[i + 1] === 'y') {
+                    const compuesto = `${palabras[i]} y ${palabras[i + 2]}`;
+                    numero = palabraANumero(compuesto);
+                    if (numero !== null) {
+                        // Verificar que después viene "metros"
+                        if (i + 3 < palabras.length && /metros?/i.test(palabras[i + 3])) {
+                            if (numero >= 1 && numero <= 50) {
+                                return numero;
+                            }
+                        }
+                    }
+                }
+                
+                if (numero !== null) {
+                    // Verificar que después viene "metro" o "metros"
+                    if (i + 1 < palabras.length && /metros?/i.test(palabras[i + 1])) {
+                        // Validar rango: 1-50 metros
+                        if (numero >= 1 && numero <= 50) {
+                            return numero;
+                        }
+                    }
+                    // O si "metros" está pegado a la palabra
+                    else if (/metros?$/i.test(palabras[i])) {
+                        if (numero >= 1 && numero <= 50) {
+                            return numero;
+                        }
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        // Función principal que detecta órdenes compuestas
         function procesarComandoVoz(comando) {
-            console.log('Procesando comando:', comando);
+            // Limpiar el comando: eliminar comas y signos de puntuación innecesarios
+            // Mantener solo letras, números, espacios y conectores importantes
+            comando = comando.replace(/[.,;:!?]+/g, ' ').trim();
+            // Normalizar espacios múltiples
+            comando = comando.replace(/\s+/g, ' ');
+            
+            console.log('🎙️ Procesando comando limpio:', comando);
+            
+            // Detectar si es una orden compuesta
+            const comandosIndividuales = dividirComandoCompuesto(comando);
+            
+            if (comandosIndividuales.length > 1) {
+                // Es una orden compuesta
+                console.log(`🔗 Orden compuesta detectada con ${comandosIndividuales.length} comandos`);
+                hablar(`Ejecutando ${comandosIndividuales.length} comandos`);
+                
+                // Agregar comandos a la cola
+                colaComandos = comandosIndividuales;
+                
+                // Iniciar ejecución secuencial
+                ejecutarColaComandos();
+                
+                return true;
+            } else {
+                // Es un comando simple
+                return procesarComandoVozIndividual(comando);
+            }
+        }
+
+        // Función que procesa un comando individual (renombrada de procesarComandoVoz)
+        function procesarComandoVozIndividual(comando) {
+            console.log('▶️ Procesando comando individual:', comando);
 
             // Despegar con altura específica
             if (comando.includes('despega') || comando.includes('despegar') || 
@@ -4070,10 +4576,20 @@
                     hablar(`Despegando a ${altura} metros`);
                     despegarDronConAltura(altura);
                 } else {
-                    // Si no se especifica altura con "a" o "hasta", usar la del campo input
-                    console.log('Ejecutando: Despegar');
-                    hablar('Despegando');
-                    despegarDron();
+                    // Si no se especifica altura, verificar si hay altura en el campo
+                    const alturaInput = document.getElementById('altura');
+                    const alturaValor = alturaInput ? alturaInput.value : null;
+                    
+                    if (alturaValor && alturaValor.trim() !== '') {
+                        console.log('Ejecutando: Despegar con altura del campo');
+                        hablar('Despegando');
+                        despegarDron();
+                    } else {
+                        console.log('Ejecutando: Solicitar altura de despegue');
+                        hablar('Ingrese o diga una altura de despegue');
+                        despegarDron();
+                        return false;
+                    }
                 }
                 return true;
             }
@@ -4105,40 +4621,86 @@
                  comando === 'alto' || comando === 'stop')) {
                 console.log('Ejecutando: Parar (detener movimiento)');
                 hablar('Deteniendo');
-                moverDron('Stop');
+                
+                // Detener movimiento con distancia si está activo
+                if (movimientoConDistancia.activo) {
+                    detenerMovimientoConDistancia(false); // false = no alcanzado, cancelado
+                } else {
+                    moverDron('Stop');
+                }
                 return true;
             }
 
-            // Movimientos direccionales
+            // Movimientos direccionales con distancia específica
             if (comando.includes('norte') || comando.includes('adelante') || comando.includes('alante') ||
                 comando.includes('avanza') || comando.includes('recto')) {
-                console.log('Ejecutando: Mover al norte');
-                hablar('Moviendo al norte');
-                moverDron('North');
+                
+                // Intentar extraer distancia del comando
+                const distancia = extraerDistancia(comando);
+                
+                if (distancia !== null) {
+                    console.log(`Ejecutando: Mover al norte ${distancia} metros`);
+                    hablar(`Avanzando ${distancia} metros al norte`);
+                    moverDron('North', distancia);
+                } else {
+                    console.log('Ejecutando: Mover al norte');
+                    hablar('Moviendo al norte');
+                    moverDron('North');
+                }
                 return true;
             }
 
             if (comando.includes('sur') || comando.includes('atrás') || 
                 comando.includes('retrocede') || comando.includes('backward')) {
-                console.log('Ejecutando: Mover al sur');
-                hablar('Moviendo al sur');
-                moverDron('South');
+                
+                // Intentar extraer distancia del comando
+                const distancia = extraerDistancia(comando);
+                
+                if (distancia !== null) {
+                    console.log(`Ejecutando: Mover al sur ${distancia} metros`);
+                    hablar(`Retrocediendo ${distancia} metros al sur`);
+                    moverDron('South', distancia);
+                } else {
+                    console.log('Ejecutando: Mover al sur');
+                    hablar('Moviendo al sur');
+                    moverDron('South');
+                }
                 return true;
             }
 
             if (comando.includes('este') || comando.includes('derecha') || 
                 comando.includes('right')) {
-                console.log('Ejecutando: Mover al este');
-                hablar('Moviendo al este');
-                moverDron('East');
+                
+                // Intentar extraer distancia del comando
+                const distancia = extraerDistancia(comando);
+                
+                if (distancia !== null) {
+                    console.log(`Ejecutando: Mover al este ${distancia} metros`);
+                    hablar(`Moviendo ${distancia} metros al este`);
+                    moverDron('East', distancia);
+                } else {
+                    console.log('Ejecutando: Mover al este');
+                    hablar('Moviendo al este');
+                    moverDron('East');
+                }
                 return true;
             }
 
             if (comando.includes('oeste') || comando.includes('izquierda') || 
                 comando.includes('left')) {
-                console.log('Ejecutando: Mover al oeste');
-                hablar('Moviendo al oeste');
-                moverDron('West');
+                
+                // Intentar extraer distancia del comando
+                const distancia = extraerDistancia(comando);
+                
+                if (distancia !== null) {
+                    console.log(`Ejecutando: Mover al oeste ${distancia} metros`);
+                    hablar(`Moviendo ${distancia} metros al oeste`);
+                    moverDron('West', distancia);
+                } else {
+                    console.log('Ejecutando: Mover al oeste');
+                    hablar('Moviendo al oeste');
+                    moverDron('West');
+                }
                 return true;
             }
 
@@ -4146,24 +4708,77 @@
             if (comando.includes('sube') || comando.includes('subir') || 
                 comando.includes('arriba') || comando.includes('up')) {
                 
+                // Verificar si es comando de altura absoluta "sube A/HASTA X metros"
+                const esAlturaAbsoluta = comando.includes(' a ') || comando.includes(' hasta ');
+                
                 // Extraer altura del comando (dígitos o palabras)
                 const altura = extraerAltura(comando);
                 
                 if (altura !== null) {
-                    // Validar rango: solo entre 1 y 10 metros
-                    if (altura < 1 || altura > 10) {
+                    // Validar rango máximo: 20 metros
+                    if (altura > 20) {
                         console.log(`Altura fuera de rango: ${altura} metros`);
-                        hablar('Solo se puede ajustar entre 1 y 10 metros');
+                        hablar('La altura máxima es 20 metros');
                         return false;
                     }
                     
-                    console.log(`Ejecutando: Subir ${altura} metros`);
-                    hablar(`Subiendo ${altura} metros`);
-                    ajustarAltitud(altura);
+                    if (altura < 1) {
+                        console.log(`Altura muy baja: ${altura} metros`);
+                        hablar('La altura mínima es 1 metro');
+                        return false;
+                    }
+                    
+                    if (esAlturaAbsoluta) {
+                        // Altura absoluta: "sube a 15 metros" o "sube hasta 10 metros"
+                        console.log(`Ejecutando: Ir a altura absoluta de ${altura} metros`);
+                        hablar(`Subiendo a altura de ${altura} metros`);
+                        irAAlturaAbsoluta(altura);
+                    } else {
+                        // Altura relativa: "sube 5 metros"
+                        
+                        // VALIDACIÓN DE SEGURIDAD: Verificar que no se superen los 20m totales
+                        if (!telemetry_info || telemetry_info.alt === undefined) {
+                            console.error('❌ No hay telemetría de altitud disponible');
+                            hablar('Error: No hay información de altitud');
+                            return false;
+                        }
+                        
+                        const alturaActual = telemetry_info.alt;
+                        const alturaResultante = alturaActual + altura;
+                        
+                        if (alturaResultante > 20) {
+                            console.warn(`❌ Altura resultante excedería límite: ${alturaActual.toFixed(2)}m + ${altura}m = ${alturaResultante.toFixed(2)}m > 20m`);
+                            hablar('La altura máxima es 20 metros');
+                            return false;
+                        }
+                        
+                        console.log(`✅ Ajuste seguro: ${alturaActual.toFixed(2)}m + ${altura}m = ${alturaResultante.toFixed(2)}m ≤ 20m`);
+                        console.log(`Ejecutando: Subir ${altura} metros (relativo)`);
+                        hablar(`Subiendo ${altura} metros`);
+                        ajustarAltitud(altura);
+                    }
                 } else {
-                    console.log('Ejecutando: Subir altitud (5m por defecto)');
-                    hablar('Subiendo 5 metros');
-                    ajustarAltitud(5);
+                    // Si no se especifica altura, subir 2m por defecto (relativo)
+                    
+                    // VALIDACIÓN DE SEGURIDAD para ajuste por defecto
+                    if (!telemetry_info || telemetry_info.alt === undefined) {
+                        console.error('❌ No hay telemetría de altitud disponible');
+                        hablar('Error: No hay información de altitud');
+                        return false;
+                    }
+                    
+                    const alturaActual = telemetry_info.alt;
+                    const alturaResultante = alturaActual + 2;
+                    
+                    if (alturaResultante > 20) {
+                        console.warn(`❌ No puedo subir 2m por defecto: ${alturaActual.toFixed(2)}m + 2m = ${alturaResultante.toFixed(2)}m > 20m`);
+                        hablar('La altura máxima es 20 metros');
+                        return false;
+                    }
+                    
+                    console.log('Ejecutando: Subir altitud (2m por defecto)');
+                    hablar('Subiendo 2 metros');
+                    ajustarAltitud(2);
                 }
                 return true;
             }
@@ -4171,25 +4786,190 @@
             if (comando.includes('baja') || comando.includes('bajar') || 
                 comando.includes('abajo') || comando.includes('down')) {
                 
+                // Verificar si es comando de altura absoluta "baja A/HASTA X metros"
+                const esAlturaAbsoluta = comando.includes(' a ') || comando.includes(' hasta ');
+                
                 // Extraer altura del comando (dígitos o palabras)
                 const altura = extraerAltura(comando);
                 
                 if (altura !== null) {
-                    // Validar rango: solo entre 1 y 10 metros
-                    if (altura < 1 || altura > 10) {
+                    // Validar rango máximo: 20 metros
+                    if (altura > 20) {
                         console.log(`Altura fuera de rango: ${altura} metros`);
-                        hablar('Solo se puede ajustar entre 1 y 10 metros');
+                        hablar('La altura máxima es 20 metros');
                         return false;
                     }
                     
-                    console.log(`Ejecutando: Bajar ${altura} metros`);
-                    hablar(`Bajando ${altura} metros`);
-                    ajustarAltitud(-altura);
+                    if (altura < 1) {
+                        console.log(`Altura muy baja: ${altura} metros`);
+                        hablar('La altura mínima es 1 metro');
+                        return false;
+                    }
+                    
+                    if (esAlturaAbsoluta) {
+                        // Altura absoluta: "baja a 5 metros" o "baja hasta 3 metros"
+                        console.log(`Ejecutando: Ir a altura absoluta de ${altura} metros`);
+                        hablar(`Bajando a altura de ${altura} metros`);
+                        irAAlturaAbsoluta(altura);
+                    } else {
+                        // Altura relativa: "baja 5 metros"
+                        
+                        // VALIDACIÓN DE SEGURIDAD: Verificar que no se baje de 1m
+                        if (!telemetry_info || telemetry_info.alt === undefined) {
+                            console.error('❌ No hay telemetría de altitud disponible');
+                            hablar('Error: No hay información de altitud');
+                            return false;
+                        }
+                        
+                        const alturaActual = telemetry_info.alt;
+                        const alturaResultante = alturaActual - altura;
+                        
+                        if (alturaResultante < 1) {
+                            console.warn(`❌ Altura resultante sería menor a 1m: ${alturaActual.toFixed(2)}m - ${altura}m = ${alturaResultante.toFixed(2)}m < 1m`);
+                            hablar('No puedo bajar, la altura mínima es 1 metro');
+                            return false;
+                        }
+                        
+                        console.log(`✅ Descenso seguro: ${alturaActual.toFixed(2)}m - ${altura}m = ${alturaResultante.toFixed(2)}m ≥ 1m`);
+                        console.log(`Ejecutando: Bajar ${altura} metros (relativo)`);
+                        hablar(`Bajando ${altura} metros`);
+                        ajustarAltitud(-altura);
+                    }
                 } else {
-                    console.log('Ejecutando: Bajar altitud (5m por defecto)');
-                    hablar('Bajando 5 metros');
-                    ajustarAltitud(-5);
+                    // Si no se especifica altura, bajar 2m por defecto (relativo)
+                    
+                    // VALIDACIÓN DE SEGURIDAD para ajuste por defecto
+                    if (!telemetry_info || telemetry_info.alt === undefined) {
+                        console.error('❌ No hay telemetría de altitud disponible');
+                        hablar('Error: No hay información de altitud');
+                        return false;
+                    }
+                    
+                    const alturaActual = telemetry_info.alt;
+                    const alturaResultante = alturaActual - 2;
+                    
+                    if (alturaResultante < 1) {
+                        console.warn(`❌ No puedo bajar 2m por defecto: ${alturaActual.toFixed(2)}m - 2m = ${alturaResultante.toFixed(2)}m < 1m`);
+                        hablar('No puedo bajar, la altura mínima es 1 metro');
+                        return false;
+                    }
+                    
+                    console.log('Ejecutando: Bajar altitud (2m por defecto)');
+                    hablar('Bajando 2 metros');
+                    ajustarAltitud(-2);
                 }
+                return true;
+            }
+
+            // Capturar foto
+            if (comando.includes('haz una foto') || comando.includes('hacer una foto') ||
+                comando.includes('toma una foto') || comando.includes('saca una foto') ||
+                comando.includes('captura') || comando.includes('foto')) {
+                console.log('Ejecutando: Capturar foto');
+                hablar('Capturando foto');
+                capturarFoto();
+                return true;
+            }
+
+            // Iniciar grabación de video
+            if ((comando.includes('empieza a grabar') || comando.includes('empezar a grabar') ||
+                 comando.includes('inicia grabación') || comando.includes('iniciar grabación') ||
+                 comando.includes('graba video') || comando.includes('grabar video') ||
+                 comando.includes('comienza a grabar')) && !isRecording) {
+                console.log('Ejecutando: Iniciar grabación');
+                hablar('Grabando video');
+                toggleGrabacion();
+                return true;
+            }
+
+            // Detener grabación de video
+            if ((comando.includes('para de grabar') || comando.includes('parar de grabar') ||
+                 comando.includes('detén la grabación') || comando.includes('detener grabación') ||
+                 comando.includes('para la grabación') || comando.includes('parar grabación') ||
+                 comando.includes('termina de grabar') || comando.includes('terminar grabación') ||
+                 comando.includes('para video') || comando.includes('detén video') || 
+                 comando.includes('deja de grabar') || comando.includes('stop grabación')) && isRecording) {
+                console.log('Ejecutando: Detener grabación');
+                hablar('Deteniendo grabación');
+                toggleGrabacion();
+                return true;
+            }
+
+            // Consultar telemetría - Altura
+            if (comando.includes('a qué altura') || comando.includes('a que altura') ||
+                comando.includes('cuál es la altura') || comando.includes('cual es la altura') ||
+                comando.includes('altura actual') || comando.includes('dime la altura')) {
+                
+                if (!telemetry_info || telemetry_info.alt === undefined) {
+                    console.warn('No hay telemetría de altitud disponible');
+                    hablar('No tengo información de altitud');
+                    return false;
+                }
+                
+                const altura = telemetry_info.alt.toFixed(1);
+                console.log(`Consultando altura: ${altura}m`);
+                hablar(`Estoy a ${altura} metros de altura`);
+                return true;
+            }
+
+            // Consultar telemetría - Velocidad
+            if (comando.includes('a qué velocidad') || comando.includes('a que velocidad') ||
+                comando.includes('cuál es la velocidad') || comando.includes('cual es la velocidad') ||
+                comando.includes('velocidad actual') || comando.includes('dime la velocidad') ||
+                comando.includes('qué tan rápido') || comando.includes('que tan rapido')) {
+                
+                if (!telemetry_info || telemetry_info.groundSpeed === undefined) {
+                    console.warn('No hay telemetría de velocidad disponible');
+                    hablar('No tengo información de velocidad');
+                    return false;
+                }
+                
+                const velocidad = telemetry_info.groundSpeed.toFixed(1);
+                console.log(`Consultando velocidad: ${velocidad}m/s`);
+                hablar(`Voy a ${velocidad} metros por segundo`);
+                return true;
+            }
+
+            // Consultar telemetría - Estado
+            if (comando.includes('cuál es tu estado') || comando.includes('cual es tu estado') ||
+                comando.includes('cómo estás') || comando.includes('como estas') ||
+                comando.includes('estado actual') || comando.includes('dime el estado')) {
+                
+                if (!telemetry_info || !telemetry_info.state) {
+                    console.warn('No hay telemetría de estado disponible');
+                    hablar('No tengo información de estado');
+                    return false;
+                }
+                
+                const estado = telemetry_info.state;
+                console.log(`Consultando estado: ${estado}`);
+                
+                // Traducir estados al español
+                let estadoTraducido = '';
+                switch(estado) {
+                    case 'connected':
+                        estadoTraducido = 'conectado en tierra';
+                        break;
+                    case 'arming':
+                        estadoTraducido = 'armando motores';
+                        break;
+                    case 'takingOff':
+                        estadoTraducido = 'despegando';
+                        break;
+                    case 'flying':
+                        estadoTraducido = 'volando';
+                        break;
+                    case 'landing':
+                        estadoTraducido = 'aterrizando';
+                        break;
+                    case 'returning':
+                        estadoTraducido = 'regresando a base';
+                        break;
+                    default:
+                        estadoTraducido = estado;
+                }
+                
+                hablar(`Mi estado es ${estadoTraducido}`);
                 return true;
             }
 
