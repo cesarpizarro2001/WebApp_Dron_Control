@@ -157,6 +157,20 @@ def handle_video_settings(settings):
     # Reenviar la configuración a la Estación de Tierra
     socketio.emit('video_settings', settings, include_self=False)
     print("✓ Configuración de video enviada a la Estación de Tierra")
+
+# Handler para solicitud de galería
+@socketio.on('request_gallery')
+def handle_request_gallery():
+    """Recibe solicitud de galería desde la WebApp y la reenvía a la Estación de Tierra"""
+    print("📂 Solicitud de galería recibida desde WebApp, reenviando a Estación de Tierra")
+    socketio.emit('request_gallery', include_self=False)
+
+# Handler para recibir archivos de galería desde la Estación de Tierra
+@socketio.on('gallery_files')
+def handle_gallery_files(archivos):
+    """Recibe archivos de galería desde la Estación de Tierra y los envía al navegador"""
+    print(f"📂 Recibidos {len(archivos)} archivos de galería, reenviando al navegador")
+    socketio.emit('gallery_files', archivos, include_self=False)
     
 # Recibir telemetría de la Estación de Tierra y enviarla al navegador
 @socketio.on('telemetry_data')

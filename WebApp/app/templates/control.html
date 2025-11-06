@@ -298,6 +298,256 @@
             background: #000;
         }
 
+        /* === MODAL DE GALERÍA === */
+        #gallery-modal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 2100;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .gallery-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            width: 85vw;
+            height: 75vh;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 0 8px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2196F3;
+            gap: 8px;
+        }
+
+        .gallery-header h3 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.1;
+        }
+
+        .gallery-close-btn {
+            background: rgba(255, 59, 48, 0.9);
+            border: none;
+            color: white;
+            font-size: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gallery-close-btn:hover {
+            background: rgba(255, 59, 48, 1);
+            transform: scale(1.1);
+        }
+
+        .gallery-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 6px 12px 6px 6px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Estilo de scrollbar para gallery-grid */
+        .gallery-grid::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .gallery-grid::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+
+        .gallery-grid::-webkit-scrollbar-thumb {
+            background: rgba(33, 150, 243, 0.5);
+            border-radius: 4px;
+        }
+
+        .gallery-grid::-webkit-scrollbar-thumb:hover {
+            background: rgba(33, 150, 243, 0.8);
+        }
+
+        .gallery-folder {
+            background: rgba(248, 249, 250, 0.8);
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .gallery-folder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .gallery-folder-header:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+        }
+
+        .gallery-folder-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .gallery-folder-icon {
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-folder.collapsed .gallery-folder-icon {
+            transform: rotate(-90deg);
+        }
+
+        .gallery-folder-count {
+            background: rgba(255, 255, 255, 0.25);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .gallery-folder-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            padding: 14px;
+            background: white;
+            min-height: 200px;
+            max-height: 450px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Estilo de scrollbar para gallery-folder-items */
+        .gallery-folder-items::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .gallery-folder-items::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+
+        .gallery-folder-items::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 3px;
+        }
+
+        .gallery-folder-items::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.8);
+        }
+
+        .gallery-folder.collapsed .gallery-folder-items {
+            display: none;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(33, 150, 243, 0.5);
+        }
+
+        .gallery-item img,
+        .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-item-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(33, 150, 243, 0.9), transparent);
+            padding: 8px;
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .gallery-item-icon {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(33, 150, 243, 0.9);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .gallery-loading {
+            color: #666;
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+        }
+
+        .gallery-empty {
+            color: #666;
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+        }
+
         /* === MODAL DE CÁMARA MÓVIL === */
         #camara-movil-modal {
             position: fixed;
@@ -450,6 +700,79 @@
             .camera-controls {
                 padding: 5px;
                 gap: 5px;
+            }
+
+            /* Ajustes para galería en móvil */
+            .gallery-modal-content {
+                width: 85vw;
+                /* Fallback primero y unidades de viewport modernas después */
+                height: 75vh;   /* fallback */
+                height: 75svh;  /* small viewport height (iOS/Android) */
+                height: 75dvh;  /* dynamic viewport height (Chrome/Safari modernos) */
+                padding: 8px;   /* reducir espacio interior */
+                gap: 8px;       /* menos espacio entre cabecera y contenido */
+            }
+
+            .gallery-header {
+                margin: 0 8px 4px 8px;      /* menos margen inferior */
+                padding-bottom: 4px;    /* menos padding bajo el título */
+                border-bottom-width: 1px;
+            }
+
+            .gallery-header h3 {
+                font-size: 14px;        /* título más compacto en móvil */
+                line-height: 1.05;
+            }
+
+            .gallery-close-btn {
+                width: 28px;            /* botón cerrar más pequeño */
+                height: 28px;
+                font-size: 16px;
+            }
+
+            .gallery-folder-header {
+                padding: 8px 12px;
+            }
+
+            .gallery-folder-title {
+                font-size: 13px;
+                gap: 8px;
+            }
+
+            .gallery-folder-icon {
+                font-size: 16px;
+            }
+
+            .gallery-folder-count {
+                font-size: 11px;
+                padding: 2px 8px;
+            }
+
+            .gallery-folder-items {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: 10px;
+                padding: 10px;
+                min-height: auto;
+                max-height: 350px;
+            }
+
+            .gallery-item-overlay {
+                font-size: 10px;
+                padding: 5px;
+            }
+
+            .gallery-item-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+                top: 5px;
+                right: 5px;
+            }
+
+            .gallery-loading,
+            .gallery-empty {
+                padding: 30px 15px;
+                font-size: 14px;
             }
         }
         
@@ -2354,6 +2677,11 @@
                 <button id="botonVerCamaraMovil" class="boton-amarillo">📱 Viendo Cámara Móvil</button>
                 <button id="botonCerrarCamaraMovil" onclick="cerrarCamaraMovil(); closeAllDropdowns()" title="Cerrar cámara móvil">❌</button>
             </div>
+            <button id="botonGaleria" class="boton-azul" onclick="abrirGaleria(); closeAllDropdowns()">🖼️ Galería</button>
+            <div id="galeriaButtonsContainer" class="ruta-buttons-container" style="display: none;">
+                <button id="botonVerGaleria" class="boton-amarillo">🖼️ Viendo Galería</button>
+                <button id="botonCerrarGaleria" onclick="cerrarGaleria(); closeAllDropdowns()" title="Cerrar galería">❌</button>
+            </div>
             <button id="toggleNavegacion" class="boton-azul" onclick="toggleNavegacion(); closeAllDropdowns()">🧭 Ocultar Nav.</button>
         </div>
     </div>
@@ -2418,6 +2746,20 @@
                     <span class="mic-icon">🎤</span>
                 </button>
                 <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video">🎥</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Galería -->
+    <div id="gallery-modal-container" style="display: none;">
+        <div class="gallery-modal-content">
+            <div class="gallery-header">
+                <h3>🖼️ Galería de Fotos y Videos</h3>
+                <button class="gallery-close-btn" onclick="cerrarGaleria()">✖</button>
+            </div>
+            <div id="gallery-grid" class="gallery-grid">
+                <!-- Los thumbnails se cargarán aquí dinámicamente -->
+                <p class="gallery-loading">Cargando galería...</p>
             </div>
         </div>
     </div>
@@ -3500,6 +3842,12 @@
             if (photoModal) {
                 photoModal.style.display = 'none';
             }
+            
+            // Si se abrió desde la galería, volver a mostrarla
+            if (abrioDesdeGaleria) {
+                abrioDesdeGaleria = false;
+                document.getElementById('gallery-modal-container').style.display = 'block';
+            }
         }
 
         // Función para mostrar el video grabado en un modal
@@ -3553,10 +3901,19 @@
                 capturedVideo.pause(); // Pausar el video al cerrar
                 capturedVideo.currentTime = 0; // Reiniciar al inicio
             }
+            
+            // Si se abrió desde la galería, volver a mostrarla
+            if (abrioDesdeGaleria) {
+                abrioDesdeGaleria = false;
+                document.getElementById('gallery-modal-container').style.display = 'block';
+            }
         }
 
         // Variable para controlar el estado de grabación
         let isRecording = false;
+
+        // Variable para saber si se abrió foto/video desde la galería
+        let abrioDesdeGaleria = false;
 
         // Función toggle para iniciar/detener grabación
         function toggleGrabacion() {
@@ -3593,6 +3950,178 @@
                 toggleGrabacion();
             }
         }
+
+        // ===== FUNCIONES DE GALERÍA =====
+        
+        // Función para abrir la galería
+        function abrirGaleria() {
+            const galleryModal = document.getElementById('gallery-modal-container');
+            const galleryGrid = document.getElementById('gallery-grid');
+            
+            console.log("🖼️ Abriendo galería...");
+            
+            // Mostrar el modal
+            galleryModal.style.display = 'block';
+            
+            // Mostrar mensaje de carga
+            galleryGrid.innerHTML = '<p class="gallery-loading">Cargando galería...</p>';
+            
+            // Solicitar la lista de archivos al servidor
+            console.log("📡 Emitiendo request_gallery al servidor");
+            socket.emit('request_gallery');
+            
+            // Mostrar el contenedor de "Viendo Galería" con botón X
+            document.getElementById('botonGaleria').style.display = 'none';
+            document.getElementById('galeriaButtonsContainer').style.display = 'flex';
+        }
+
+        // Función para cerrar la galería
+        function cerrarGaleria() {
+            const galleryModal = document.getElementById('gallery-modal-container');
+            galleryModal.style.display = 'none';
+            
+            // Restaurar el botón original de galería
+            document.getElementById('botonGaleria').style.display = 'block';
+            document.getElementById('galeriaButtonsContainer').style.display = 'none';
+        }
+
+        // Función para cargar la galería con los archivos recibidos
+        function cargarGaleria(archivos) {
+            const galleryGrid = document.getElementById('gallery-grid');
+            
+            console.log("📂 Cargando galería con", archivos.length, "archivos");
+            
+            // Si no hay archivos
+            if (!archivos || archivos.length === 0) {
+                galleryGrid.innerHTML = '<p class="gallery-empty">Aún no hay fotos ni videos capturados 📷</p>';
+                return;
+            }
+            
+            // Limpiar la galería
+            galleryGrid.innerHTML = '';
+            
+            // Agrupar archivos por carpeta
+            const carpetas = {};
+            archivos.forEach(archivo => {
+                const nombreCarpeta = archivo.nombre.split('/')[0];
+                if (!carpetas[nombreCarpeta]) {
+                    carpetas[nombreCarpeta] = [];
+                }
+                carpetas[nombreCarpeta].push(archivo);
+            });
+            
+            // Ordenar carpetas por nombre (más recientes primero si tienen fecha en el nombre)
+            const nombresCarpetas = Object.keys(carpetas).sort().reverse();
+            
+            // Crear una sección por cada carpeta
+            nombresCarpetas.forEach(nombreCarpeta => {
+                const archivosCarpeta = carpetas[nombreCarpeta];
+                
+                // Crear contenedor de carpeta
+                const folderDiv = document.createElement('div');
+                folderDiv.className = 'gallery-folder collapsed'; // Empezar cerrada
+                
+                // Header de la carpeta (clickable para expandir/colapsar)
+                const folderHeader = document.createElement('div');
+                folderHeader.className = 'gallery-folder-header';
+                folderHeader.innerHTML = `
+                    <div class="gallery-folder-title">
+                        <span class="gallery-folder-icon">📁</span>
+                        <span>${nombreCarpeta}</span>
+                    </div>
+                    <span class="gallery-folder-count">${archivosCarpeta.length} archivo${archivosCarpeta.length !== 1 ? 's' : ''}</span>
+                `;
+                
+                // Contenedor de items
+                const folderItems = document.createElement('div');
+                folderItems.className = 'gallery-folder-items';
+                
+                // Ordenar archivos de la carpeta por fecha (más recientes primero)
+                archivosCarpeta.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                
+                // Crear thumbnails para cada archivo
+                archivosCarpeta.forEach(archivo => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    
+                    const esVideo = archivo.tipo === 'video';
+                    const icono = esVideo ? '🎥' : '📸';
+                    const ruta = esVideo 
+                        ? `/static/captured_videos/${archivo.nombre}`
+                        : `/static/captured_photos/${archivo.nombre}`;
+                    
+                    // Extraer solo el nombre del archivo (sin carpeta)
+                    const nombreArchivo = archivo.nombre.split('/')[1] || archivo.nombre;
+                    
+                    if (esVideo) {
+                        // Para videos, crear un elemento video como thumbnail
+                        item.innerHTML = `
+                            <video muted>
+                                <source src="${ruta}" type="video/mp4">
+                            </video>
+                            <div class="gallery-item-icon">${icono}</div>
+                            <div class="gallery-item-overlay">${nombreArchivo}</div>
+                        `;
+                        
+                        // Cargar el primer frame del video
+                        const video = item.querySelector('video');
+                        video.addEventListener('loadeddata', () => {
+                            video.currentTime = 1; // Ir al segundo 1 para el thumbnail
+                        });
+                    } else {
+                        // Para fotos
+                        item.innerHTML = `
+                            <img src="${ruta}" alt="${nombreArchivo}">
+                            <div class="gallery-item-icon">${icono}</div>
+                            <div class="gallery-item-overlay">${nombreArchivo}</div>
+                        `;
+                    }
+                    
+                    // Evento click para abrir el archivo
+                    item.addEventListener('click', () => {
+                        // Indicar que se abrió desde la galería
+                        abrioDesdeGaleria = true;
+                        
+                        // Ocultar temporalmente la galería
+                        document.getElementById('gallery-modal-container').style.display = 'none';
+                        
+                        // Mostrar foto o video
+                        if (esVideo) {
+                            mostrarVideoGrabado(archivo.nombre);
+                        } else {
+                            mostrarFotoCapturada(archivo.nombre);
+                        }
+                    });
+                    
+                    folderItems.appendChild(item);
+                });
+                
+                // Click en el header para expandir/colapsar
+                folderHeader.addEventListener('click', () => {
+                    folderDiv.classList.toggle('collapsed');
+                });
+                
+                folderDiv.appendChild(folderHeader);
+                folderDiv.appendChild(folderItems);
+                galleryGrid.appendChild(folderDiv);
+            });
+        }
+
+        // Cerrar galería al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            const galleryModal = document.getElementById('gallery-modal-container');
+            if (event.target === galleryModal) {
+                cerrarGaleria();
+            }
+        });
+
+        // Cerrar galería con ESC
+        document.addEventListener('keydown', function(event) {
+            const galleryModal = document.getElementById('gallery-modal-container');
+            if (event.key === 'Escape' && galleryModal.style.display === 'block') {
+                cerrarGaleria();
+            }
+        });
 
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
@@ -3685,6 +4214,12 @@
             }
         });
 
+        // Recibir lista de archivos de la galería
+        socket.on('gallery_files', function(archivos) {
+            console.log("Archivos de galería recibidos:", archivos);
+            cargarGaleria(archivos);
+        });
+
         // Función para actualizar el estado de todos los botones según el estado del dron
         function updateButtonStates(droneState) {
             const botonConectar = document.getElementById('botonConectar');
@@ -3699,7 +4234,17 @@
 
             switch (droneState) {
                 case 'connected':
+                    // Limpiar timeout de conexión si existe
+                    if (timeoutConexion) {
+                        clearTimeout(timeoutConexion);
+                        timeoutConexion = null;
+                    }
+                    
                     // Dron conectado pero en tierra
+                    botonConectar.textContent = 'Conectado';
+                    resetButtonClasses(botonConectar);
+                    botonConectar.classList.add('boton-verde');
+                    
                     if (!despegando) {
                         botonDespegar.disabled = false;
                         botonDespegar.textContent = 'Despegar';
@@ -3760,6 +4305,9 @@
 
                 default:
                     // Estado desconocido o desconectado
+                    botonConectar.textContent = 'Conectar';
+                    resetButtonClasses(botonConectar);
+                    
                     botonDespegar.disabled = true;
                     botonDespegar.textContent = 'Despegar';
                     resetButtonClasses(botonDespegar);
@@ -3794,11 +4342,29 @@
         // Variable para evitar sobrescribir estado manual de despegue
         let despegando = false;
 
+        // Variable para el timeout de conexión
+        let timeoutConexion = null;
+
         function conectarDron() {
             console.log("Voy a conectar");
             socket.emit('command', { action: 'connect' });
             const botonConectar = document.getElementById('botonConectar');
-            botonConectar.classList.add('boton-verde');
+            // No poner verde aquí, esperar a que el estado sea 'connected'
+            botonConectar.textContent = 'Conectando...';
+            botonConectar.classList.remove('boton-verde', 'boton-rojo');
+            botonConectar.classList.add('boton-amarillo');
+            
+            // Limpiar timeout anterior
+            if (timeoutConexion) clearTimeout(timeoutConexion);
+
+            // Timeout corto (1s) para revertir si aún no hay backend listo
+            timeoutConexion = setTimeout(() => {
+                if (!telemetry_info || telemetry_info.state !== 'connected') {
+                    botonConectar.textContent = 'Conectar';
+                    botonConectar.classList.remove('boton-verde', 'boton-amarillo');
+                    console.log("⚠️ Timeout de conexión - volviendo a estado inicial");
+                }
+            }, 1000);
         }
 
         function despegarDron() {
@@ -4242,11 +4808,18 @@
             // Iniciar reconocimiento
             recognition = new SpeechRecognition();
             recognition.lang = 'es-ES';
-            recognition.interimResults = false;
+            recognition.continuous = false; // No continuo, pero con más tiempo
+            recognition.interimResults = true; // Mostrar resultados parciales
             recognition.maxAlternatives = 1;
+
+            // Variable para almacenar el transcript completo
+            let finalTranscript = '';
+            let lastSpeechTime = Date.now();
+            let silenceTimer = null;
 
             recognition.onstart = function() {
                 recognizing = true;
+                finalTranscript = '';
                 btn.classList.add('listening');
                 modalBtn.classList.add('listening');
                 modalBtn.setAttribute('data-text', 'ESCUCHANDO...');
@@ -4255,44 +4828,79 @@
             };
 
             recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript.toLowerCase().trim();
-                console.log('Comando reconocido:', transcript);
+                // Actualizar tiempo de última actividad de voz
+                lastSpeechTime = Date.now();
                 
-                btn.classList.remove('listening');
-                btn.classList.add('processing');
-                modalBtn.classList.remove('listening');
-                modalBtn.classList.add('processing');
-                modalBtn.setAttribute('data-text', `"${transcript}"`);
-                voiceText.textContent = `"${transcript}"`;
-
-                // Procesar comando (puede ser simple o compuesto)
-                setTimeout(() => {
-                    const exitoso = procesarComandoVoz(transcript);
-                    
-                    if (exitoso) {
-                        setTimeout(() => {
-                            btn.classList.remove('processing');
-                            modalBtn.classList.remove('processing');
-                            modalBtn.removeAttribute('data-text');
-                            voiceText.textContent = 'VOZ';
-                            recognizing = false;
-                        }, 1500);
+                // Obtener el transcript (parcial o final)
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
                     } else {
-                        btn.classList.remove('processing');
-                        btn.classList.add('error');
-                        modalBtn.classList.remove('processing');
-                        modalBtn.classList.add('error');
-                        modalBtn.setAttribute('data-text', 'NO ENTENDIDO');
-                        voiceText.textContent = 'NO ENTENDIDO';
-                        setTimeout(() => {
-                            btn.classList.remove('error');
-                            modalBtn.classList.remove('error');
-                            modalBtn.removeAttribute('data-text');
-                            voiceText.textContent = 'VOZ';
-                            recognizing = false;
-                        }, 2000);
+                        interimTranscript = transcript;
                     }
-                }, 500);
+                }
+                
+                // Mostrar lo que se está diciendo (parcial o final)
+                const displayText = (finalTranscript + interimTranscript).toLowerCase().trim();
+                if (displayText) {
+                    console.log('Escuchando:', displayText);
+                    modalBtn.setAttribute('data-text', `"${displayText}"`);
+                    voiceText.textContent = `"${displayText}"`;
+                }
+            };
+
+            recognition.onend = function() {
+                console.log('Reconocimiento finalizado');
+                
+                // Solo procesar si hay un transcript final y no estamos ya procesando
+                if (finalTranscript.trim() && recognizing) {
+                    const transcript = finalTranscript.toLowerCase().trim();
+                    console.log('Comando final reconocido:', transcript);
+                    
+                    btn.classList.remove('listening');
+                    btn.classList.add('processing');
+                    modalBtn.classList.remove('listening');
+                    modalBtn.classList.add('processing');
+                    modalBtn.setAttribute('data-text', `"${transcript}"`);
+                    voiceText.textContent = `"${transcript}"`;
+
+                    // Procesar comando (puede ser simple o compuesto)
+                    setTimeout(() => {
+                        const exitoso = procesarComandoVoz(transcript);
+                        
+                        if (exitoso) {
+                            setTimeout(() => {
+                                btn.classList.remove('processing');
+                                modalBtn.classList.remove('processing');
+                                modalBtn.removeAttribute('data-text');
+                                voiceText.textContent = 'VOZ';
+                                recognizing = false;
+                            }, 1500);
+                        } else {
+                            btn.classList.remove('processing');
+                            btn.classList.add('error');
+                            modalBtn.classList.remove('processing');
+                            modalBtn.classList.add('error');
+                            modalBtn.setAttribute('data-text', 'NO ENTENDIDO');
+                            voiceText.textContent = 'NO ENTENDIDO';
+                            setTimeout(() => {
+                                btn.classList.remove('error');
+                                modalBtn.classList.remove('error');
+                                modalBtn.removeAttribute('data-text');
+                                voiceText.textContent = 'VOZ';
+                                recognizing = false;
+                            }, 2000);
+                        }
+                    }, 500);
+                } else if (!recognizing) {
+                    // Si se canceló manualmente, solo limpiar
+                    btn.classList.remove('listening', 'processing', 'error');
+                    modalBtn.classList.remove('listening', 'processing', 'error');
+                    modalBtn.removeAttribute('data-text');
+                    voiceText.textContent = 'VOZ';
+                }
             };
 
             recognition.onerror = function(event) {
@@ -4313,35 +4921,79 @@
                 }, 2000);
             };
 
-            recognition.onend = function() {
-                console.log('Reconocimiento finalizado');
-                if (recognizing && !btn.classList.contains('processing') && !btn.classList.contains('error')) {
-                    btn.classList.remove('listening');
-                    voiceText.textContent = 'VOZ';
-                    recognizing = false;
-                }
-            };
-
             recognition.start();
         }
 
         // Función para leer texto en voz alta
+        // Cola de mensajes de voz
+        let colaVoz = [];
+        let hablando = false;
+
         function hablar(texto) {
             // Verificar soporte de síntesis de voz
-            if ('speechSynthesis' in window) {
-                // Cancelar cualquier habla anterior
-                window.speechSynthesis.cancel();
-                
-                // Crear el mensaje de voz
-                const utterance = new SpeechSynthesisUtterance(texto);
-                utterance.lang = 'es-ES';
-                utterance.rate = 1.0; // Velocidad normal
-                utterance.pitch = 1.0; // Tono normal
-                utterance.volume = 1.0; // Volumen máximo
-                
-                // Hablar
-                window.speechSynthesis.speak(utterance);
+            if (!('speechSynthesis' in window)) {
+                console.warn('Síntesis de voz no soportada');
+                return;
             }
+            
+            // Agregar texto a la cola
+            colaVoz.push(texto);
+            
+            // Si no está hablando, iniciar
+            if (!hablando) {
+                procesarColaVoz();
+            }
+        }
+
+        function procesarColaVoz() {
+            // Si no hay mensajes en la cola, terminar
+            if (colaVoz.length === 0) {
+                hablando = false;
+                return;
+            }
+            
+            // Marcar que está hablando
+            hablando = true;
+            
+            // Obtener el siguiente mensaje
+            const texto = colaVoz.shift();
+            
+            console.log('🔊 Hablando:', texto);
+            
+            // Crear el mensaje de voz
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'es-ES';
+            utterance.rate = 1.0; // Velocidad normal
+            utterance.pitch = 1.0; // Tono normal
+            utterance.volume = 1.0; // Volumen máximo
+            
+            // Cuando termine de hablar, procesar el siguiente mensaje
+            utterance.onend = function() {
+                console.log('✅ Terminó de hablar');
+                // Pequeña pausa entre mensajes (300ms)
+                setTimeout(() => {
+                    procesarColaVoz();
+                }, 300);
+            };
+            
+            // Si hay error, continuar con el siguiente
+            utterance.onerror = function(event) {
+                console.error('❌ Error al hablar:', event.error);
+                setTimeout(() => {
+                    procesarColaVoz();
+                }, 300);
+            };
+            
+            // Hablar
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Función para cancelar toda la cola de voz (si es necesario)
+        function cancelarVoz() {
+            window.speechSynthesis.cancel();
+            colaVoz = [];
+            hablando = false;
+            console.log('🔇 Voz cancelada');
         }
 
         // Función para convertir palabras numéricas a números (soporta 1-50)
@@ -4866,7 +5518,7 @@
                 comando.includes('toma una foto') || comando.includes('saca una foto') ||
                 comando.includes('captura') || comando.includes('foto')) {
                 console.log('Ejecutando: Capturar foto');
-                hablar('Capturando foto');
+                hablar('Foto hecha');
                 capturarFoto();
                 return true;
             }
@@ -4890,7 +5542,7 @@
                  comando.includes('para video') || comando.includes('detén video') || 
                  comando.includes('deja de grabar') || comando.includes('stop grabación')) && isRecording) {
                 console.log('Ejecutando: Detener grabación');
-                hablar('Deteniendo grabación');
+                hablar('Grabación hecha');
                 toggleGrabacion();
                 return true;
             }

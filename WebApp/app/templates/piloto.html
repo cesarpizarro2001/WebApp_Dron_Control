@@ -1782,15 +1782,20 @@
         let lastSendTime = 0;
         function sendJoystickData() {
             const now = Date.now();
-            if (now - lastSendTime < 100) return;
+            if (now - lastSendTime < 50) return;  // 50ms = 20Hz (más responsivo)
             lastSendTime = now;
 
-            socket.emit('pilot_rc', [
+            const rcData = [
                 joystickState.throttle,
                 joystickState.yaw,
                 joystickState.pitch,
                 joystickState.roll
-            ]);
+            ];
+            
+            // Debug: mostrar valores enviados (comentado para no ralentizar)
+            // console.log('🎮 Enviando RC:', rcData);
+            
+            socket.emit('pilot_rc', rcData);
         }
 
         // Variables para seguimiento del estado
@@ -1907,6 +1912,9 @@
             console.log('Conectado');
         });
 
+        // Variable para controlar si ya se cambió a LOITER automáticamente
+        let autoLoiterActivated = false;
+
         socket.on('telemetry_info', (data) => {
             // console.log('Telemetría recibida:', data);  // Comentado para no llenar la consola
             
@@ -1917,6 +1925,25 @@
                 
                 // Cambiar color según estado
                 stateElement.style.color = getStateColor(data.state);
+                
+                // Debug: mostrar estado y banderas (solo cuando cambia el estado)
+                if (data.state !== previousDroneState) {
+                    console.log(`Estado: ${data.state}, autoLoiterActivated: ${autoLoiterActivated}, volviendoABase: ${volviendoABase}, aterrizando: ${aterrizando}`);
+                    previousDroneState = data.state;
+                }
+                
+                // Si el dron está en estado 'flying' y aún no se ha activado LOITER automáticamente
+                // Solo cambiar a LOITER si NO está aterrizando ni volviendo a base
+                if (data.state === 'flying' && !autoLoiterActivated && !volviendoABase && !aterrizando) {
+                    console.log('🎮 Dron en estado flying, activando modo piloto (RC loop + LOITER)...');
+                    socket.emit('command', { action: 'enable_pilot_mode' });
+                    autoLoiterActivated = true;
+                }
+                
+                // Resetear la bandera si el dron vuelve a tierra
+                if (data.state === 'connected') {
+                    autoLoiterActivated = false;
+                }
             }
             
             // Actualizar altitud
@@ -2189,16 +2216,15 @@
                 // Si el panel de ajustes está abierto, usar joystick para navegar
                 if (settingsNavigationActive && !isRemapping) {
                     // Joystick izquierdo vertical (throttle) para navegar arriba/abajo
+                    // Movimiento continuo mientras se mantiene el stick, navegado con cooldown interno
                     if (Math.abs(joystickState.throttle) > inputThreshold) {
-                        if (joystickState.throttle > inputThreshold && lastVerticalInput !== 1) {
+                        if (joystickState.throttle > inputThreshold) {
                             navigateSettings('up');
-                            lastVerticalInput = 1;
-                        } else if (joystickState.throttle < -inputThreshold && lastVerticalInput !== -1) {
+                        } else if (joystickState.throttle < -inputThreshold) {
                             navigateSettings('down');
-                            lastVerticalInput = -1;
                         }
                     } else {
-                        lastVerticalInput = 0;
+                        lastVerticalInput = 0; // mantener limpieza del estado aunque no se use para edge-detection
                     }
                     
                     // Joystick izquierdo horizontal (yaw) para ajustar sliders
@@ -2287,7 +2313,15 @@
             if (stick) {
                 const maxDistance = 35; // Mismo valor que en VirtualJoystick
                 let dx = x * maxDistance;
-                let dy = -y * maxDistance; // Invertir Y para coordenadas visuales
+                // Para el stick derecho (pitch/roll) corregimos la inversión visual reportada
+                // El dron ya se mueve correctamente; solo ajustamos representación.
+                // Stick izquierdo mantiene lógica original (throttle/yaw).
+                let dy;
+                if (stickId === 'right-stick') {
+                    dy = y * maxDistance; // Mostrar arriba cuando se empuja arriba físicamente
+                } else {
+                    dy = -y * maxDistance; // Mantener inversión para throttle/yaw
+                }
                 
                 // Aplicar restricción circular (igual que el joystick táctil)
                 const distance = Math.sqrt(dx * dx + dy * dy);

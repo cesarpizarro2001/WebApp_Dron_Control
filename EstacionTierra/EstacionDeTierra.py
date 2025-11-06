@@ -563,7 +563,8 @@ def toggle_connection_mode():
 # aqui recibimos los mensajes de la WebApp via Socket.IO
 def on_command_received(data):
     """Procesa comandos recibidos del servidor Flask via Socket.IO"""
-    global dron
+    # Declarar todos los globals usados/modificados por las ramas de este handler
+    global dron, pilot_mode_active, pilot_rc_thread, last_rc_command_time
     
     action = data.get('action')
     print(f'Comando recibido: {action}')
@@ -674,10 +675,51 @@ def on_command_received(data):
     elif action == 'change_mode':
         try:
             mode = data.get('mode', 'LOITER')
+            
+            # Si se cambia a LOITER, PRIMERO iniciar el loop RC (antes del cambio de modo)
+            if mode == 'LOITER':
+                if not pilot_mode_active:
+                    print('⚡ INICIANDO loop RC ANTES de cambiar a LOITER (prevención de caída)')
+                    pilot_mode_active = True
+                    last_rc_command_time = time.time()
+                    if pilot_rc_thread is None or not pilot_rc_thread.is_alive():
+                        pilot_rc_thread = threading.Thread(target=pilot_rc_loop, daemon=True)
+                        pilot_rc_thread.start()
+                    # Esperar brevemente a que el thread arranque
+                    time.sleep(0.1)
+                    print('✅ Loop RC activo - ahora cambiando a LOITER')
+            
             print(f'Cambiando modo a: {mode}')
             dron.setFlightMode(mode)
+            
         except Exception as e:
             print(f"Error al cambiar modo: {str(e)}")
+    
+    elif action == 'enable_pilot_mode':
+        """Comando específico para activar modo piloto: inicia RC loop y luego cambia a LOITER"""
+        try:
+            
+            print('🎮 Activando modo piloto desde control.html')
+            
+            # PRIMERO: Iniciar loop RC
+            if not pilot_mode_active:
+                print('  1️⃣ Iniciando loop RC...')
+                pilot_mode_active = True
+                last_rc_command_time = time.time()
+                if pilot_rc_thread is None or not pilot_rc_thread.is_alive():
+                    pilot_rc_thread = threading.Thread(target=pilot_rc_loop, daemon=True)
+                    pilot_rc_thread.start()
+                # Esperar a que el loop esté activo
+                time.sleep(0.15)
+                print('  ✅ Loop RC activo y enviando valores neutrales')
+            
+            # SEGUNDO: Cambiar a LOITER
+            print('  2️⃣ Cambiando a modo LOITER...')
+            dron.setFlightMode('LOITER')
+            print('  ✅ Modo piloto activado correctamente')
+            
+        except Exception as e:
+            print(f"❌ Error al activar modo piloto: {str(e)}")
 
     elif action == 'capturarFoto':
         print('Capturando foto del último frame')
@@ -1895,6 +1937,70 @@ def handle_video_settings(settings):
         print(f'✗ Error al configurar video: {e}')
         import traceback
         traceback.print_exc()
+
+@sio.on("request_gallery")
+def handle_request_gallery():
+    """Handler para solicitar la lista de fotos y videos de la galería"""
+    global webapp_commands_enabled
+    
+    if not webapp_commands_enabled:
+        print('SOLICITUD DE GALERÍA BLOQUEADA: (WebApp no autorizada)')
+        return
+    
+    print('📂 Solicitud de galería recibida desde WebApp')
+    
+    try:
+        archivos = []
+        
+        # Obtener ruta base de EstacionTierra
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Directorio de fotos
+        photos_dir = os.path.join(base_dir, 'captured_photos')
+        if os.path.exists(photos_dir):
+            for carpeta_vuelo in os.listdir(photos_dir):
+                carpeta_path = os.path.join(photos_dir, carpeta_vuelo)
+                if os.path.isdir(carpeta_path):
+                    for archivo in os.listdir(carpeta_path):
+                        if archivo.lower().endswith(('.jpg', '.jpeg', '.png')):
+                            archivo_path = os.path.join(carpeta_path, archivo)
+                            fecha = os.path.getmtime(archivo_path)
+                            archivos.append({
+                                'tipo': 'foto',
+                                'nombre': f"{carpeta_vuelo}/{archivo}",
+                                'fecha': fecha
+                            })
+        else:
+            print(f'⚠️  Directorio de fotos no existe: {photos_dir}')
+        
+        # Directorio de videos
+        videos_dir = os.path.join(base_dir, 'captured_videos')
+        if os.path.exists(videos_dir):
+            for carpeta_vuelo in os.listdir(videos_dir):
+                carpeta_path = os.path.join(videos_dir, carpeta_vuelo)
+                if os.path.isdir(carpeta_path):
+                    for archivo in os.listdir(carpeta_path):
+                        if archivo.lower().endswith(('.mp4', '.avi', '.mov')):
+                            archivo_path = os.path.join(carpeta_path, archivo)
+                            fecha = os.path.getmtime(archivo_path)
+                            archivos.append({
+                                'tipo': 'video',
+                                'nombre': f"{carpeta_vuelo}/{archivo}",
+                                'fecha': fecha
+                            })
+        else:
+            print(f'⚠️  Directorio de videos no existe: {videos_dir}')
+        
+        print(f'✓ Se encontraron {len(archivos)} archivos en la galería')
+        
+        # Enviar la lista de archivos al cliente
+        sio.emit('gallery_files', archivos)
+        
+    except Exception as e:
+        print(f'✗ Error al obtener galería: {e}')
+        import traceback
+        traceback.print_exc()
+        sio.emit('gallery_files', [])
 
 print("Conectado al websocket")
 dron = Dron()
