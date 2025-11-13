@@ -11,6 +11,10 @@ def index():
 def piloto():
     return render_template('piloto.html')
 
+@main.route('/movimiento')
+def movimiento():
+    return render_template('movimiento.html')
+
 # Ruta para servir fotos capturadas desde EstacionTierra
 @main.route('/static/captured_photos/<path:filename>')
 def captured_photos(filename):

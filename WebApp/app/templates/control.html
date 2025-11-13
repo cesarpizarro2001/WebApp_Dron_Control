@@ -2693,7 +2693,7 @@
         </button>
         <div class="dropdown-menu" id="modesMenu">
             <button id="botonModoPiloto" class="boton-azul" onclick="irAModoPiloto(); closeAllDropdowns()">🎮 Modo Piloto</button>
-            <button class="boton-azul" style="opacity: 0.5; cursor: not-allowed;" disabled>📱 Control Movimiento<br><small style="font-size: 10px;">(Próximamente)</small></button>
+            <button id="botonModoMovimiento" class="boton-azul" onclick="irAModoMovimiento(); closeAllDropdowns()">📱 Control Movimiento</button>
         </div>
     </div>
 
@@ -3786,6 +3786,11 @@
         // Función para ir al modo piloto
         function irAModoPiloto() {
             window.location.href = '/piloto';
+        }
+
+        // Función para ir al modo movimiento
+        function irAModoMovimiento() {
+            window.location.href = '/movimiento';
         }
 
         // Función de capturar foto
