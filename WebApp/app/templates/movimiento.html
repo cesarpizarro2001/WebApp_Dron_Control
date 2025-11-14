@@ -374,19 +374,20 @@
             position: absolute;
             top: 8px;
             right: 8px;
-            width: 95px;
-            height: 95px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
+            width: 120px;
+            height: 120px;
+            border: 3px solid rgba(255, 255, 255, 0.9);
             background: white;
-            border-radius: 8px;
+            border-radius: 50%;
             box-shadow: 0 4px 16px rgba(0,0,0,0.5);
             z-index: 100;
+            overflow: hidden;
         }
 
         #minimap {
             width: 100%;
             height: 100%;
-            border-radius: 6px;
+            border-radius: 50%;
         }
 
         /* Botón de ajustes */
@@ -482,7 +483,7 @@
 
         /* Minimap: en fullscreen, escalar ligeramente manteniéndolo anclado a la esquina */
         body.is-fullscreen .minimap-container {
-            transform: scale(1.15);
+            transform: scale(1.10);
             transform-origin: top right;
             will-change: transform;
         }
@@ -1011,6 +1012,7 @@
         let calibratedGamma = 0;
         let calibratedAlpha = 0; // Orientación (yaw) en momento de calibrar
         let isCalibrated = false;
+        let landscapeSide = 'LEFT'; // LEFT (cámara izquierda) o RIGHT (cámara derecha)
 
         // Estado del dron
         let previousDroneState = null;
@@ -1029,7 +1031,7 @@
 
         // Límites de seguridad
     const MAX_ANGLE_DEVIATION = 30; // ±30° desde la posición calibrada
-        const DEADZONE = 3; // Zona muerta de ±3°
+        const DEADZONE = 5; // Zona muerta de ±5°
 
         // Inicializar minimapa
         function initMinimap() {
@@ -1100,6 +1102,61 @@
             }
         }
 
+        // Detectar si el móvil está horizontal con cámara a la izquierda o derecha
+        function detectLandscapeSide(gammaValue) {
+            // En landscape izquierdo (cámara a la izquierda), gamma está cerca de 0 cuando el móvil está plano
+            // En landscape derecho (cámara a la derecha), gamma cambia radicalmente
+            // Usamos gamma para detectar: si gamma > 0 normalmente = LEFT, si gamma < 0 fuertemente = RIGHT
+            // Una heurística más robusta: medir si gamma está en rango "normal" de landscape LEFT (-45 a 45)
+            // o si está en el rango invertido de landscape RIGHT
+            
+            // Landscape LEFT típico: gamma entre -45 y +45 aproximadamente cuando está plano/inclinado
+            // Landscape RIGHT típico: gamma fuera de ese rango o en valores extremos
+            
+            // Mejor enfoque: usar window.orientation si está disponible
+            if (typeof window.orientation !== 'undefined') {
+                // window.orientation:
+                // 0 = portrait, 90 = landscape (cámara derecha), -90 = landscape (cámara izquierda), 180 = portrait invertido
+                if (window.orientation === -90) {
+                    return 'LEFT';
+                } else if (window.orientation === 90) {
+                    return 'RIGHT';
+                }
+            }
+            
+            // Fallback: detectar por el signo y magnitud de gamma
+            // En LEFT, gamma suele estar en rango manejable (-45 a +45)
+            // En RIGHT, los valores se invierten
+            if (gammaValue < -45 || gammaValue > 45) {
+                return 'RIGHT';
+            }
+            return 'LEFT';
+        }
+
+        // Corregir ángulos según la orientación del móvil
+        function fixAnglesForControl(betaValue, gammaValue) {
+            const side = detectLandscapeSide(gammaValue);
+            landscapeSide = side; // Actualizar variable global para referencia
+            
+            if (side === 'RIGHT') {
+                // Cuando la cámara está a la derecha:
+                // - Invertir gamma (pitch)
+                // - Invertir beta (roll)
+                return {
+                    beta: betaValue,
+                    gamma: gammaValue,
+                    side: side
+                };
+            }
+            
+            // Cámara a la izquierda: valores normales
+            return {
+                beta: -betaValue,
+                gamma: -gammaValue,
+                side: side
+            };
+        }
+
         // Manejar cambios de orientación
         function handleOrientation(event) {
             // Leer ángulos del sensor
@@ -1109,15 +1166,18 @@
             
             // Protección contra gimbal lock: cuando gamma se acerca a ±90°,
             // los valores de beta se vuelven inestables. Rechazamos lecturas en esta zona.
-            const GIMBAL_LOCK_THRESHOLD = 85; // Ignorar lecturas cuando |gamma| > 85°
+            const GIMBAL_LOCK_THRESHOLD = 80; // Ignorar lecturas cuando |gamma| > 80°
             if (Math.abs(rawGamma) > GIMBAL_LOCK_THRESHOLD) {
                 // Zona de gimbal lock detectada - mantener valores anteriores
                 return;
             }
             
+            // Corregir ángulos según orientación del móvil (cámara izquierda vs derecha)
+            const corrected = fixAnglesForControl(rawBeta, rawGamma);
+            
             // Actualizar valores globales solo si la lectura es válida
-            beta = rawBeta;
-            gamma = rawGamma;
+            beta = corrected.beta;
+            gamma = corrected.gamma;
             
             // Las cajas de ángulo ahora muestran el ángulo RELATIVO respecto a la posición neutra calibrada.
             // (Se actualizan dentro de updatePhoneVisualization para usar los valores ya limitados/clamped)
@@ -1165,7 +1225,15 @@
             calibratedAlpha = alpha; // Guardar orientación en momento de calibrar
 
             isCalibrated = true;
-            console.log(`🎯 Calibrado: Beta=${calibratedBeta.toFixed(1)}°, Gamma=${calibratedGamma.toFixed(1)}°, Alpha=${calibratedAlpha.toFixed(1)}°`);
+            
+            const sideText = landscapeSide === 'LEFT' ? '📱← Cámara IZQUIERDA' : '📱→ Cámara DERECHA';
+            const statusMsg = document.getElementById('status-message');
+            statusMsg.innerHTML = `✅ Calibrado correctamente<br>${sideText}<br>Mueve el móvil para controlar el dron`;
+            statusMsg.style.background = 'rgba(76, 175, 80, 0.2)';
+            statusMsg.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+            statusMsg.style.color = '#4CAF50';
+            
+            console.log(`🎯 Calibrado: Beta=${calibratedBeta.toFixed(1)}°, Gamma=${calibratedGamma.toFixed(1)}°, Alpha=${calibratedAlpha.toFixed(1)}°, Side=${landscapeSide}`);
         }
 
         // Calcular comandos de movimiento basados en la orientación (MÓVIL HORIZONTAL)
@@ -1193,9 +1261,9 @@
             // Normalizar a rango -1 a 1
             // EN HORIZONTAL:
             // Beta: negativo = izquierda, positivo = derecha (ROLL)
-            // Gamma: negativo = atrás, positivo = adelante (PITCH)
+            // Gamma: negativo = atrás, positivo = adelante (PITCH) - invertir signo para el dron
             joystickState.roll = clampedBeta / MAX_ANGLE_DEVIATION;  // Roll: inclinación lateral
-            joystickState.pitch = clampedGamma / MAX_ANGLE_DEVIATION;  // Pitch: gamma positivo = adelante
+            joystickState.pitch = -(clampedGamma / MAX_ANGLE_DEVIATION);  // Pitch: INVERTIDO - gamma positivo envía comando negativo para avanzar
             
             // Throttle y yaw se mantienen en 0 (controlados manualmente si es necesario)
             joystickState.throttle = 0;
@@ -1222,8 +1290,9 @@
                 color = '#4CAF50';
             } else {
                 // Determinar dirección principal
+                // Nota: pitch está invertido, así que pitch negativo = avanzar, pitch positivo = retroceder
                 if (Math.abs(pitch) > Math.abs(roll)) {
-                    if (pitch > 0) {
+                    if (pitch < 0) {
                         direction = '⬆️ AVANZAR';
                         color = '#2196F3';
                     } else {
@@ -1242,10 +1311,10 @@
 
                 // Dirección diagonal
                 if (Math.abs(pitch) > 0.3 && Math.abs(roll) > 0.3) {
-                    if (pitch > 0 && roll > 0) direction = '↗️ ADELANTE-DERECHA';
-                    else if (pitch > 0 && roll < 0) direction = '↖️ ADELANTE-IZQUIERDA';
-                    else if (pitch < 0 && roll > 0) direction = '↘️ ATRÁS-DERECHA';
-                    else if (pitch < 0 && roll < 0) direction = '↙️ ATRÁS-IZQUIERDA';
+                    if (pitch < 0 && roll > 0) direction = '↗️ ADELANTE-DERECHA';
+                    else if (pitch < 0 && roll < 0) direction = '↖️ ADELANTE-IZQUIERDA';
+                    else if (pitch > 0 && roll > 0) direction = '↘️ ATRÁS-DERECHA';
+                    else if (pitch > 0 && roll < 0) direction = '↙️ ATRÁS-IZQUIERDA';
                     color = '#FFC107';
                 }
             }
