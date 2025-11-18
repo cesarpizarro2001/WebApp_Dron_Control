@@ -178,7 +178,95 @@ def handle_telemetry(data):
     # Reenviar telemetría a todos los clientes web conectados
     socketio.emit('telemetry_info', data, include_self=False)
 
-# Recibir eventos de la Estación de Tierra
+# ==================================================================================
+# HANDLERS DE SINCRONIZACIÓN PROFESOR -> ALUMNO (alumno_control.html)
+# Estos handlers retransmiten eventos del profesor a los alumnos para mantener
+# sincronizada la interfaz visual sin permitir interacción de los alumnos
+# ==================================================================================
+
+# Sincronización de estilos de botones (Conectar, Despegar, Aterrizar, RTL)
+@socketio.on('button_style_sync')
+def handle_button_style_sync(payload):
+    """Sincroniza cambios de texto y clases CSS de botones principales"""
+    try:
+        print(f"[SYNC BOTONES] {payload.get('buttonId')} -> {payload.get('text')}")
+        socketio.emit('button_style_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en button_style_sync: {e}")
+
+# Sincronización de comandos de voz
+@socketio.on('voice_command_sync')
+def handle_voice_command_sync(payload):
+    """Sincroniza estados del control por voz (listening, processing, success, error)"""
+    try:
+        status = payload.get('status')
+        text = payload.get('text', '')
+        if text:
+            print(f"[SYNC VOZ] {status.upper()} - '{text}'")
+        else:
+            print(f"[SYNC VOZ] {status.upper()}")
+        socketio.emit('voice_command_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en voice_command_sync: {e}")
+
+# Sincronización de cámara móvil (modal)
+@socketio.on('camera_modal_sync')
+def handle_camera_modal_sync(payload):
+    """Sincroniza apertura/cierre del modal de cámara móvil del profesor"""
+    try:
+        print(f"[SYNC CÁMARA MÓVIL] {payload.get('action').upper()}")
+        socketio.emit('camera_modal_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en camera_modal_sync: {e}")
+
+# Sincronización de cámara del dron
+@socketio.on('drone_camera_sync')
+def handle_drone_camera_sync(payload):
+    """Sincroniza apertura/cierre de la vista de cámara del dron"""
+    try:
+        print(f"[SYNC CÁMARA DRON] {payload.get('action').upper()}")
+        socketio.emit('drone_camera_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en drone_camera_sync: {e}")
+
+# Sincronización de modal de foto capturada
+@socketio.on('photo_modal_sync')
+def handle_photo_modal_sync(payload):
+    """Sincroniza visualización de fotos capturadas"""
+    try:
+        action = payload.get('action')
+        photo = payload.get('photoName', '')
+        if action == 'open':
+            print(f"[SYNC FOTO] ABRIR - {photo}")
+        else:
+            print(f"[SYNC FOTO] CERRAR")
+        socketio.emit('photo_modal_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en photo_modal_sync: {e}")
+
+# Sincronización de modal de video y controles de reproducción
+@socketio.on('video_modal_sync')
+def handle_video_modal_sync(payload):
+    """Sincroniza visualización de videos y controles (play, pause, seek)"""
+    try:
+        action = payload.get('action')
+        if action == 'open':
+            print(f"[SYNC VIDEO] ABRIR - {payload.get('videoName', '')}")
+        elif action == 'close':
+            print(f"[SYNC VIDEO] CERRAR")
+        elif action in ['play', 'pause']:
+            print(f"[SYNC VIDEO] {action.upper()} - {payload.get('currentTime', 0):.1f}s")
+        elif action == 'seek':
+            print(f"[SYNC VIDEO] SEEK -> {payload.get('currentTime', 0):.1f}s")
+        socketio.emit('video_modal_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en video_modal_sync: {e}")
+
+# ==================================================================================
+# FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_CONTROL
+# ==================================================================================
+
+# Recibir comandos de la WebApp y reenviarlos a la Estación de Tierra
 @socketio.on('flight_event')
 def handle_flight_event(data):
     event_type = data.get('event')

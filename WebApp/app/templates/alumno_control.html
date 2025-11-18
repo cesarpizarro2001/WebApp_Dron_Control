@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Web App</title>
+    <title>Vista Alumno - Control</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <!--    Necesito estos scripts para trabajar con websockets (Socket.IO)-->
@@ -2642,23 +2642,23 @@
         </div>
 
         <div class="settings-actions">
-            <button class="reset-btn" onclick="resetSettings()">🔄 Restablecer</button>
-            <button class="apply-btn" onclick="applySettings()">✅ Aplicar</button>
+            <button class="reset-btn" disabled>🔄 Restablecer</button>
+            <button class="apply-btn" disabled>✅ Aplicar</button>
         </div>
     </div>
 
-    <!-- Barra superior de controles principales -->
+    <!-- Barra superior de controles principales (ALUMNO - SOLO VISUAL) -->
     <div class="top-controls">
-        <input type="number" id="altura" placeholder="Altura (m)" />
-        <button id="botonConectar" onclick="conectarDron()">Conectar</button>
-        <button id="botonDespegar" onclick="despegarDron()">Despegar</button>
-        <button id="botonAterrizar" onclick="aterrizarDron()">Aterrizar</button>
-        <button id="botonRTL" onclick="returnToLaunch()">RTL</button>
+        <input type="number" id="altura" placeholder="Altura (m)" disabled />
+        <button id="botonConectar" disabled>Conectar</button>
+        <button id="botonDespegar" disabled>Despegar</button>
+        <button id="botonAterrizar" disabled>Aterrizar</button>
+        <button id="botonRTL" disabled>RTL</button>
     </div>
 
-    <!-- Dropdown de funcionalidades -->
+    <!-- Dropdown de funcionalidades (ALUMNO - SOLO VISUAL) -->
     <div class="features-dropdown">
-        <button class="dropdown-toggle" onclick="toggleDropdown('dropdownMenu')">
+        <button class="dropdown-toggle" disabled>
             ⚙️ Funcionalidades
         </button>
         <div class="dropdown-menu" id="dropdownMenu">
@@ -2667,15 +2667,15 @@
                 <button id="botonRecorrerRuta" class="boton-amarillo" onclick="confirmarEjecutarRuta(); closeAllDropdowns()">✅ Recorrer Ruta</button>
                 <button id="botonCancelarRuta" onclick="cancelarRuta(); closeAllDropdowns()" title="Cancelar y borrar ruta">❌</button>
             </div>
-            <button id="botonImagenDron" class="boton-azul" onclick="toggleWebcamView(); closeAllDropdowns()">📷 Cámara Dron</button>
+            <button id="botonImagenDron" class="boton-azul" disabled>📷 Cámara Dron</button>
             <div id="camaraButtonsContainer" class="ruta-buttons-container">
                 <button id="botonVerMapa" class="boton-amarillo">📷 Viendo Cámara Dron</button>
-                <button id="botonCerrarCamara" onclick="cerrarCamaraDron(); closeAllDropdowns()" title="Cerrar cámara">❌</button>
+                <button id="botonCerrarCamara" disabled title="Cerrar cámara">❌</button>
             </div>
-            <button id="botonCamaraMovil" class="boton-azul" onclick="abrirVentanaCamara(); closeAllDropdowns()">📱 Cámara Móvil</button>
+            <button id="botonCamaraMovil" class="boton-azul" disabled>📱 Cámara Móvil</button>
             <div id="camaraMovilButtonsContainer" class="ruta-buttons-container">
                 <button id="botonVerCamaraMovil" class="boton-amarillo">📱 Viendo Cámara Móvil</button>
-                <button id="botonCerrarCamaraMovil" onclick="cerrarCamaraMovil(); closeAllDropdowns()" title="Cerrar cámara móvil">❌</button>
+                <button id="botonCerrarCamaraMovil" disabled title="Cerrar cámara móvil">❌</button>
             </div>
             <button id="botonGaleria" class="boton-azul" onclick="abrirGaleria(); closeAllDropdowns()">🖼️ Galería</button>
             <div id="galeriaButtonsContainer" class="ruta-buttons-container" style="display: none;">
@@ -2730,22 +2730,22 @@
             <!-- Botones superiores sobre la cámara -->
             <div class="camera-top-controls">
                 <div class="camera-top-controls-left">
-                    <button class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar">✈️</button>
-                    <button class="camera-btn camera-btn-icon" onclick="aterrizarDron()" title="Aterrizar">🛬</button>
-                    <button class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL">🏠</button>
+                    <button class="camera-btn camera-btn-icon" disabled title="Despegar">✈️</button>
+                    <button class="camera-btn camera-btn-icon" disabled title="Aterrizar">🛬</button>
+                    <button class="camera-btn camera-btn-icon" disabled title="RTL">🏠</button>
                 </div>
                 <div class="camera-top-controls-right">
-                    <button class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Configuración de Video">⚙️</button>
+                    <button class="camera-btn camera-btn-icon" disabled title="Configuración de Video">⚙️</button>
                 </div>
             </div>
             <img id='video-stream' alt='Stream de video del dron'>
             <!-- Botones inferiores sobre la cámara -->
             <div class="camera-controls">
-                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" onclick="capturarFoto()" title="Hacer foto">📸</button>
-                <button id="voice-control-modal-btn" class="camera-btn camera-btn-icon" onclick="iniciarControlVoz()" title="Control por voz">
+                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" disabled title="Hacer foto">📸</button>
+                <button id="voice-control-modal-btn" class="camera-btn camera-btn-icon" disabled title="Control por voz">
                     <span class="mic-icon">🎤</span>
                 </button>
-                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video">🎥</button>
+                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" disabled title="Grabar video">🎥</button>
             </div>
         </div>
     </div>
@@ -2796,7 +2796,7 @@
     <div id="map"></div>
 
     <!-- Control por voz -->
-    <button id="voice-control-btn" onclick="iniciarControlVoz()">
+    <button id="voice-control-btn" disabled>
         <span class="mic-icon">🎤</span>
         <span class="voice-text">VOZ</span>
     </button>
@@ -2897,9 +2897,13 @@
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
-        // Inicializar el mapa
-        // ===== VARIABLES GLOBALES =====
+        // ========================================
+        // ALUMNO_CONTROL.HTML - SOLO VISUAL
+        // Este archivo es una réplica visual de control.html
+        // Sin funciones, solo escucha eventos de sincronización
+        // ========================================
         
+        // Inicializar el mapa (solo visual)
         // Variables del mapa y posicionamiento
         var map = L.map('map').setView([41.27624, 1.98838], 20);
         L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
@@ -3698,93 +3702,29 @@
 
         // Función para mostrar u ocultar el contenedor de video
         function toggleWebcamView() {
-            const webcamContainer = document.getElementById('webcam-container');
-            const botonImagenDron = document.getElementById('botonImagenDron');
-            const camaraButtonsContainer = document.getElementById('camaraButtonsContainer');
-            
-            if (webcamContainer.style.display === 'none' || webcamContainer.style.display === '') {
-                // Mostrar cámara con animación
-                webcamContainer.style.display = 'block';
-                
-                // Ocultar botón principal y mostrar contenedor de botones
-                botonImagenDron.style.display = 'none';
-                camaraButtonsContainer.classList.add('show');
-                
-                // Sincronizar con alumnos - abrir cámara dron
-                socket.emit('drone_camera_sync', {
-                    action: 'open'
-                });
-                
-                console.log('Modo cámara dron activado');
-            }
+            // Deshabilitado para alumnos - solo visualización desde sincronización
+            console.log('[ALUMNO] Función toggleWebcamView() deshabilitada - solo sincronización');
+            return;
         }
 
         // Función para cerrar la cámara del dron
         function cerrarCamaraDron() {
-            const webcamContainer = document.getElementById('webcam-container');
-            const botonImagenDron = document.getElementById('botonImagenDron');
-            const camaraButtonsContainer = document.getElementById('camaraButtonsContainer');
-            
-            // Ocultar cámara
-            webcamContainer.style.display = 'none';
-            
-            // Mostrar botón principal y ocultar contenedor de botones
-            botonImagenDron.style.display = '';  // Restaurar display original
-            botonImagenDron.textContent = '📷 Cámara Dron';
-            camaraButtonsContainer.classList.remove('show');
-            
-            // Sincronizar con alumnos - cerrar cámara dron
-            socket.emit('drone_camera_sync', {
-                action: 'close'
-            });
-            
-            console.log('Modo cámara dron desactivado');
+            // Deshabilitado para alumnos - solo visualización desde sincronización
+            console.log('[ALUMNO] Función cerrarCamaraDron() deshabilitada - solo sincronización');
+            return;
         }
 
         // Función para mostrar u ocultar el contenedor de la cámara del móvil
         function abrirVentanaCamara() {
-            const camaraModal = document.getElementById('camara-movil-modal');
-            const botonCamaraMovil = document.getElementById('botonCamaraMovil');
-            const camaraMovilButtonsContainer = document.getElementById('camaraMovilButtonsContainer');
-            
-            camaraModal.classList.add('active');
-            
-            // Ocultar botón principal y mostrar contenedor de botones
-            botonCamaraMovil.style.display = 'none';
-            camaraMovilButtonsContainer.classList.add('show');
-            
-            // Sincronizar con alumnos - abrir cámara
-            socket.emit('camera_modal_sync', {
-                action: 'open'
-            });
-            
-            // Activar automáticamente la cámara frontal
-            cam = "user";
-            startVideo();
+            // Deshabilitado para alumnos - solo visualización desde sincronización
+            console.log('[ALUMNO] Función abrirVentanaCamara() deshabilitada - solo sincronización');
+            return;
         }
 
         function cerrarCamaraMovil() {
-            const camaraModal = document.getElementById('camara-movil-modal');
-            const botonCamaraMovil = document.getElementById('botonCamaraMovil');
-            const camaraMovilButtonsContainer = document.getElementById('camaraMovilButtonsContainer');
-            
-            camaraModal.classList.remove('active');
-            
-            // Mostrar botón principal y ocultar contenedor de botones
-            botonCamaraMovil.style.display = '';  // Restaurar display original
-            camaraMovilButtonsContainer.classList.remove('show');
-            
-            // Sincronizar con alumnos - cerrar cámara
-            socket.emit('camera_modal_sync', {
-                action: 'close'
-            });
-            
-            // Detener stream de cámara si está activo
-            const video = document.getElementById('video');
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-            }
+            // Deshabilitado para alumnos - solo visualización desde sincronización
+            console.log('[ALUMNO] Función cerrarCamaraMovil() deshabilitada - solo sincronización');
+            return;
         }
 
         // Cerrar modal de cámara móvil al hacer clic fuera
@@ -3828,77 +3768,23 @@
 
         // Función para mostrar la foto capturada en un modal
         function mostrarFotoCapturada(nombreFoto) {
-            const photoModal = document.getElementById('photo-modal-container');
-            const capturedPhoto = document.getElementById('captured-photo');
-            
-            if (!photoModal || !capturedPhoto) {
-                console.error('ERROR: No se encontró el modal o la imagen');
-                return;
-            }
-            
-            // Construir la ruta y cargar la imagen
-            const photoPath = `/static/captured_photos/${nombreFoto}`;
-            capturedPhoto.src = photoPath;
-            
-            // Mostrar el modal
-            photoModal.style.zIndex = '2100';
-            photoModal.style.display = 'block';
-            
-            // Sincronizar con alumnos - mostrar foto
-            socket.emit('photo_modal_sync', {
-                action: 'open',
-                photoName: nombreFoto
-            });
-            
-            // Agregar evento de clic para cerrar el modal al hacer clic fuera de la imagen
-            photoModal.onclick = function(event) {
-                if (event.target === photoModal) {
-                    cerrarFotoCapturada();
-                }
-            };
-            
-            // Agregar evento de teclado para cerrar con ESC
-            const handleEscape = function(event) {
-                if (event.key === 'Escape') {
-                    cerrarFotoCapturada();
-                    document.removeEventListener('keydown', handleEscape);
-                }
-            };
-            document.addEventListener('keydown', handleEscape);
+            // Deshabilitado para alumnos - solo visualización desde sincronización
+            console.log('[ALUMNO] Función mostrarFotoCapturada() deshabilitada - solo sincronización');
+            return;
         }
 
         // Función para cerrar el modal de foto
         function cerrarFotoCapturada() {
-            const photoModal = document.getElementById('photo-modal-container');
-            if (photoModal) {
-                photoModal.style.display = 'none';
-            }
-            
-            // Sincronizar con alumnos - cerrar foto
-            socket.emit('photo_modal_sync', {
-                action: 'close'
-            });
-            
-            // Si se abrió desde la galería, volver a mostrarla
-            if (abrioDesdeGaleria) {
-                abrioDesdeGaleria = false;
-                document.getElementById('gallery-modal-container').style.display = 'block';
-            }
+            // Deshabilitado para alumnos - solo visualización desde sincronización
+            console.log('[ALUMNO] Función cerrarFotoCapturada() deshabilitada - solo sincronización');
+            return;
         }
 
         // Función para mostrar el video grabado en un modal
         function mostrarVideoGrabado(nombreVideo) {
-            const videoModal = document.getElementById('video-modal-container');
-            const capturedVideo = document.getElementById('captured-video');
-            const videoSource = document.getElementById('video-source');
-            
-            if (!videoModal || !capturedVideo || !videoSource) {
-                console.error('ERROR: No se encontró el modal o el video');
-                return;
-            }
-            
-            // Construir la ruta y cargar el video
-            const videoPath = `/static/captured_videos/${nombreVideo}`;
+            // Deshabilitado para alumnos - solo visualización desde sincronización
+            console.log('[ALUMNO] Función mostrarVideoGrabado() deshabilitada - solo sincronización');
+            return;
             
             videoSource.src = videoPath;
             capturedVideo.load(); // Recargar el video con la nueva fuente
@@ -3906,34 +3792,6 @@
             // Mostrar el modal
             videoModal.style.zIndex = '2100';
             videoModal.style.display = 'block';
-            
-            // Sincronizar con alumnos - mostrar video
-            socket.emit('video_modal_sync', {
-                action: 'open',
-                videoName: nombreVideo
-            });
-            
-            // Sincronizar play/pause con alumnos
-            capturedVideo.onplay = function() {
-                socket.emit('video_modal_sync', {
-                    action: 'play',
-                    currentTime: capturedVideo.currentTime
-                });
-            };
-            
-            capturedVideo.onpause = function() {
-                socket.emit('video_modal_sync', {
-                    action: 'pause',
-                    currentTime: capturedVideo.currentTime
-                });
-            };
-            
-            capturedVideo.onseeked = function() {
-                socket.emit('video_modal_sync', {
-                    action: 'seek',
-                    currentTime: capturedVideo.currentTime
-                });
-            };
             
             // Agregar evento de clic para cerrar el modal al hacer clic fuera del video
             videoModal.onclick = function(event) {
@@ -3954,28 +3812,9 @@
 
         // Función para cerrar el modal de video
         function cerrarVideoGrabado() {
-            const videoModal = document.getElementById('video-modal-container');
-            const capturedVideo = document.getElementById('captured-video');
-            
-            if (videoModal) {
-                videoModal.style.display = 'none';
-            }
-            
-            if (capturedVideo) {
-                capturedVideo.pause(); // Pausar el video al cerrar
-                capturedVideo.currentTime = 0; // Reiniciar al inicio
-            }
-            
-            // Sincronizar con alumnos - cerrar video
-            socket.emit('video_modal_sync', {
-                action: 'close'
-            });
-            
-            // Si se abrió desde la galería, volver a mostrarla
-            if (abrioDesdeGaleria) {
-                abrioDesdeGaleria = false;
-                document.getElementById('gallery-modal-container').style.display = 'block';
-            }
+            // Deshabilitado para alumnos - solo visualización desde sincronización
+            console.log('[ALUMNO] Función cerrarVideoGrabado() deshabilitada - solo sincronización');
+            return;
         }
 
         // Variable para controlar el estado de grabación
@@ -4209,6 +4048,185 @@
             document.getElementById('video-stream').src = 'data:image/jpeg;base64,' + data;
         });
         
+        // ===== SINCRONIZACIÓN VISUAL ALUMNO =====
+        // Escuchar cambios de estilo de botones desde el profesor
+        socket.on('button_style_sync', function(data) {
+            const boton = document.getElementById(data.buttonId);
+            if (boton) {
+                // Aplicar texto
+                if (data.text) boton.textContent = data.text;
+                // Remover clases antiguas
+                if (data.removeClass) {
+                    data.removeClass.forEach(cls => boton.classList.remove(cls));
+                }
+                // Añadir clases nuevas
+                if (data.addClass) {
+                    data.addClass.forEach(cls => boton.classList.add(cls));
+                }
+                console.log(`[ALUMNO] Botón ${data.buttonId} sincronizado:`, data);
+            }
+        });
+
+        // Sincronizar comandos de voz del profesor
+        socket.on('voice_command_sync', function(data) {
+            const btn = document.getElementById('voice-control-btn');
+            const modalBtn = document.getElementById('voice-control-modal-btn');
+            const voiceText = btn.querySelector('.voice-text');
+            
+            console.log('[ALUMNO] Comando de voz del profesor:', data);
+            
+            if (data.status === 'listening') {
+                btn.classList.add('listening');
+                if (modalBtn) {
+                    modalBtn.classList.add('listening');
+                    modalBtn.setAttribute('data-text', 'ESCUCHANDO...');
+                }
+                voiceText.textContent = 'ESCUCHANDO...';
+            } else if (data.status === 'processing') {
+                btn.classList.remove('listening');
+                btn.classList.add('processing');
+                if (modalBtn) {
+                    modalBtn.classList.remove('listening');
+                    modalBtn.classList.add('processing');
+                    modalBtn.setAttribute('data-text', `"${data.text}"`);
+                }
+                voiceText.textContent = `"${data.text}"`;
+            } else if (data.status === 'success') {
+                setTimeout(() => {
+                    btn.classList.remove('processing');
+                    if (modalBtn) {
+                        modalBtn.classList.remove('processing');
+                        modalBtn.removeAttribute('data-text');
+                    }
+                    voiceText.textContent = 'VOZ';
+                }, 1500);
+            } else if (data.status === 'error') {
+                btn.classList.remove('processing', 'listening');
+                btn.classList.add('error');
+                if (modalBtn) {
+                    modalBtn.classList.remove('processing', 'listening');
+                    modalBtn.classList.add('error');
+                    modalBtn.setAttribute('data-text', 'NO ENTENDIDO');
+                }
+                voiceText.textContent = 'NO ENTENDIDO';
+                setTimeout(() => {
+                    btn.classList.remove('error');
+                    if (modalBtn) {
+                        modalBtn.classList.remove('error');
+                        modalBtn.removeAttribute('data-text');
+                    }
+                    voiceText.textContent = 'VOZ';
+                }, 2000);
+            } else if (data.status === 'idle') {
+                btn.classList.remove('listening', 'processing', 'error');
+                if (modalBtn) {
+                    modalBtn.classList.remove('listening', 'processing', 'error');
+                    modalBtn.removeAttribute('data-text');
+                }
+                voiceText.textContent = 'VOZ';
+            }
+        });
+
+        // Sincronizar apertura/cierre de cámara móvil del profesor
+        socket.on('camera_modal_sync', function(data) {
+            const camaraModal = document.getElementById('camara-movil-modal');
+            const botonCamaraMovil = document.getElementById('botonCamaraMovil');
+            const camaraMovilButtonsContainer = document.getElementById('camaraMovilButtonsContainer');
+            
+            console.log('[ALUMNO] Sincronización cámara móvil:', data.action);
+            
+            if (data.action === 'open') {
+                // Abrir modal de cámara para el alumno
+                camaraModal.classList.add('active');
+                if (botonCamaraMovil) botonCamaraMovil.style.display = 'none';
+                if (camaraMovilButtonsContainer) camaraMovilButtonsContainer.classList.add('show');
+            } else if (data.action === 'close') {
+                // Cerrar modal de cámara para el alumno
+                camaraModal.classList.remove('active');
+                if (botonCamaraMovil) botonCamaraMovil.style.display = '';
+                if (camaraMovilButtonsContainer) camaraMovilButtonsContainer.classList.remove('show');
+            }
+        });
+
+        // Sincronizar apertura/cierre de cámara del dron del profesor
+        socket.on('drone_camera_sync', function(data) {
+            const webcamContainer = document.getElementById('webcam-container');
+            const botonImagenDron = document.getElementById('botonImagenDron');
+            const camaraButtonsContainer = document.getElementById('camaraButtonsContainer');
+            
+            console.log('[ALUMNO] Sincronización cámara dron:', data.action);
+            
+            if (data.action === 'open') {
+                // Mostrar cámara del dron
+                webcamContainer.style.display = 'block';
+                if (botonImagenDron) botonImagenDron.style.display = 'none';
+                if (camaraButtonsContainer) camaraButtonsContainer.classList.add('show');
+            } else if (data.action === 'close') {
+                // Ocultar cámara del dron
+                webcamContainer.style.display = 'none';
+                if (botonImagenDron) {
+                    botonImagenDron.style.display = '';
+                    botonImagenDron.textContent = '📷 Cámara Dron';
+                }
+                if (camaraButtonsContainer) camaraButtonsContainer.classList.remove('show');
+            }
+        });
+
+        // Sincronizar modal de foto capturada del profesor
+        socket.on('photo_modal_sync', function(data) {
+            const photoModal = document.getElementById('photo-modal-container');
+            const capturedPhoto = document.getElementById('captured-photo');
+            
+            console.log('[ALUMNO] Sincronización foto:', data.action);
+            
+            if (data.action === 'open' && data.photoName) {
+                // Mostrar foto
+                const photoPath = `/static/captured_photos/${data.photoName}`;
+                capturedPhoto.src = photoPath;
+                photoModal.style.zIndex = '2100';
+                photoModal.style.display = 'block';
+            } else if (data.action === 'close') {
+                // Cerrar foto
+                photoModal.style.display = 'none';
+            }
+        });
+
+        // Sincronizar modal de video del profesor
+        socket.on('video_modal_sync', function(data) {
+            const videoModal = document.getElementById('video-modal-container');
+            const capturedVideo = document.getElementById('captured-video');
+            const videoSource = document.getElementById('video-source');
+            
+            console.log('[ALUMNO] Sincronización video:', data.action);
+            
+            if (data.action === 'open' && data.videoName) {
+                // Mostrar video
+                const videoPath = `/static/captured_videos/${data.videoName}`;
+                videoSource.src = videoPath;
+                capturedVideo.load();
+                videoModal.style.zIndex = '2100';
+                videoModal.style.display = 'block';
+            } else if (data.action === 'close') {
+                // Cerrar video
+                videoModal.style.display = 'none';
+                if (capturedVideo) {
+                    capturedVideo.pause();
+                    capturedVideo.currentTime = 0;
+                }
+            } else if (data.action === 'play') {
+                // Reproducir video
+                capturedVideo.currentTime = data.currentTime || 0;
+                capturedVideo.play().catch(e => console.log('[ALUMNO] No se pudo reproducir:', e));
+            } else if (data.action === 'pause') {
+                // Pausar video
+                capturedVideo.currentTime = data.currentTime || 0;
+                capturedVideo.pause();
+            } else if (data.action === 'seek') {
+                // Sincronizar posición del video
+                capturedVideo.currentTime = data.currentTime || 0;
+            }
+        });
+
         // Recibir telemetría del dron
         socket.on('telemetry_info', function(data) {
             telemetry_info = data;
@@ -4313,44 +4331,20 @@
                     botonConectar.textContent = 'Conectado';
                     resetButtonClasses(botonConectar);
                     botonConectar.classList.add('boton-verde');
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonConectar',
-                        text: 'Conectado',
-                        removeClass: ['boton-amarillo', 'boton-rojo'],
-                        addClass: ['boton-verde']
-                    });
                     
                     if (!despegando) {
                         botonDespegar.disabled = false;
                         botonDespegar.textContent = 'Despegar';
                         resetButtonClasses(botonDespegar);
-                        socket.emit('button_style_sync', {
-                            buttonId: 'botonDespegar',
-                            text: 'Despegar',
-                            removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                            addClass: []
-                        });
                     }
                     
                     botonAterrizar.disabled = true;
                     botonAterrizar.textContent = 'Aterrizar';
                     resetButtonClasses(botonAterrizar);
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonAterrizar',
-                        text: 'Aterrizar',
-                        removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                        addClass: []
-                    });
                     
                     botonRTL.disabled = true;
                     botonRTL.textContent = 'RTL';
                     resetButtonClasses(botonRTL);
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonRTL',
-                        text: 'RTL',
-                        removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                        addClass: []
-                    });
                     break;
 
                 case 'arming':
@@ -4366,32 +4360,14 @@
                     botonDespegar.textContent = 'Volando';
                     resetButtonClasses(botonDespegar);
                     botonDespegar.classList.add('boton-verde');
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonDespegar',
-                        text: 'Volando',
-                        removeClass: ['boton-amarillo', 'boton-rojo'],
-                        addClass: ['boton-verde']
-                    });
                     
                     botonAterrizar.disabled = false;
                     botonAterrizar.textContent = 'Aterrizar';
                     resetButtonClasses(botonAterrizar);
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonAterrizar',
-                        text: 'Aterrizar',
-                        removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                        addClass: []
-                    });
                     
                     botonRTL.disabled = false;
                     botonRTL.textContent = 'RTL';
                     resetButtonClasses(botonRTL);
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonRTL',
-                        text: 'RTL',
-                        removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                        addClass: []
-                    });
                     break;
 
                 case 'landing':
@@ -4401,12 +4377,6 @@
                     botonAterrizar.textContent = 'Aterrizando...';
                     resetButtonClasses(botonAterrizar);
                     botonAterrizar.classList.add('boton-amarillo');
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonAterrizar',
-                        text: 'Aterrizando...',
-                        removeClass: ['boton-verde', 'boton-rojo'],
-                        addClass: ['boton-amarillo']
-                    });
                     botonRTL.disabled = true;
                     break;
 
@@ -4418,54 +4388,24 @@
                     botonRTL.textContent = 'Volviendo...';
                     resetButtonClasses(botonRTL);
                     botonRTL.classList.add('boton-amarillo');
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonRTL',
-                        text: 'Volviendo...',
-                        removeClass: ['boton-verde', 'boton-rojo'],
-                        addClass: ['boton-amarillo']
-                    });
                     break;
 
                 default:
                     // Estado desconocido o desconectado
                     botonConectar.textContent = 'Conectar';
                     resetButtonClasses(botonConectar);
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonConectar',
-                        text: 'Conectar',
-                        removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                        addClass: []
-                    });
                     
                     botonDespegar.disabled = true;
                     botonDespegar.textContent = 'Despegar';
                     resetButtonClasses(botonDespegar);
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonDespegar',
-                        text: 'Despegar',
-                        removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                        addClass: []
-                    });
                     
                     botonAterrizar.disabled = true;
                     botonAterrizar.textContent = 'Aterrizar';
                     resetButtonClasses(botonAterrizar);
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonAterrizar',
-                        text: 'Aterrizar',
-                        removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                        addClass: []
-                    });
                     
                     botonRTL.disabled = true;
                     botonRTL.textContent = 'RTL';
                     resetButtonClasses(botonRTL);
-                    socket.emit('button_style_sync', {
-                        buttonId: 'botonRTL',
-                        text: 'RTL',
-                        removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
-                        addClass: []
-                    });
                     break;
             }
         }
@@ -4476,14 +4416,6 @@
             button.textContent = 'En Tierra';
             button.classList.remove('boton-amarillo');
             button.classList.add('boton-verde');
-            
-            // Sincronizar con vista alumno
-            socket.emit('button_style_sync', {
-                buttonId: buttonId,
-                text: 'En Tierra',
-                removeClass: ['boton-amarillo'],
-                addClass: ['boton-verde']
-            });
             
             // Después de 3 segundos, resetear al estado base
             setTimeout(() => {
@@ -4509,14 +4441,6 @@
             botonConectar.classList.remove('boton-verde', 'boton-rojo');
             botonConectar.classList.add('boton-amarillo');
             
-            // Sincronizar con vista alumno
-            socket.emit('button_style_sync', {
-                buttonId: 'botonConectar',
-                text: 'Conectando...',
-                removeClass: ['boton-verde', 'boton-rojo'],
-                addClass: ['boton-amarillo']
-            });
-            
             // Limpiar timeout anterior
             if (timeoutConexion) clearTimeout(timeoutConexion);
 
@@ -4540,14 +4464,6 @@
                 botonDespegar.textContent = 'Despegando...';
                 botonDespegar.classList.add('boton-amarillo');
                 botonDespegar.disabled = true;
-                
-                // Sincronizar con vista alumno
-                socket.emit('button_style_sync', {
-                    buttonId: 'botonDespegar',
-                    text: 'Despegando...',
-                    removeClass: [],
-                    addClass: ['boton-amarillo']
-                });
             } else {
                 showAlert(
                     "Por favor, ingrese una altura válida.",
@@ -4593,14 +4509,6 @@
             botonAterrizar.textContent = 'Aterrizando...';
             botonAterrizar.classList.add('boton-amarillo');
             botonAterrizar.disabled = true;
-            
-            // Sincronizar con vista alumno
-            socket.emit('button_style_sync', {
-                buttonId: 'botonAterrizar',
-                text: 'Aterrizando...',
-                removeClass: [],
-                addClass: ['boton-amarillo']
-            });
         }
 
         // ===== SISTEMA DE MOVIMIENTO CON DISTANCIA ESPECÍFICA =====
@@ -4722,14 +4630,6 @@
             botonRTL.textContent = 'Volviendo...';
             botonRTL.classList.add('boton-amarillo');
             botonRTL.disabled = true;
-            
-            // Sincronizar con vista alumno
-            socket.emit('button_style_sync', {
-                buttonId: 'botonRTL',
-                text: 'Volviendo...',
-                removeClass: [],
-                addClass: ['boton-amarillo']
-            });
         }
 
         function ajustarAltitud(cantidad) {
@@ -4965,6 +4865,12 @@
         }
 
         function iniciarControlVoz() {
+            // Deshabilitado para alumnos - solo visualización de comandos del profesor
+            console.log('[ALUMNO] Reconocimiento de voz deshabilitado - solo visualización');
+            return;
+            
+            // CÓDIGO DESHABILITADO PARA ALUMNOS
+            /*
             // Verificar soporte
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -4994,6 +4900,7 @@
 
             // Iniciar reconocimiento
             recognition = new SpeechRecognition();
+            */
             recognition.lang = 'es-ES';
             recognition.continuous = false; // No continuo, pero con más tiempo
             recognition.interimResults = true; // Mostrar resultados parciales
@@ -5012,11 +4919,6 @@
                 modalBtn.setAttribute('data-text', 'ESCUCHANDO...');
                 voiceText.textContent = 'ESCUCHANDO...';
                 console.log('Reconocimiento de voz iniciado');
-                
-                // Sincronizar con alumnos
-                socket.emit('voice_command_sync', {
-                    status: 'listening'
-                });
             };
 
             recognition.onresult = function(event) {
@@ -5057,23 +4959,12 @@
                     modalBtn.classList.add('processing');
                     modalBtn.setAttribute('data-text', `"${transcript}"`);
                     voiceText.textContent = `"${transcript}"`;
-                    
-                    // Sincronizar con alumnos
-                    socket.emit('voice_command_sync', {
-                        status: 'processing',
-                        text: transcript
-                    });
 
                     // Procesar comando (puede ser simple o compuesto)
                     setTimeout(() => {
                         const exitoso = procesarComandoVoz(transcript);
                         
                         if (exitoso) {
-                            // Sincronizar con alumnos - comando exitoso
-                            socket.emit('voice_command_sync', {
-                                status: 'success'
-                            });
-                            
                             setTimeout(() => {
                                 btn.classList.remove('processing');
                                 modalBtn.classList.remove('processing');
@@ -5088,12 +4979,6 @@
                             modalBtn.classList.add('error');
                             modalBtn.setAttribute('data-text', 'NO ENTENDIDO');
                             voiceText.textContent = 'NO ENTENDIDO';
-                            
-                            // Sincronizar con alumnos - comando no entendido
-                            socket.emit('voice_command_sync', {
-                                status: 'error'
-                            });
-                            
                             setTimeout(() => {
                                 btn.classList.remove('error');
                                 modalBtn.classList.remove('error');
@@ -5109,11 +4994,6 @@
                     modalBtn.classList.remove('listening', 'processing', 'error');
                     modalBtn.removeAttribute('data-text');
                     voiceText.textContent = 'VOZ';
-                    
-                    // Sincronizar con alumnos - cancelación
-                    socket.emit('voice_command_sync', {
-                        status: 'idle'
-                    });
                 }
             };
 
@@ -5125,11 +5005,6 @@
                 modalBtn.classList.add('error');
                 modalBtn.setAttribute('data-text', 'ERROR');
                 voiceText.textContent = 'ERROR';
-                
-                // Sincronizar con alumnos - error
-                socket.emit('voice_command_sync', {
-                    status: 'error'
-                });
                 
                 setTimeout(() => {
                     btn.classList.remove('error');
