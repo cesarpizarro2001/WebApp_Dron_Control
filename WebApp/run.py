@@ -1,7 +1,7 @@
 # IMPORTANTE: Interprete Pyhton 3.9 e instalar Flask, Flask-SocketIO, mediapipe
 import base64
 from app import create_app
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit, join_room
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -14,6 +14,9 @@ mp_drawing = mp.solutions.drawing_utils
 
 app = create_app()
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Variable global para almacenar el tipo de dispositivo del profesor
+professor_device_info = {'isTouchDevice': None}
 
 # Cargar imágenes de gestos de MediaPipe
 def load_gesture_images():
@@ -172,10 +175,30 @@ def handle_gallery_files(archivos):
     print(f"📂 Recibidos {len(archivos)} archivos de galería, reenviando al navegador")
     socketio.emit('gallery_files', archivos, include_self=False)
     
+# ==================================================================================
+# SISTEMA DE SALA ALUMNOS
+# Los alumnos se unen a la sala 'alumnos' para recibir sincronización del profesor
+# El profesor NO necesita sala (solo hay 1 y emite eventos directamente)
+# ==================================================================================
+
+@socketio.on('join_alumno')
+def handle_join_alumno():
+    """Los alumnos se unen a su sala para recibir sincronización"""
+    join_room('alumnos')
+    print(f"👨‍🎓 Alumno conectado y unido a sala 'alumnos'")
+    
+    # Si ya hay información del dispositivo del profesor, enviarla al nuevo alumno
+    if professor_device_info['isTouchDevice'] is not None:
+        tipo = "TÁCTIL (Joystick)" if professor_device_info['isTouchDevice'] else "NO TÁCTIL (Cruceta)"
+        print(f"  └─> Enviando info de dispositivo del profesor: {tipo}")
+        emit('professor_device_type', {'isTouchDevice': professor_device_info['isTouchDevice']})
+
+# ==================================================================================
+
 # Recibir telemetría de la Estación de Tierra y enviarla al navegador
 @socketio.on('telemetry_data')
 def handle_telemetry(data):
-    # Reenviar telemetría a todos los clientes web conectados
+    # Reenviar telemetría a todos los clientes web conectados (profesores y alumnos)
     socketio.emit('telemetry_info', data, include_self=False)
 
 # ==================================================================================
@@ -187,80 +210,142 @@ def handle_telemetry(data):
 # Sincronización de estilos de botones (Conectar, Despegar, Aterrizar, RTL)
 @socketio.on('button_style_sync')
 def handle_button_style_sync(payload):
-    """Sincroniza cambios de texto y clases CSS de botones principales"""
+    """Sincroniza cambios de texto y clases CSS de botones principales - SOLO A ALUMNOS"""
     try:
-        print(f"[SYNC BOTONES] {payload.get('buttonId')} -> {payload.get('text')}")
-        socketio.emit('button_style_sync', payload, include_self=False)
+        print(f"[SYNC BOTONES → ALUMNOS] {payload.get('buttonId')} -> {payload.get('text')}")
+        socketio.emit('button_style_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en button_style_sync: {e}")
 
 # Sincronización de comandos de voz
 @socketio.on('voice_command_sync')
 def handle_voice_command_sync(payload):
-    """Sincroniza estados del control por voz (listening, processing, success, error)"""
+    """Sincroniza estados del control por voz (listening, processing, success, error) - SOLO A ALUMNOS"""
     try:
         status = payload.get('status')
         text = payload.get('text', '')
         if text:
-            print(f"[SYNC VOZ] {status.upper()} - '{text}'")
+            print(f"[SYNC VOZ → ALUMNOS] {status.upper()} - '{text}'")
         else:
-            print(f"[SYNC VOZ] {status.upper()}")
-        socketio.emit('voice_command_sync', payload, include_self=False)
+            print(f"[SYNC VOZ → ALUMNOS] {status.upper()}")
+        socketio.emit('voice_command_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en voice_command_sync: {e}")
 
 # Sincronización de cámara móvil (modal)
 @socketio.on('camera_modal_sync')
 def handle_camera_modal_sync(payload):
-    """Sincroniza apertura/cierre del modal de cámara móvil del profesor"""
+    """Sincroniza apertura/cierre del modal de cámara móvil del profesor - SOLO A ALUMNOS"""
     try:
-        print(f"[SYNC CÁMARA MÓVIL] {payload.get('action').upper()}")
-        socketio.emit('camera_modal_sync', payload, include_self=False)
+        print(f"[SYNC CÁMARA MÓVIL → ALUMNOS] {payload.get('action').upper()}")
+        socketio.emit('camera_modal_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en camera_modal_sync: {e}")
 
 # Sincronización de cámara del dron
 @socketio.on('drone_camera_sync')
 def handle_drone_camera_sync(payload):
-    """Sincroniza apertura/cierre de la vista de cámara del dron"""
+    """Sincroniza apertura/cierre de la vista de cámara del dron - SOLO A ALUMNOS"""
     try:
-        print(f"[SYNC CÁMARA DRON] {payload.get('action').upper()}")
-        socketio.emit('drone_camera_sync', payload, include_self=False)
+        print(f"[SYNC CÁMARA DRON → ALUMNOS] {payload.get('action').upper()}")
+        socketio.emit('drone_camera_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en drone_camera_sync: {e}")
 
 # Sincronización de modal de foto capturada
 @socketio.on('photo_modal_sync')
 def handle_photo_modal_sync(payload):
-    """Sincroniza visualización de fotos capturadas"""
+    """Sincroniza visualización de fotos capturadas - SOLO A ALUMNOS"""
     try:
         action = payload.get('action')
         photo = payload.get('photoName', '')
         if action == 'open':
-            print(f"[SYNC FOTO] ABRIR - {photo}")
+            print(f"[SYNC FOTO → ALUMNOS] ABRIR - {photo}")
         else:
-            print(f"[SYNC FOTO] CERRAR")
-        socketio.emit('photo_modal_sync', payload, include_self=False)
+            print(f"[SYNC FOTO → ALUMNOS] CERRAR")
+        socketio.emit('photo_modal_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en photo_modal_sync: {e}")
 
 # Sincronización de modal de video y controles de reproducción
 @socketio.on('video_modal_sync')
 def handle_video_modal_sync(payload):
-    """Sincroniza visualización de videos y controles (play, pause, seek)"""
+    """Sincroniza visualización de videos y controles (play, pause, seek) - SOLO A ALUMNOS"""
     try:
         action = payload.get('action')
         if action == 'open':
-            print(f"[SYNC VIDEO] ABRIR - {payload.get('videoName', '')}")
+            print(f"[SYNC VIDEO → ALUMNOS] ABRIR - {payload.get('videoName', '')}")
         elif action == 'close':
-            print(f"[SYNC VIDEO] CERRAR")
+            print(f"[SYNC VIDEO → ALUMNOS] CERRAR")
         elif action in ['play', 'pause']:
-            print(f"[SYNC VIDEO] {action.upper()} - {payload.get('currentTime', 0):.1f}s")
+            print(f"[SYNC VIDEO → ALUMNOS] {action.upper()} - {payload.get('currentTime', 0):.1f}s")
         elif action == 'seek':
-            print(f"[SYNC VIDEO] SEEK -> {payload.get('currentTime', 0):.1f}s")
-        socketio.emit('video_modal_sync', payload, include_self=False)
+            print(f"[SYNC VIDEO → ALUMNOS] SEEK -> {payload.get('currentTime', 0):.1f}s")
+        socketio.emit('video_modal_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en video_modal_sync: {e}")
+
+# Sincronización de modal de galería
+@socketio.on('gallery_modal_sync')
+def handle_gallery_modal_sync(payload):
+    """Sincroniza apertura/cierre del modal de galería - SOLO A ALUMNOS"""
+    try:
+        action = payload.get('action')
+        print(f"[SYNC GALERÍA → ALUMNOS] {action.upper()}")
+        socketio.emit('gallery_modal_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en gallery_modal_sync: {e}")
+
+# Sincronización del contenido de la galería
+@socketio.on('gallery_content_sync')
+def handle_gallery_content_sync(payload):
+    """Sincroniza el contenido de archivos de la galería - SOLO A ALUMNOS"""
+    try:
+        archivos = payload.get('archivos', [])
+        print(f"[SYNC CONTENIDO GALERÍA → ALUMNOS] {len(archivos)} archivos")
+        socketio.emit('gallery_content_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en gallery_content_sync: {e}")
+
+# Sincronización de carpetas expandidas/colapsadas en la galería
+@socketio.on('gallery_folder_sync')
+def handle_gallery_folder_sync(payload):
+    """Sincroniza el estado (expandido/colapsado) de carpetas en la galería - SOLO A ALUMNOS"""
+    try:
+        folder_name = payload.get('folderName')
+        collapsed = payload.get('collapsed')
+        estado = "CERRADA" if collapsed else "ABIERTA"
+        print(f"[SYNC CARPETA GALERÍA → ALUMNOS] '{folder_name}' → {estado}")
+        socketio.emit('gallery_folder_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en gallery_folder_sync: {e}")
+
+# Sincronización del tipo de dispositivo del profesor
+@socketio.on('professor_device_type')
+def handle_professor_device_type(payload):
+    """Sincroniza el tipo de dispositivo del profesor (táctil/no táctil) - SOLO A ALUMNOS"""
+    try:
+        is_touch = payload.get('isTouchDevice')
+        tipo = "TÁCTIL (Joystick)" if is_touch else "NO TÁCTIL (Cruceta)"
+        print(f"[SYNC DISPOSITIVO PROFESOR → ALUMNOS] {tipo}")
+        
+        # Guardar el tipo de dispositivo del profesor
+        professor_device_info['isTouchDevice'] = is_touch
+        
+        # Emitir a todos los alumnos
+        socketio.emit('professor_device_type', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en professor_device_type: {e}")
+
+# Sincronización de la posición del joystick del profesor
+@socketio.on('joystick_position')
+def handle_joystick_position(payload):
+    """Sincroniza la posición del joystick del profesor en tiempo real - SOLO A ALUMNOS"""
+    try:
+        # No imprimir en consola porque genera mucho spam (se actualiza constantemente)
+        socketio.emit('joystick_position', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en joystick_position: {e}")
 
 # ==================================================================================
 # FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_CONTROL

@@ -4039,6 +4039,11 @@
             console.log("📡 Emitiendo request_gallery al servidor");
             socket.emit('request_gallery');
             
+            // Sincronizar con alumnos - abrir galería
+            socket.emit('gallery_modal_sync', {
+                action: 'open'
+            });
+            
             // Mostrar el contenedor de "Viendo Galería" con botón X
             document.getElementById('botonGaleria').style.display = 'none';
             document.getElementById('galeriaButtonsContainer').style.display = 'flex';
@@ -4048,6 +4053,11 @@
         function cerrarGaleria() {
             const galleryModal = document.getElementById('gallery-modal-container');
             galleryModal.style.display = 'none';
+            
+            // Sincronizar con alumnos - cerrar galería
+            socket.emit('gallery_modal_sync', {
+                action: 'close'
+            });
             
             // Restaurar el botón original de galería
             document.getElementById('botonGaleria').style.display = 'block';
@@ -4168,6 +4178,13 @@
                 // Click en el header para expandir/colapsar
                 folderHeader.addEventListener('click', () => {
                     folderDiv.classList.toggle('collapsed');
+                    
+                    // Sincronizar con alumnos el estado de la carpeta
+                    const isCollapsed = folderDiv.classList.contains('collapsed');
+                    socket.emit('gallery_folder_sync', {
+                        folderName: nombreCarpeta,
+                        collapsed: isCollapsed
+                    });
                 });
                 
                 folderDiv.appendChild(folderHeader);
@@ -4201,7 +4218,14 @@
 
         // Me conecto por websocket al servidor flask
         const socket = io();
-        console.log("Conectado al servidor via Socket.IO");
+        
+        // Enviar tipo de dispositivo al conectar
+        socket.on('connect', () => {
+            console.log('✅ Profesor conectado, enviando tipo de dispositivo:', IS_TOUCH_DEVICE ? 'TÁCTIL' : 'NO TÁCTIL');
+            socket.emit('professor_device_type', {
+                isTouchDevice: IS_TOUCH_DEVICE
+            });
+        });
         
         // Recibir frames de video del dron
         socket.on('stream_frame', function(data) {
@@ -4287,6 +4311,11 @@
         socket.on('gallery_files', function(archivos) {
             console.log("Archivos de galería recibidos:", archivos);
             cargarGaleria(archivos);
+            
+            // Sincronizar contenido de galería con alumnos
+            socket.emit('gallery_content_sync', {
+                archivos: archivos
+            });
         });
 
         // Función para actualizar el estado de todos los botones según el estado del dron
@@ -6041,6 +6070,13 @@
         // Función para resetear la posición del knob al centro
         function resetJoystickKnob() {
             joystickKnob.style.transform = 'translate(-50%, -50%)';
+            
+            // Sincronizar reset con alumnos
+            socket.emit('joystick_position', {
+                deltaX: 0,
+                deltaY: 0,
+                active: false
+            });
         }
 
         // Función para actualizar la posición del knob
@@ -6058,6 +6094,13 @@
                 deltaX = limitedX;
                 deltaY = limitedY;
             }
+            
+            // Sincronizar posición del joystick con alumnos
+            socket.emit('joystick_position', {
+                deltaX: deltaX,
+                deltaY: deltaY,
+                active: true
+            });
             
             return { x: deltaX, y: deltaY };
         }
