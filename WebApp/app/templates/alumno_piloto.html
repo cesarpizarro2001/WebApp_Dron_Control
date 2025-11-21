@@ -1210,7 +1210,7 @@
 <body>
     <!-- BARRA SUPERIOR -->
     <div class="top-bar">
-        <button class="home-btn" onclick="goHome()">🏠 Volver</button>
+        <button class="home-btn" onclick="goHome()" disabled>🏠 Volver</button>
         <h2>MODO PILOTO</h2>
         <div style="display: flex; align-items: center; gap: 8px;">
             <div class="telemetry">
@@ -1288,7 +1288,7 @@
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="speedUpSlider" 
                            min="50" max="300" value="150" step="10" 
-                           oninput="updateSliderValue('speedUp', this.value)">
+                           oninput="updateSliderValue('speedUp', this.value)" disabled>
                     <div class="slider-labels">
                         <span>50 cm/s (0,5 m/s)</span>
                         <span>300 cm/s (3 m/s)</span>
@@ -1306,7 +1306,7 @@
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="speedDnSlider" 
                            min="50" max="300" value="150" step="10" 
-                           oninput="updateSliderValue('speedDn', this.value)">
+                           oninput="updateSliderValue('speedDn', this.value)" disabled>
                     <div class="slider-labels">
                         <span>50 cm/s (0,5 m/s)</span>
                         <span>300 cm/s (3 m/s)</span>
@@ -1324,7 +1324,7 @@
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="loitSpeedSlider" 
                            min="50" max="2500" value="1250" step="50" 
-                           oninput="updateSliderValue('loitSpeed', this.value)">
+                           oninput="updateSliderValue('loitSpeed', this.value)" disabled>
                     <div class="slider-labels">
                         <span>50 cm/s (0,5 m/s)</span>
                         <span>250 cm/s (2,5 m/s)</span>
@@ -1342,7 +1342,7 @@
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="yawRateSlider" 
                            min="10" max="180" value="90" step="5" 
-                           oninput="updateSliderValue('yawRate', this.value)">
+                           oninput="updateSliderValue('yawRate', this.value)" disabled>
                     <div class="slider-labels">
                         <span>10 °/s</span>
                         <span>180 °/s</span>
@@ -1360,7 +1360,7 @@
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="accelZSlider" 
                            min="100" max="500" value="250" step="10" 
-                           oninput="updateSliderValue('accelZ', this.value)">
+                           oninput="updateSliderValue('accelZ', this.value)" disabled>
                     <div class="slider-labels">
                         <span>100 cm/s²</span>
                         <span>500 cm/s²</span>
@@ -1378,7 +1378,7 @@
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="loitAccSlider" 
                            min="250" max="1000" value="500" step="25" 
-                           oninput="updateSliderValue('loitAcc', this.value)">
+                           oninput="updateSliderValue('loitAcc', this.value)" disabled>
                     <div class="slider-labels">
                         <span>250 cm/s²</span>
                         <span>1000 cm/s²</span>
@@ -1401,7 +1401,7 @@
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="videoQualitySlider" 
                            min="0" max="100" step="5" value="50"
-                           oninput="updateSliderValue('videoQuality', this.value)">
+                           oninput="updateSliderValue('videoQuality', this.value)" disabled>
                     <div class="slider-labels">
                         <span>Baja (0%)</span>
                         <span>Alta (100%)</span>
@@ -1419,7 +1419,7 @@
                 <div class="slider-container">
                     <input type="range" class="setting-slider" id="videoFpsSlider" 
                            min="1" max="30" step="1" value="5"
-                           oninput="updateSliderValue('videoFps', this.value)">
+                           oninput="updateSliderValue('videoFps', this.value)" disabled>
                     <div class="slider-labels">
                         <span>1 fps</span>
                         <span>30 fps</span>
@@ -1438,7 +1438,7 @@
                     <div class="setting-label">
                         <span>Despegar</span>
                     </div>
-                    <button class="remap-button" onclick="startRemapping('takeoff')" id="takeoffRemapButton">
+                    <button class="remap-button" onclick="startRemapping('takeoff')" id="takeoffRemapButton" disabled>
                         <span class="remap-icon">🎯</span> <span id="takeoffButtonLabel">Botón 1 (Arriba)</span>
                     </button>
                 </div>
@@ -1448,7 +1448,7 @@
                     <div class="setting-label">
                         <span>Aterrizar</span>
                     </div>
-                    <button class="remap-button" onclick="startRemapping('land')" id="landRemapButton">
+                    <button class="remap-button" onclick="startRemapping('land')" id="landRemapButton" disabled>
                         <span class="remap-icon">🎯</span> <span id="landButtonLabel">Botón 2 (Derecha)</span>
                     </button>
                 </div>
@@ -1458,7 +1458,7 @@
                     <div class="setting-label">
                         <span>Volver a Casa</span>
                     </div>
-                    <button class="remap-button" onclick="startRemapping('rtl')" id="rtlRemapButton">
+                    <button class="remap-button" onclick="startRemapping('rtl')" id="rtlRemapButton" disabled>
                         <span class="remap-icon">🎯</span> <span id="rtlButtonLabel">Botón 3 (Abajo)</span>
                     </button>
                 </div>
@@ -1468,7 +1468,7 @@
                     <div class="setting-label">
                         <span>Capturar Foto</span>
                     </div>
-                    <button class="remap-button" onclick="startRemapping('photo')" id="photoRemapButton">
+                    <button class="remap-button" onclick="startRemapping('photo')" id="photoRemapButton" disabled>
                         <span class="remap-icon">🎯</span> <span id="photoButtonLabel">Botón 4 (Izquierda)</span>
                     </button>
                 </div>
@@ -1478,7 +1478,7 @@
                     <div class="setting-label">
                         <span>Grabar Video</span>
                     </div>
-                    <button class="remap-button" onclick="startRemapping('video')" id="videoRemapButton">
+                    <button class="remap-button" onclick="startRemapping('video')" id="videoRemapButton" disabled>
                         <span class="remap-icon">🎯</span> <span id="videoButtonLabel">Start</span>
                     </button>
                 </div>
@@ -1486,8 +1486,8 @@
         </div>
 
         <div class="settings-actions">
-            <button class="reset-btn" onclick="resetSettings()">🔄 Restaurar</button>
-            <button class="apply-btn" onclick="applySettings()">✓ Aplicar</button>
+            <button class="reset-btn" onclick="resetSettings()" disabled>🔄 Restaurar</button>
+            <button class="apply-btn" onclick="applySettings()" disabled>✓ Aplicar</button>
         </div>
     </div>
 
@@ -1495,9 +1495,9 @@
     <div class="main-content">
         <!-- BOTONES DE CONTROL (movidos dentro para posicionarlos sobre la cámara) -->
         <div class="control-buttons">
-            <button id="botonDespegar" class="control-btn" onclick="despegarDron()">DESPEGAR</button>
-            <button id="botonAterrizar" class="control-btn" onclick="aterrizarDron()">ATERRIZAR</button>
-            <button id="botonRTL" class="control-btn" onclick="returnToLaunch()">RTL</button>
+            <button id="botonDespegar" class="control-btn" onclick="despegarDron()" disabled>DESPEGAR</button>
+            <button id="botonAterrizar" class="control-btn" onclick="aterrizarDron()" disabled>ATERRIZAR</button>
+            <button id="botonRTL" class="control-btn" onclick="returnToLaunch()" disabled>RTL</button>
         </div>
 
         <!-- JOYSTICK IZQUIERDO -->
@@ -1581,36 +1581,18 @@
     </div>
 
     <script>
+        // ========== MODO ALUMNO - SOLO VISUALIZACIÓN ==========
         const socket = io();
         let minimap = null;
         let dronMarker = null;
         let directionArrow = null;
-        let currentFlightName = null; // Para rutas de foto/video
+        
+        // Variables de estado para manejo de botones
+        let despegando = false;
+        let volviendoABase = false;
+        let aterrizando = false;
 
-        // Estado de joysticks
-        let joystickState = {
-            throttle: 0,
-            yaw: 0,
-            pitch: 0,
-            roll: 0
-        };
-
-        // ========== SOPORTE PARA GAMEPAD FÍSICO (USB) ==========
-        let gamepadConnected = false;
-        let gamepadIndex = null;
-        let gamepadAnimationId = null;
-        let previousButtonStates = []; // Para detectar pulsaciones (edge detection)
-
-        // Variables para grabación de video
-        let isRecording = false;
-        let anyModalOpen = false;
-        let gamepadInstructionsModalOpen = false; // Para detectar si el modal de instrucciones está abierto
-        let gamepadInstructionsShown = false; // Para saber si ya se mostraron las instrucciones alguna vez
-
-        // Detectar si estamos en desktop (no móvil)
-        function isDesktop() {
-            return !(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-        }
+        console.log('👁️ MODO ALUMNO: Conectando para recibir datos del profesor...');
 
         // Inicializar minimapa
         function initMinimap() {
@@ -1619,12 +1601,10 @@
                 attributionControl: false
             }).setView([41.2764, 1.9888], 18);
 
-            // Usar el mismo mapa satelital de Google que control.html
             L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
                 maxZoom: 20
             }).addTo(minimap);
 
-            // Crear marcador del dron con icono personalizado
             dronMarker = L.marker([41.2764, 1.9888], {
                 icon: L.icon({
                     iconUrl: 'static/icono_dron.png',
@@ -1634,328 +1614,117 @@
                 zIndexOffset: 1000
             }).addTo(minimap);
 
-            // Crear flecha de dirección (más pequeña)
-            var DirectionArrow = L.Icon.extend({
-                options: {
+            directionArrow = L.marker([41.2764, 1.9888], {
+                icon: L.icon({
+                    iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(0)),
                     iconSize: [100, 100],
                     iconAnchor: [50, 50]
-                }
-            });
-
-            directionArrow = L.marker([41.2764, 1.9888], {
-                icon: new DirectionArrow({
-                    iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(0))
                 })
             }).addTo(minimap);
         }
 
-        // Función para crear el SVG de la flecha de dirección
         function createArrowSVG(angle) {
             return `
             <svg width="300" height="300" viewBox="-150 -150 300 300" xmlns="http://www.w3.org/2000/svg">
                 <g transform="rotate(${angle} 0 0)">
-                    <!-- Línea roja de dirección (más corta y delgada) -->
                     <line x1="0" y1="0" x2="0" y2="-100" stroke="red" stroke-width="2.5"/>
                 </g>
             </svg>
             `;
         }
 
-        // Clase Joystick con soporte multi-touch
-        class VirtualJoystick {
-            constructor(joystickElement, stickElement, onMove) {
-                this.joystick = joystickElement;
-                this.stick = stickElement;
-                this.onMove = onMove;
-                this.touchId = null; // Identificador único del touch asignado a este joystick
-                this.maxDistance = 35;
-
-                // Touch events para dispositivos móviles
-                this.joystick.addEventListener('touchstart', this.handleTouchStart.bind(this));
-                this.joystick.addEventListener('touchmove', this.handleTouchMove.bind(this));
-                this.joystick.addEventListener('touchend', this.handleTouchEnd.bind(this));
-                this.joystick.addEventListener('touchcancel', this.handleTouchEnd.bind(this));
-            }
-
-            handleTouchStart(e) {
-                e.preventDefault();
-                // Solo capturar el primer touch que toca este joystick
-                if (this.touchId === null && e.changedTouches.length > 0) {
-                    const touch = e.changedTouches[0];
-                    this.touchId = touch.identifier;
-                    
-                    const rect = this.joystick.getBoundingClientRect();
-                    this.centerX = rect.left + rect.width / 2;
-                    this.centerY = rect.top + rect.height / 2;
-                }
-            }
-
-            handleTouchMove(e) {
-                if (this.touchId === null) return;
-                e.preventDefault();
-
-                // Buscar el touch que corresponde a este joystick
-                for (let i = 0; i < e.touches.length; i++) {
-                    const touch = e.touches[i];
-                    if (touch.identifier === this.touchId) {
-                        this.updatePosition(touch.clientX, touch.clientY);
-                        break;
-                    }
-                }
-            }
-
-            handleTouchEnd(e) {
-                if (this.touchId === null) return;
-                
-                // Verificar si el touch que terminó es el de este joystick
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    if (e.changedTouches[i].identifier === this.touchId) {
-                        e.preventDefault();
-                        this.touchId = null;
-                        this.resetPosition();
-                        break;
-                    }
-                }
-            }
-
-            updatePosition(clientX, clientY) {
-                let dx = clientX - this.centerX;
-                let dy = clientY - this.centerY;
-
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance > this.maxDistance) {
-                    const angle = Math.atan2(dy, dx);
-                    dx = Math.cos(angle) * this.maxDistance;
-                    dy = Math.sin(angle) * this.maxDistance;
-                }
-
-                this.stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-
-                const normalizedX = dx / this.maxDistance;
-                const normalizedY = -dy / this.maxDistance;
-
-                if (this.onMove) {
-                    this.onMove(normalizedX, normalizedY);
-                }
-            }
-
-            resetPosition() {
-                this.stick.style.transition = 'transform 0.2s';
-                this.stick.style.transform = 'translate(-50%, -50%)';
-                
-                setTimeout(() => {
-                    this.stick.style.transition = '';
-                }, 200);
-
-                if (this.onMove) {
-                    this.onMove(0, 0);
-                }
-            }
-        }
-
-        // Inicializar joysticks
-        const leftJoystick = new VirtualJoystick(
-            document.getElementById('left-joystick'),
-            document.getElementById('left-stick'),
-            (x, y) => {
-                joystickState.yaw = x;
-                joystickState.throttle = y;
-                document.getElementById('yaw-value').textContent = x.toFixed(2);
-                document.getElementById('throttle-value').textContent = y.toFixed(2);
-                sendJoystickData();
-                sendJoystickStateToStudents();
-            }
-        );
-
-        const rightJoystick = new VirtualJoystick(
-            document.getElementById('right-joystick'),
-            document.getElementById('right-stick'),
-            (x, y) => {
-                joystickState.roll = x;   
-                joystickState.pitch = -y;
-                document.getElementById('roll-value').textContent = x.toFixed(2);
-                document.getElementById('pitch-value').textContent = (-y).toFixed(2);
-                sendJoystickData();
-                sendJoystickStateToStudents();
-            }
-        );
-
-        // Enviar datos de joystick
-        let lastSendTime = 0;
-        function sendJoystickData() {
-            const now = Date.now();
-            if (now - lastSendTime < 50) return;  // 50ms = 20Hz (más responsivo)
-            lastSendTime = now;
-
-            const rcData = [
-                joystickState.throttle,
-                joystickState.yaw,
-                joystickState.pitch,
-                joystickState.roll
-            ];
-            
-            // Debug: mostrar valores enviados (comentado para no ralentizar)
-            // console.log('🎮 Enviando RC:', rcData);
-            
-            socket.emit('pilot_rc', rcData);
-        }
-
-        // Enviar estado de joysticks a los alumnos (sin throttling para que sea instantáneo)
-        function sendJoystickStateToStudents() {
-            socket.emit('joystick_state', {
-                throttle: joystickState.throttle,
-                yaw: joystickState.yaw,
-                pitch: joystickState.pitch,
-                roll: joystickState.roll
-            });
-        }
-
-        // Variables para seguimiento del estado
-        let previousDroneState = null;
-        let despegando = false;
-        let volviendoABase = false;
-        let aterrizando = false;
-
-        // Enviar comandos
-        function despegarDron() {
-            const altura = 3; // Altura fija de 3 metros para modo piloto
-            console.log('Despegando a', altura, 'metros');
-            socket.emit('command', { action: 'arm_takeOff', altura: String(altura), pilot_mode: true });
-            
-            // Cambiar botón a amarillo
-            despegando = true;
-            const botonDespegar = document.getElementById('botonDespegar');
-            botonDespegar.textContent = 'Despegando...';
-            botonDespegar.classList.remove('boton-verde');
-            botonDespegar.classList.add('boton-amarillo');
-            botonDespegar.disabled = true;
-        }
-
-        function aterrizarDron() {
-            console.log('Aterrizando');
-            socket.emit('pilot_action', { action: 'land' });
-            
-            aterrizando = true;
-            const botonAterrizar = document.getElementById('botonAterrizar');
-            botonAterrizar.textContent = 'Aterrizando...';
-            botonAterrizar.classList.add('boton-amarillo');
-            botonAterrizar.disabled = true;
-        }
-
-        function returnToLaunch() {
-            console.log('RTL');
-            socket.emit('pilot_action', { action: 'rtl' });
-            
-            volviendoABase = true;
-            const botonRTL = document.getElementById('botonRTL');
-            botonRTL.textContent = 'Volviendo a base...';
-            botonRTL.classList.add('boton-amarillo');
-            botonRTL.disabled = true;
-        }
-
         function goHome() {
-            window.location.href = '/';
+            window.location.href = '/alumno_control';
         }
 
-        // Funciones de pantalla completa
-        let isFullscreen = false;
+        // Función para alternar panel de ajustes
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('settingsOverlay');
+            panel.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
 
+        // Función para pantalla completa
         function toggleFullscreen() {
-            const btn = document.getElementById('fullscreenBtn');
-            const icon = document.getElementById('fullscreenIcon');
+            const elem = document.documentElement;
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
             
-            if (!isFullscreen) {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && 
+                !document.mozFullScreenElement && !document.msFullscreenElement) {
                 // Entrar en pantalla completa
-                const elem = document.documentElement;
-                
                 if (elem.requestFullscreen) {
                     elem.requestFullscreen();
-                } else if (elem.webkitRequestFullscreen) { // Safari
+                } else if (elem.webkitRequestFullscreen) {
                     elem.webkitRequestFullscreen();
-                } else if (elem.msRequestFullscreen) { // IE11
+                } else if (elem.mozRequestFullScreen) {
+                    elem.mozRequestFullScreen();
+                } else if (elem.msRequestFullscreen) {
                     elem.msRequestFullscreen();
                 }
             } else {
                 // Salir de pantalla completa
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { // Safari
+                } else if (document.webkitExitFullscreen) {
                     document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) { // IE11
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
                     document.msExitFullscreen();
                 }
             }
         }
 
-        // Detectar cambios en el estado de fullscreen
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        document.addEventListener('msfullscreenchange', handleFullscreenChange);
-
+        // Actualizar icono de pantalla completa
         function handleFullscreenChange() {
-            const btn = document.getElementById('fullscreenBtn');
-            const icon = document.getElementById('fullscreenIcon');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            const fullscreenIcon = document.getElementById('fullscreenIcon');
             
-            isFullscreen = !!(document.fullscreenElement || 
-                             document.webkitFullscreenElement || 
-                             document.msFullscreenElement);
-            
-            if (isFullscreen) {
-                // Añadir clase al body para que CSS haga el resto
+            if (document.fullscreenElement || document.webkitFullscreenElement || 
+                document.mozFullScreenElement || document.msFullscreenElement) {
+                fullscreenBtn.classList.add('active');
                 document.body.classList.add('is-fullscreen');
-                
-                // Cambiar a icono de "salir de fullscreen"
-                btn.classList.add('active');
-                icon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>';
-                btn.title = 'Salir de pantalla completa';
+                // Cambiar a icono de salir de pantalla completa
+                fullscreenIcon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>';
             } else {
-                // Quitar clase del body para volver al tamaño normal
+                fullscreenBtn.classList.remove('active');
                 document.body.classList.remove('is-fullscreen');
-                
-                // Cambiar a icono de "entrar en fullscreen"
-                btn.classList.remove('active');
-                icon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
-                btn.title = 'Pantalla completa';
+                // Cambiar a icono de entrar en pantalla completa
+                fullscreenIcon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
             }
         }
 
-        // Eventos Socket.IO
+        // Escuchar cambios de pantalla completa
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        // Funciones vacías para evitar errores (modo solo lectura)
+        function updateSliderValue() {}
+        function resetSettings() {}
+        function applySettings() {}
+        function startRemapping() {}
+        function closeGamepadModal() {
+            document.getElementById('gamepad-instructions-modal').classList.remove('show');
+        }
+        function despegarDron() {}
+        function aterrizarDron() {}
+        function returnToLaunch() {}
+
+        // Conectar al servidor
         socket.on('connect', () => {
-            console.log('Conectado');
+            console.log('✅ Conectado al servidor como alumno');
         });
 
-        // Variable para controlar si ya se cambió a LOITER automáticamente
-        let autoLoiterActivated = false;
-
+        // Recibir telemetría del profesor
         socket.on('telemetry_info', (data) => {
-            // console.log('Telemetría recibida:', data);  // Comentado para no llenar la consola
-            
             // Actualizar estado
             if (data.state !== undefined) {
                 const stateElement = document.getElementById('state');
                 stateElement.textContent = data.state;
-                
-                // Cambiar color según estado
                 stateElement.style.color = getStateColor(data.state);
-                
-                // Debug: mostrar estado y banderas (solo cuando cambia el estado)
-                if (data.state !== previousDroneState) {
-                    console.log(`Estado: ${data.state}, autoLoiterActivated: ${autoLoiterActivated}, volviendoABase: ${volviendoABase}, aterrizando: ${aterrizando}`);
-                    previousDroneState = data.state;
-                }
-                
-                // Si el dron está en estado 'flying' y aún no se ha activado LOITER automáticamente
-                // Solo cambiar a LOITER si NO está aterrizando ni volviendo a base
-                if (data.state === 'flying' && !autoLoiterActivated && !volviendoABase && !aterrizando) {
-                    console.log('🎮 Dron en estado flying, activando modo piloto (RC loop + LOITER)...');
-                    socket.emit('command', { action: 'enable_pilot_mode' });
-                    autoLoiterActivated = true;
-                }
-                
-                // Resetear la bandera si el dron vuelve a tierra
-                if (data.state === 'connected') {
-                    autoLoiterActivated = false;
-                }
             }
             
             // Actualizar altitud
@@ -1968,54 +1737,133 @@
                 document.getElementById('speed').textContent = data.groundSpeed.toFixed(1);
             }
 
-            // Actualizar minimapa con posición y dirección
+            // Actualizar minimapa
             if (data.lat && data.lon && minimap) {
                 const newPos = [data.lat, data.lon];
                 dronMarker.setLatLng(newPos);
                 minimap.setView(newPos);
                 
-                // Rotar el mapa para que la flecha siempre apunte hacia arriba
                 if (data.heading !== undefined) {
-                    // Rotar el contenedor del mapa en dirección opuesta al heading
                     const mapContainer = document.getElementById('minimap');
                     mapContainer.style.transform = `rotate(${-data.heading}deg)`;
                     
-                    // La flecha mantiene su orientación real (heading del dron)
-                    // y rota junto con el mapa
                     if (directionArrow) {
                         directionArrow.setLatLng(newPos);
-                        
-                        var DirectionArrow = L.Icon.extend({
-                            options: {
-                                iconSize: [100, 100],
-                                iconAnchor: [50, 50]
-                            }
-                        });
-                        
-                        // La flecha muestra el heading real del dron
-                        directionArrow.setIcon(new DirectionArrow({
-                            iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(data.heading))
+                        directionArrow.setIcon(L.icon({
+                            iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(data.heading)),
+                            iconSize: [100, 100],
+                            iconAnchor: [50, 50]
                         }));
                     }
                 }
             }
 
-            // Actualizar estados de botones según telemetría
+            // Actualizar estados de botones
             if (data.state) {
                 updateButtonStates(data.state);
             }
         });
 
-        // Función para obtener color según estado del dron
+        // Recibir stream de video (ya viene de run.py)
+        socket.on('stream_frame', (data) => {
+            const cameraFeed = document.getElementById('camera-feed');
+            const placeholder = document.getElementById('camera-placeholder');
+            
+            cameraFeed.src = 'data:image/jpeg;base64,' + data;
+            cameraFeed.style.display = 'block';
+            placeholder.style.display = 'none';
+        });
+
+        // Recibir estado de joysticks del profesor
+        socket.on('joystick_state', (data) => {
+            // Actualizar valores de joystick izquierdo
+            if (data.throttle !== undefined) {
+                document.getElementById('throttle-value').textContent = data.throttle.toFixed(2);
+                updateJoystickVisual('left-stick', data.yaw, data.throttle);
+            }
+            if (data.yaw !== undefined) {
+                document.getElementById('yaw-value').textContent = data.yaw.toFixed(2);
+            }
+
+            // Actualizar valores de joystick derecho
+            if (data.pitch !== undefined) {
+                document.getElementById('pitch-value').textContent = data.pitch.toFixed(2);
+                updateJoystickVisual('right-stick', data.roll, -data.pitch);
+            }
+            if (data.roll !== undefined) {
+                document.getElementById('roll-value').textContent = data.roll.toFixed(2);
+            }
+        });
+
+        // Actualizar visualización de joysticks
+        function updateJoystickVisual(stickId, x, y) {
+            const stick = document.getElementById(stickId);
+            if (stick) {
+                const maxDistance = 35; // píxeles desde el centro
+                const dx = x * maxDistance;
+                const dy = -y * maxDistance;
+                stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            }
+        }
+
+        // Recibir estado de grabación
+        socket.on('recording_state', (data) => {
+            const recordingIndicator = document.getElementById('recording-indicator');
+            if (data.recording) {
+                recordingIndicator.style.display = 'flex';
+            } else {
+                recordingIndicator.style.display = 'none';
+            }
+        });
+
+        // Sincronización del panel de ajustes
+        socket.on('settings_panel_sync', (data) => {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('settingsOverlay');
+            
+            if (data.open) {
+                panel.classList.add('open');
+                overlay.classList.add('open');
+            } else {
+                panel.classList.remove('open');
+                overlay.classList.remove('open');
+            }
+        });
+
+        // Sincronización de valores de sliders
+        socket.on('slider_value_sync', (data) => {
+            const slider = document.getElementById(data.setting + 'Slider');
+            const valueSpan = document.getElementById(data.setting + 'Value');
+            
+            if (slider && valueSpan) {
+                slider.value = data.value;
+                valueSpan.textContent = data.value;
+            }
+        });
+
+        // Sincronización inicial de todos los ajustes
+        socket.on('settings_initial_sync', (data) => {
+            const settings = data.settings;
+            for (let key in settings) {
+                const slider = document.getElementById(key + 'Slider');
+                const valueSpan = document.getElementById(key + 'Value');
+                
+                if (slider && valueSpan) {
+                    slider.value = settings[key];
+                    valueSpan.textContent = settings[key];
+                }
+            }
+        });
+
         function getStateColor(state) {
             const stateColors = {
-                'connected': '#4CAF50',      // Verde
-                'arming': '#FFC107',         // Amarillo
-                'takingOff': '#FFA500',      // Naranja
-                'flying': '#4CAF50',         // Verde
-                'landing': '#FFC107',        // Amarillo
-                'returning': '#FFC107',      // Amarillo
-                'disconnected': '#f44336'    // Rojo
+                'connected': '#4CAF50',
+                'arming': '#FFC107',
+                'takingOff': '#FFA500',
+                'flying': '#4CAF50',
+                'landing': '#FFC107',
+                'returning': '#FFC107',
+                'disconnected': '#f44336'
             };
             return stateColors[state] || '#fff';
         }
@@ -2118,1009 +1966,11 @@
             }
         }
 
-        socket.on('stream_frame', (data) => {
-            const cameraFeed = document.getElementById('camera-feed');
-            const placeholder = document.getElementById('camera-placeholder');
-            
-            // console.log('Frame de cámara recibido');  // Comentado para no llenar la consola
-            cameraFeed.src = 'data:image/jpeg;base64,' + data;
-            cameraFeed.style.display = 'block';
-            placeholder.style.display = 'none';
-        });
-
-        // Inicializar
+        // Inicializar al cargar la página
         window.addEventListener('load', () => {
             initMinimap();
-            loadSettings();
-            loadButtonMapping();  // Cargar mapeo de botones personalizado
-            
-            // Inicializar soporte de gamepad solo en desktop
-            if (isDesktop()) {
-                // Mostrar elemento de telemetría de gamepad
-                const gamepadTelemetry = document.getElementById('gamepad-telemetry');
-                if (gamepadTelemetry) {
-                    gamepadTelemetry.style.display = 'flex';
-                }
-                // Inicializar estado como desconectado
-                updateGamepadTelemetry(false);
-                // Iniciar detección
-                initGamepad();
-            }
+            console.log('✅ Modo alumno inicializado - Solo visualización');
         });
-
-        // (CSS-only) Eliminado el ajuste JS de viewport; usamos 100vh/svh/dvh en CSS
-
-        // ========== FUNCIONES GAMEPAD FÍSICO ==========
-        
-        function initGamepad() {
-            console.log('🎮 Inicializando soporte para gamepad...');
-            
-            // Eventos de conexión/desconexión
-            window.addEventListener('gamepadconnected', (e) => {
-                console.log('🎮 Gamepad conectado:', e.gamepad.id);
-                gamepadConnected = true;
-                gamepadIndex = e.gamepad.index;
-                startGamepadLoop();
-                showGamepadStatus(true, e.gamepad.id);
-            });
-
-            window.addEventListener('gamepaddisconnected', (e) => {
-                console.log('🎮 Gamepad desconectado');
-                gamepadConnected = false;
-                gamepadIndex = null;
-                stopGamepadLoop();
-                showGamepadStatus(false);
-            });
-
-            // Verificar si ya hay un gamepad conectado
-            const gamepads = navigator.getGamepads();
-            for (let i = 0; i < gamepads.length; i++) {
-                if (gamepads[i]) {
-                    console.log('🎮 Gamepad ya conectado:', gamepads[i].id);
-                    gamepadConnected = true;
-                    gamepadIndex = i;
-                    startGamepadLoop();
-                    showGamepadStatus(true, gamepads[i].id);
-                    break;
-                }
-            }
-        }
-
-        function startGamepadLoop() {
-            if (gamepadAnimationId) return; // Ya está corriendo
-            
-            function updateGamepad() {
-                if (!gamepadConnected) return;
-                
-                const gamepads = navigator.getGamepads();
-                const gamepad = gamepads[gamepadIndex];
-                
-                if (!gamepad) {
-                    stopGamepadLoop();
-                    return;
-                }
-
-                // Mapeo de ejes según el tipo de gamepad
-                // Ejes típicos:
-                // 0: Stick izquierdo horizontal (Yaw)
-                // 1: Stick izquierdo vertical (Throttle)
-                // 2: Stick derecho horizontal (Roll)
-                // 3 o 5: Stick derecho vertical (Pitch) - depende del modelo de mando
-                
-                const yaw = gamepad.axes[0] || 0;          // Stick izquierdo X
-                const throttle = -(gamepad.axes[1] || 0);  // Stick izquierdo Y
-                const roll = gamepad.axes[2] || 0;         // Stick derecho X
-                
-                // Auto-detectar si el mando usa eje 3 o 5 para pitch
-                let pitch = gamepad.axes[5] || 0;          // Intentar primero eje 5
-                if (Math.abs(pitch) < 0.05 && gamepad.axes[3] !== undefined) {
-                    pitch = gamepad.axes[3] || 0;          // Si eje 5 está inactivo, usar eje 3
-                } 
-
-                // Aplicar zona muerta (deadzone) para evitar drift
-                const deadzone = 0.1;
-                
-                joystickState.yaw = Math.abs(yaw) < deadzone ? 0 : yaw;
-                joystickState.throttle = Math.abs(throttle) < deadzone ? 0 : throttle;
-                joystickState.roll = Math.abs(roll) < deadzone ? 0 : roll;
-                joystickState.pitch = Math.abs(pitch) < deadzone ? 0 : pitch;
-
-                // Si el panel de ajustes está abierto, usar joystick para navegar
-                if (settingsNavigationActive && !isRemapping) {
-                    // Joystick izquierdo vertical (throttle) para navegar arriba/abajo
-                    // Movimiento continuo mientras se mantiene el stick, navegado con cooldown interno
-                    if (Math.abs(joystickState.throttle) > inputThreshold) {
-                        if (joystickState.throttle > inputThreshold) {
-                            navigateSettings('up');
-                        } else if (joystickState.throttle < -inputThreshold) {
-                            navigateSettings('down');
-                        }
-                    } else {
-                        lastVerticalInput = 0; // mantener limpieza del estado aunque no se use para edge-detection
-                    }
-                    
-                    // Joystick izquierdo horizontal (yaw) para ajustar sliders
-                    // Ajuste continuo cuando el joystick se mantiene presionado
-                    if (Math.abs(joystickState.yaw) > inputThreshold) {
-                        if (joystickState.yaw < -inputThreshold) {
-                            adjustCurrentSliderContinuous('left');
-                            lastHorizontalInput = -1;
-                        } else if (joystickState.yaw > inputThreshold) {
-                            adjustCurrentSliderContinuous('right');
-                            lastHorizontalInput = 1;
-                        }
-                    } else {
-                        lastHorizontalInput = 0;
-                    }
-                    
-                    // No enviar datos de movimiento al dron cuando estamos navegando ajustes
-                } else {
-                    // Enviar datos al dron solo si no estamos en ajustes
-                    sendJoystickData();
-                }
-
-                // Actualizar displays
-                document.getElementById('yaw-value').textContent = joystickState.yaw.toFixed(2);
-                document.getElementById('throttle-value').textContent = joystickState.throttle.toFixed(2);
-                document.getElementById('roll-value').textContent = joystickState.roll.toFixed(2);
-                document.getElementById('pitch-value').textContent = joystickState.pitch.toFixed(2);
-
-                // Actualizar posición visual de los sticks virtuales (opcional)
-                updateVirtualStickPosition('left-stick', joystickState.yaw, joystickState.throttle);
-                updateVirtualStickPosition('right-stick', joystickState.roll, joystickState.pitch);
-
-                // Enviar estado visual a los alumnos
-                sendJoystickStateToStudents();
-
-                // ========== MANEJO DE BOTONES ==========
-                // Detectar pulsaciones (edge detection - solo cuando se presiona, no cuando se mantiene)
-                const currentButtonStates = gamepad.buttons.map(b => b.pressed);
-                
-                for (let i = 0; i < currentButtonStates.length; i++) {
-                    const wasPressed = previousButtonStates[i] || false;
-                    const isPressed = currentButtonStates[i];
-                    
-                    // Solo actuar cuando se presiona el botón (transición de false a true)
-                    if (isPressed && !wasPressed) {
-                        handleGamepadButton(i);
-                    }
-                }
-                
-                // Guardar estado actual para la próxima iteración
-                previousButtonStates = currentButtonStates;
-
-                // Enviar datos al dron solo si no estamos navegando ajustes
-                if (!settingsNavigationActive) {
-                    sendJoystickData();
-                }
-
-                gamepadAnimationId = requestAnimationFrame(updateGamepad);
-            }
-            
-            updateGamepad();
-        }
-
-        function stopGamepadLoop() {
-            if (gamepadAnimationId) {
-                cancelAnimationFrame(gamepadAnimationId);
-                gamepadAnimationId = null;
-            }
-            
-            // Resetear joystick state
-            joystickState.throttle = 0;
-            joystickState.yaw = 0;
-            joystickState.pitch = 0;
-            joystickState.roll = 0;
-            
-            // Actualizar displays
-            document.getElementById('yaw-value').textContent = '0.00';
-            document.getElementById('throttle-value').textContent = '0.00';
-            document.getElementById('roll-value').textContent = '0.00';
-            document.getElementById('pitch-value').textContent = '0.00';
-            
-            // Resetear posición de sticks virtuales
-            updateVirtualStickPosition('left-stick', 0, 0);
-            updateVirtualStickPosition('right-stick', 0, 0);
-        }
-
-        function updateVirtualStickPosition(stickId, x, y) {
-            const stick = document.getElementById(stickId);
-            if (stick) {
-                const maxDistance = 35; // Mismo valor que en VirtualJoystick
-                let dx = x * maxDistance;
-                // Para el stick derecho (pitch/roll) corregimos la inversión visual reportada
-                // El dron ya se mueve correctamente; solo ajustamos representación.
-                // Stick izquierdo mantiene lógica original (throttle/yaw).
-                let dy;
-                if (stickId === 'right-stick') {
-                    dy = y * maxDistance; // Mostrar arriba cuando se empuja arriba físicamente
-                } else {
-                    dy = -y * maxDistance; // Mantener inversión para throttle/yaw
-                }
-                
-                // Aplicar restricción circular (igual que el joystick táctil)
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance > maxDistance) {
-                    const angle = Math.atan2(dy, dx);
-                    dx = Math.cos(angle) * maxDistance;
-                    dy = Math.sin(angle) * maxDistance;
-                }
-                
-                stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-            }
-        }
-
-        function showGamepadStatus(connected, name = '') {
-            updateGamepadTelemetry(connected);
-            
-            if (connected) {
-                console.log('✅ Gamepad conectado:', name);
-            } else {
-                console.log('⚠️ Gamepad desconectado');
-            }
-        }
-
-        function updateGamepadTelemetry(connected) {
-            const statusElement = document.getElementById('gamepad-status');
-            if (!statusElement) return;
-            
-            if (connected) {
-                statusElement.textContent = 'Conectado';
-                statusElement.style.color = '#4CAF50'; // Verde
-                
-                // Mostrar modal de instrucciones cuando se conecta (solo la primera vez)
-                if (!gamepadInstructionsShown && isDesktop()) {
-                    showGamepadModal();
-                }
-            } else {
-                statusElement.textContent = 'Desconectado';
-                statusElement.style.color = '#f44336'; // Rojo
-            }
-        }
-
-        // ========== FUNCIONES PARA MODAL DE INSTRUCCIONES DE GAMEPAD ==========
-        
-        function showGamepadModal() {
-            const modal = document.getElementById('gamepad-instructions-modal');
-            if (modal) {
-                modal.classList.add('show');
-                gamepadInstructionsModalOpen = true;
-                gamepadInstructionsShown = true; // Marcar que ya se mostraron las instrucciones
-                console.log('📖 Mostrando instrucciones del mando');
-            }
-        }
-
-        function closeGamepadModal() {
-            const modal = document.getElementById('gamepad-instructions-modal');
-            if (modal) {
-                modal.classList.remove('show');
-                gamepadInstructionsModalOpen = false;
-                console.log('✅ Instrucciones cerradas');
-            }
-        }
-
-        // Cerrar modal con tecla ESC
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeGamepadModal();
-            }
-        });
-
-        // Cerrar modal al hacer clic fuera del contenido
-        document.getElementById('gamepad-instructions-modal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'gamepad-instructions-modal') {
-                closeGamepadModal();
-            }
-        });
-
-        // ========== SISTEMA DE REMAPEO DE BOTONES ==========
-        
-        // Mapeo de botones por defecto
-        let buttonMapping = {
-            takeoff: 9,    // Start
-            land: 1,       // Botón 2 
-            rtl: 0,        // Botón 1 
-            photo: 2,      // Botón 3
-            video: 3       // Botón 4
-        };
-
-        // Nombres de botones genéricos (mando USB estándar)
-        const buttonNames = {
-            0: 'Botón 1 / Botón Y',
-            1: 'Botón 2 / Botón B',
-            2: 'Botón 3 / Botón A',
-            3: 'Botón 4 / Botón X',
-            4: 'L1 / LB',
-            5: 'R1 / RB',
-            6: 'L2 / LT',
-            7: 'R2 / RT',
-            8: 'Select',
-            9: 'Start',
-            10: 'L3',
-            11: 'R3',
-            12: 'D-Pad Arriba',
-            13: 'D-Pad Abajo',
-            14: 'D-Pad Izquierda',
-            15: 'D-Pad Derecha',
-            16: 'Home'
-        };
-
-        // Estado del remapeo
-        let isRemapping = false;
-        let currentRemapAction = null;
-        let remapStartTime = null;
-
-        // ========== NAVEGACIÓN POR AJUSTES CON GAMEPAD ==========
-        let settingsNavigationActive = false;
-        let currentSettingIndex = 0;
-        let settingsItems = [];
-        let lastVerticalInput = 0;
-        let lastHorizontalInput = 0;
-        const inputThreshold = 0.5; // Umbral para detectar movimiento del joystick
-        const navigationCooldown = 200; // Milisegundos entre navegación arriba/abajo
-        const sliderContinuousSpeed = 50; // Milisegundos entre ajustes continuos del slider
-        let lastNavigationTime = 0;
-        let lastSliderAdjustTime = 0;
-
-        // Cargar mapeo guardado del localStorage
-        function loadButtonMapping() {
-            const saved = localStorage.getItem('piloto_button_mapping');
-            if (saved) {
-                try {
-                    buttonMapping = JSON.parse(saved);
-                    updateAllButtonLabels();
-                    console.log('🎮 Mapeo de botones cargado:', buttonMapping);
-                } catch (e) {
-                    console.error('Error al cargar mapeo:', e);
-                }
-            }
-        }
-
-        // Guardar mapeo en localStorage
-        function saveButtonMapping() {
-            localStorage.setItem('piloto_button_mapping', JSON.stringify(buttonMapping));
-            console.log('💾 Mapeo de botones guardado');
-        }
-
-        // Actualizar todas las etiquetas de botones
-        function updateAllButtonLabels() {
-            updateButtonLabel('takeoff', buttonMapping.takeoff);
-            updateButtonLabel('land', buttonMapping.land);
-            updateButtonLabel('rtl', buttonMapping.rtl);
-            updateButtonLabel('photo', buttonMapping.photo);
-            updateButtonLabel('video', buttonMapping.video);
-        }
-
-        // Actualizar etiqueta de un botón específico
-        function updateButtonLabel(action, buttonIndex) {
-            const label = document.getElementById(`${action}ButtonLabel`);
-            const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
-            if (label) {
-                label.textContent = buttonName;
-            }
-        }
-
-        // Iniciar proceso de remapeo
-        function startRemapping(action) {
-            if (!gamepadConnected) {
-                alert('⚠️ No hay ningún mando conectado. Por favor, conecta un mando USB para remapear los botones.');
-                return;
-            }
-
-            isRemapping = true;
-            currentRemapAction = action;
-            remapStartTime = Date.now();
-
-            // Encontrar el botón específico y ponerlo en estado "escuchando"
-            const button = document.getElementById(`${action}RemapButton`);
-            if (button) {
-                button.classList.add('listening');
-                button.innerHTML = '<span class="remap-icon">⏳</span> Presiona un botón...';
-            }
-
-            console.log(`🎯 Esperando botón para: ${action}`);
-
-            // Auto-cancelar después de 10 segundos
-            setTimeout(() => {
-                if (isRemapping && currentRemapAction === action) {
-                    cancelRemapping();
-                }
-            }, 10000);
-        }
-
-        // Cancelar remapeo
-        function cancelRemapping() {
-            if (!isRemapping) return;
-
-            const action = currentRemapAction;
-            isRemapping = false;
-            currentRemapAction = null;
-
-            // Restaurar el botón específico a su estado normal
-            const button = document.getElementById(`${action}RemapButton`);
-            if (button) {
-                button.classList.remove('listening');
-                const buttonName = buttonNames[buttonMapping[action]] || `Botón ${buttonMapping[action]}`;
-                button.innerHTML = `<span class="remap-icon">🎯</span> <span id="${action}ButtonLabel">${buttonName}</span>`;
-            }
-
-            console.log('❌ Remapeo cancelado');
-        }
-
-        // Completar remapeo
-        function completeRemapping(buttonIndex) {
-            if (!isRemapping) return;
-
-            const action = currentRemapAction;
-
-            // Guardar el nuevo mapeo
-            buttonMapping[action] = buttonIndex;
-            saveButtonMapping();
-
-            // Restaurar el botón con el nuevo nombre
-            const button = document.getElementById(`${action}RemapButton`);
-            if (button) {
-                button.classList.remove('listening');
-                const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
-                button.innerHTML = `<span class="remap-icon">🎯</span> <span id="${action}ButtonLabel">${buttonName}</span>`;
-            }
-
-            // Mostrar confirmación visual
-            const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
-            console.log(`✅ ${action} remapeado a ${buttonName}`);
-
-            isRemapping = false;
-            currentRemapAction = null;
-        }
-
-        // ========== MANEJO DE BOTONES DEL GAMEPAD ==========
-        
-        function handleGamepadButton(buttonIndex) {
-            console.log(`🎮 Botón ${buttonIndex} presionado`);
-            
-            // Si las instrucciones nunca se han mostrado, mostrarlas y NO ejecutar la acción
-            if (!gamepadInstructionsShown) {
-                console.log('🎮 Primer botón detectado - Mostrando instrucciones sin ejecutar acción');
-                showGamepadModal();
-                return; // Salir sin ejecutar ninguna acción
-            }
-            
-            // Si estamos en modo remapeo, capturar el botón
-            if (isRemapping) {
-                completeRemapping(buttonIndex);
-                return;
-            }
-            
-            // Si el modal de instrucciones de gamepad está abierto, cerrarlo
-            if (gamepadInstructionsModalOpen) {
-                closeGamepadModal();
-                return;
-            }
-            
-            // Si hay algún otro modal abierto (foto/video), cerrarlo con cualquier botón
-            if (anyModalOpen) {
-                closePhotoModal();
-                closeVideoModal();
-                return;
-            }
-            
-            // Si estamos navegando por ajustes
-            if (settingsNavigationActive) {
-                // Botón 2 (A/Cross) - Activar elemento actual
-                if (buttonIndex === buttonMapping.land || buttonIndex === 2) {
-                    activateCurrentButton();
-                    return;
-                }
-                
-                // Select - Cerrar ajustes
-                if (buttonIndex === 8) {
-                    console.log('🎮 SELECT: Cerrar ajustes');
-                    toggleSettings();
-                    return;
-                }
-                
-                // Start - Aplicar ajustes
-                if (buttonIndex === 9) {
-                    console.log('🎮 START: Aplicar ajustes');
-                    applySettings();
-                    return;
-                }
-                
-                // Otros botones no hacen nada en modo ajustes
-                return;
-            }
-            
-            // Select - Abrir ajustes (solo si están cerrados)
-            if (buttonIndex === 8) {
-                console.log('🎮 SELECT: Abrir ajustes');
-                toggleSettings();
-                return;
-            }
-            
-            // Usar el mapeo configurado (solo cuando ajustes están cerrados)
-            if (buttonIndex === buttonMapping.takeoff) {
-                console.log('🎮 DESPEGAR');
-                despegarDron();
-            } else if (buttonIndex === buttonMapping.land) {
-                console.log('🎮 ATERRIZAR');
-                aterrizarDron();
-            } else if (buttonIndex === buttonMapping.rtl) {
-                console.log('🎮 VOLVER A CASA (RTL)');
-                returnToLaunch();
-            } else if (buttonIndex === buttonMapping.photo) {
-                console.log('🎮 CAPTURAR FOTO');
-                capturarFoto();
-            } else if (buttonIndex === buttonMapping.video) {
-                console.log('🎮 TOGGLE GRABACIÓN VIDEO');
-                toggleGrabacion();
-            } else {
-                console.log(`🎮 Botón ${buttonIndex} no mapeado`);
-            }
-        }
-
-        // ========== FUNCIONES DE CAPTURA Y GRABACIÓN ==========
-        
-        function capturarFoto() {
-            console.log('📸 Solicitando captura de foto...');
-            socket.emit('command', { action: 'capturarFoto' });
-        }
-
-        function toggleGrabacion() {
-            if (isRecording) {
-                console.log('🎥 Deteniendo grabación...');
-                socket.emit('command', { action: 'detenerVideo' });
-                isRecording = false;
-                // Ocultar indicador de grabación
-                document.getElementById('recording-indicator').style.display = 'none';
-                // Notificar a los alumnos
-                socket.emit('recording_state', { recording: false });
-            } else {
-                console.log('🎥 Iniciando grabación...');
-                socket.emit('command', { action: 'iniciarVideo' });
-                isRecording = true;
-                // Mostrar indicador de grabación
-                document.getElementById('recording-indicator').style.display = 'flex';
-                // Notificar a los alumnos
-                socket.emit('recording_state', { recording: true });
-            }
-        }
-
-        // Función para mostrar la foto capturada
-        function mostrarFotoCapturada(nombreFoto) {
-            console.log('📸 Mostrando foto capturada:', nombreFoto);
-            
-            const modal = document.getElementById('photo-modal');
-            const img = document.getElementById('captured-photo');
-            
-            // Construir la URL de la foto con timestamp para evitar cache
-            // nombreFoto ya incluye el path completo (ej: PruebaPiloto/foto_dron_20251103-174942.jpg)
-            const timestamp = new Date().getTime();
-            const fotoUrl = `/static/captured_photos/${nombreFoto}?t=${timestamp}`;
-            
-            img.src = fotoUrl;
-            modal.classList.add('show');
-            anyModalOpen = true;
-        }
-
-        // Función para cerrar el modal de foto
-        function closePhotoModal() {
-            const modal = document.getElementById('photo-modal');
-            modal.classList.remove('show');
-            anyModalOpen = false;
-        }
-
-        // Función para mostrar el video grabado
-        function mostrarVideoGrabado(nombreVideo) {
-            console.log('🎥 Mostrando video grabado:', nombreVideo);
-            
-            const modal = document.getElementById('video-modal');
-            const video = document.getElementById('captured-video');
-            
-            // Construir la URL del video con timestamp para evitar cache
-            // nombreVideo ya incluye el path completo (ej: PruebaPiloto/video_dron_20251103-174942.mp4)
-            const timestamp = new Date().getTime();
-            const videoUrl = `/static/captured_videos/${nombreVideo}?t=${timestamp}`;
-            
-            video.src = videoUrl;
-            modal.classList.add('show');
-            anyModalOpen = true;
-            
-            // Auto-reproducir el video
-            video.play().catch(err => console.log('No se pudo auto-reproducir:', err));
-        }
-
-        // Función para cerrar el modal de video
-        function closeVideoModal() {
-            const modal = document.getElementById('video-modal');
-            const video = document.getElementById('captured-video');
-            
-            // Detener y resetear el video
-            video.pause();
-            video.currentTime = 0;
-            
-            modal.classList.remove('show');
-            anyModalOpen = false;
-        }
-
-        // Eventos Socket.IO para captura de foto y video
-        socket.on('foto_capturada', function(nombreFoto) {
-            console.log('✅ Foto capturada:', nombreFoto);
-            mostrarFotoCapturada(nombreFoto);
-        });
-
-        socket.on('video_iniciado', function(data) {
-            console.log('✅ Grabación iniciada');
-            isRecording = true;
-            // Mostrar indicador de grabación
-            document.getElementById('recording-indicator').style.display = 'flex';
-            // Notificar a los alumnos
-            socket.emit('recording_state', { recording: true });
-        });
-
-        socket.on('video_detenido', function(nombreVideo) {
-            console.log('✅ Grabación detenida:', nombreVideo);
-            isRecording = false;
-            // Ocultar indicador de grabación
-            document.getElementById('recording-indicator').style.display = 'none';
-            // Notificar a los alumnos
-            socket.emit('recording_state', { recording: false });
-            mostrarVideoGrabado(nombreVideo);
-        });
-
-        socket.on('flight_name_set', function(flightName) {
-            currentFlightName = flightName;
-            console.log('✈️ Nombre de vuelo establecido:', flightName);
-        });
-
-        // ========== FUNCIONES DEL PANEL DE AJUSTES ==========
-        
-        // Valores por defecto de los parámetros
-        const defaultSettings = {
-            speedUp: 250,      // PILOT_SPEED_UP (cm/s)
-            speedDn: 150,      // PILOT_SPEED_DN (cm/s)
-            loitSpeed: 1250,   // LOIT_SPEED (cm/s)
-            yawRate: 90,       // ATC_RATE_Y_MAX (deg/s)
-            accelZ: 250,       // PILOT_ACCEL_Z (cm/s²)
-            loitAcc: 500,      // LOIT_ACC_MAX (cm/s²)
-            videoQuality: 50,  // Calidad del video (0-100%)
-            videoFps: 5        // Frames por segundo (1-30 fps)
-        };
-
-        // Valores actuales
-        let currentSettings = {...defaultSettings};
-
-        // Abrir/Cerrar panel de ajustes
-        function toggleSettings() {
-            const panel = document.getElementById('settingsPanel');
-            const overlay = document.getElementById('settingsOverlay');
-            
-            panel.classList.toggle('open');
-            overlay.classList.toggle('open');
-            
-            // Ajustar altura del panel al espacio visible real
-            if (panel.classList.contains('open')) {
-                adjustPanelHeight();
-                initSettingsNavigation();
-            } else {
-                deactivateSettingsNavigation();
-            }
-            
-            // Sincronizar con alumnos
-            const isOpen = panel.classList.contains('open');
-            socket.emit('settings_panel_sync', { open: isOpen });
-        }
-
-        // Inicializar navegación por ajustes con gamepad
-        function initSettingsNavigation() {
-            if (!isDesktop()) return; // Solo en desktop
-            
-            settingsNavigationActive = true;
-            currentSettingIndex = 0;
-            
-            // Recopilar todos los elementos navegables (sliders y botones de remapeo)
-            settingsItems = [];
-            
-            // Añadir sliders
-            const sliders = document.querySelectorAll('.setting-item:not(.button-mapping-item)');
-            sliders.forEach(item => {
-                const slider = item.querySelector('.setting-slider');
-                if (slider) {
-                    settingsItems.push({
-                        type: 'slider',
-                        element: item,
-                        slider: slider,
-                        setting: slider.id.replace('Slider', '')
-                    });
-                }
-            });
-            
-            // Añadir botones de remapeo (solo si gamepad está conectado)
-            if (gamepadConnected) {
-                const remapItems = document.querySelectorAll('.button-mapping-item');
-                remapItems.forEach(item => {
-                    const button = item.querySelector('.remap-button');
-                    if (button) {
-                        const action = button.id.replace('RemapButton', '');
-                        settingsItems.push({
-                            type: 'remap',
-                            element: item,
-                            button: button,
-                            action: action
-                        });
-                    }
-                });
-            }
-            
-            // Resaltar el primer elemento
-            if (settingsItems.length > 0) {
-                highlightSettingItem(0);
-            }
-            
-            console.log('🎮 Navegación de ajustes activada:', settingsItems.length, 'elementos');
-        }
-
-        // Desactivar navegación por ajustes
-        function deactivateSettingsNavigation() {
-            settingsNavigationActive = false;
-            
-            // Quitar resaltado de todos los elementos
-            settingsItems.forEach(item => {
-                item.element.classList.remove('gamepad-selected');
-            });
-            
-            settingsItems = [];
-            currentSettingIndex = 0;
-            
-            console.log('🎮 Navegación de ajustes desactivada');
-        }
-
-        // Resaltar elemento seleccionado
-        function highlightSettingItem(index) {
-            // Quitar resaltado anterior
-            settingsItems.forEach(item => {
-                item.element.classList.remove('gamepad-selected');
-            });
-            
-            // Resaltar nuevo elemento
-            if (index >= 0 && index < settingsItems.length) {
-                const item = settingsItems[index];
-                item.element.classList.add('gamepad-selected');
-                
-                // Hacer scroll para que sea visible
-                item.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                currentSettingIndex = index;
-            }
-        }
-
-        // Navegar arriba/abajo por los ajustes
-        function navigateSettings(direction) {
-            if (!settingsNavigationActive || settingsItems.length === 0) return;
-            
-            const now = Date.now();
-            if (now - lastNavigationTime < navigationCooldown) return;
-            lastNavigationTime = now;
-            
-            let newIndex = currentSettingIndex;
-            
-            if (direction === 'up') {
-                newIndex = Math.max(0, currentSettingIndex - 1);
-            } else if (direction === 'down') {
-                newIndex = Math.min(settingsItems.length - 1, currentSettingIndex + 1);
-            }
-            
-            if (newIndex !== currentSettingIndex) {
-                highlightSettingItem(newIndex);
-            }
-        }
-
-        // Ajustar valor del slider actual (versión antigua - un toque)
-        function adjustCurrentSlider(direction) {
-            if (!settingsNavigationActive || settingsItems.length === 0) return;
-            
-            const now = Date.now();
-            if (now - lastNavigationTime < navigationCooldown) return;
-            lastNavigationTime = now;
-            
-            const currentItem = settingsItems[currentSettingIndex];
-            
-            if (currentItem.type === 'slider') {
-                const slider = currentItem.slider;
-                const step = parseFloat(slider.step) || 1;
-                const min = parseFloat(slider.min);
-                const max = parseFloat(slider.max);
-                let value = parseFloat(slider.value);
-                
-                if (direction === 'left') {
-                    value = Math.max(min, value - step);
-                } else if (direction === 'right') {
-                    value = Math.min(max, value + step);
-                }
-                
-                slider.value = value;
-                updateSliderValue(currentItem.setting, value);
-                
-                console.log(`🎮 Ajustado ${currentItem.setting} a ${value}`);
-            }
-        }
-
-        // Ajustar valor del slider actual de forma continua
-        function adjustCurrentSliderContinuous(direction) {
-            if (!settingsNavigationActive || settingsItems.length === 0) return;
-            
-            const now = Date.now();
-            if (now - lastSliderAdjustTime < sliderContinuousSpeed) return;
-            lastSliderAdjustTime = now;
-            
-            const currentItem = settingsItems[currentSettingIndex];
-            
-            if (currentItem.type === 'slider') {
-                const slider = currentItem.slider;
-                const step = parseFloat(slider.step) || 1;
-                const min = parseFloat(slider.min);
-                const max = parseFloat(slider.max);
-                let value = parseFloat(slider.value);
-                
-                if (direction === 'left') {
-                    value = Math.max(min, value - step);
-                } else if (direction === 'right') {
-                    value = Math.min(max, value + step);
-                }
-                
-                slider.value = value;
-                updateSliderValue(currentItem.setting, value);
-                
-                // Solo mostrar log cada 10 ajustes para no saturar la consola
-                if (Math.round(value) % 10 === 0) {
-                    console.log(`🎮 Ajustado ${currentItem.setting} a ${value}`);
-                }
-            }
-        }
-
-        // Activar botón actual (para remapeo o aplicar/restaurar)
-        function activateCurrentButton() {
-            if (!settingsNavigationActive || settingsItems.length === 0) return;
-            
-            const currentItem = settingsItems[currentSettingIndex];
-            
-            if (currentItem.type === 'remap') {
-                // Activar remapeo
-                startRemapping(currentItem.action);
-                console.log(`🎮 Activando remapeo para: ${currentItem.action}`);
-            }
-        }
-
-        // Ajustar altura del panel al viewport visible
-        function adjustPanelHeight() {
-            const panel = document.getElementById('settingsPanel');
-            // Usar window.innerHeight en lugar de 100vh para obtener la altura real visible
-            panel.style.height = window.innerHeight + 'px';
-        }
-
-        // Ajustar cuando cambie el tamaño de la ventana o la orientación
-        window.addEventListener('resize', () => {
-            const panel = document.getElementById('settingsPanel');
-            if (panel.classList.contains('open')) {
-                adjustPanelHeight();
-            }
-        });
-
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => {
-                const panel = document.getElementById('settingsPanel');
-                if (panel.classList.contains('open')) {
-                    adjustPanelHeight();
-                }
-            }, 100);
-        });
-
-        // Actualizar valor del slider en tiempo real
-        function updateSliderValue(setting, value) {
-            document.getElementById(setting + 'Value').textContent = value;
-            currentSettings[setting] = parseFloat(value);
-            
-            // Sincronizar cambio de slider con alumnos
-            socket.emit('slider_value_sync', {
-                setting: setting,
-                value: value
-            });
-        }
-
-        // Cargar ajustes guardados (o valores por defecto)
-        function loadSettings() {
-            // Intentar cargar desde localStorage
-            const saved = localStorage.getItem('pilotSettings');
-            if (saved) {
-                currentSettings = JSON.parse(saved);
-            }
-            
-            // Actualizar sliders y valores mostrados
-            for (let key in currentSettings) {
-                const slider = document.getElementById(key + 'Slider');
-                const valueSpan = document.getElementById(key + 'Value');
-                if (slider && valueSpan) {
-                    slider.value = currentSettings[key];
-                    valueSpan.textContent = currentSettings[key];
-                }
-            }
-            
-            // Enviar todos los valores actuales a los alumnos
-            socket.emit('settings_initial_sync', { settings: currentSettings });
-        }
-
-        // Restaurar valores por defecto
-        function resetSettings() {
-            if (confirm('¿Restaurar todos los ajustes (parámetros y mapeo de botones) a valores por defecto?')) {
-                // Restaurar parámetros de vuelo
-                currentSettings = {...defaultSettings};
-                
-                // Actualizar sliders y valores
-                for (let key in currentSettings) {
-                    const slider = document.getElementById(key + 'Slider');
-                    const valueSpan = document.getElementById(key + 'Value');
-                    if (slider && valueSpan) {
-                        slider.value = currentSettings[key];
-                        valueSpan.textContent = currentSettings[key];
-                    }
-                }
-                
-                // Restaurar mapeo de botones a valores por defecto
-                buttonMapping = {
-                    takeoff: 9,     // Start
-                    land: 1,        // Botón 2 
-                    rtl: 0,         // Botón 1
-                    photo: 2,       // Botón 3
-                    video: 3        // Botón 4
-                };
-                saveButtonMapping();
-                updateAllButtonLabels();
-                
-                console.log('✅ Ajustes y mapeo restaurados a valores por defecto');
-            }
-        }
-
-        // Aplicar ajustes al dron
-        function applySettings() {
-            // Preparar parámetros del dron para enviar
-            const params = [
-                {ID: 'PILOT_SPEED_UP', Value: currentSettings.speedUp},
-                {ID: 'PILOT_SPEED_DN', Value: currentSettings.speedDn},
-                {ID: 'LOIT_SPEED', Value: currentSettings.loitSpeed},
-                {ID: 'ATC_RATE_Y_MAX', Value: currentSettings.yawRate},
-                {ID: 'PILOT_ACCEL_Z', Value: currentSettings.accelZ},
-                {ID: 'LOIT_ACC_MAX', Value: currentSettings.loitAcc}
-            ];
-            
-            // Guardar en localStorage
-            localStorage.setItem('pilotSettings', JSON.stringify(currentSettings));
-            
-            // Enviar parámetros del dron
-            socket.emit('set_parameters', params);
-            
-            // Enviar configuración de video por separado
-            socket.emit('video_settings', {
-                quality: currentSettings.videoQuality,
-                fps: currentSettings.videoFps
-            });
-            
-            console.log('Aplicando ajustes del dron:', params);
-            console.log('Aplicando ajustes de video:', {
-                quality: currentSettings.videoQuality,
-                fps: currentSettings.videoFps
-            });
-            
-            // Mostrar feedback visual
-            const applyBtn = document.querySelector('.apply-btn');
-            const originalText = applyBtn.innerHTML;
-            applyBtn.innerHTML = '✓ ¡Aplicado!';
-            applyBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
-            
-            setTimeout(() => {
-                applyBtn.innerHTML = originalText;
-                applyBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                toggleSettings();
-            }, 1500);
-        }
     </script>
 </body>
 </html>

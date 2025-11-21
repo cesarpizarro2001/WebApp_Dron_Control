@@ -351,6 +351,71 @@ def handle_joystick_position(payload):
 # FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_CONTROL
 # ==================================================================================
 
+# ==================================================================================
+# HANDLERS DE SINCRONIZACIÓN ALUMNO_PILOTO (piloto.html -> alumno_piloto.html)
+# Estos handlers retransmiten eventos del profesor a todos los alumnos
+# ==================================================================================
+
+# Sincronización del estado del joystick en modo piloto
+@socketio.on('joystick_state')
+def handle_joystick_state(payload):
+    """Sincroniza la posición del joystick del modo piloto - A TODOS LOS CLIENTES"""
+    try:
+        # No imprimir en consola porque genera mucho spam (se actualiza constantemente)
+        socketio.emit('joystick_state', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en joystick_state: {e}")
+
+# Sincronización del estado de grabación de video
+@socketio.on('recording_state')
+def handle_recording_state(payload):
+    """Sincroniza el estado de grabación de video - A TODOS LOS CLIENTES"""
+    try:
+        recording = payload.get('recording')
+        estado = "GRABANDO" if recording else "DETENIDO"
+        print(f"[SYNC GRABACIÓN → TODOS] {estado}")
+        socketio.emit('recording_state', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en recording_state: {e}")
+
+# Sincronización del panel de ajustes
+@socketio.on('settings_panel_sync')
+def handle_settings_panel_sync(payload):
+    """Sincroniza la apertura/cierre del panel de ajustes - A TODOS LOS CLIENTES"""
+    try:
+        is_open = payload.get('open')
+        estado = "ABIERTO" if is_open else "CERRADO"
+        print(f"[SYNC PANEL AJUSTES → TODOS] {estado}")
+        socketio.emit('settings_panel_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en settings_panel_sync: {e}")
+
+# Sincronización de valores de sliders
+@socketio.on('slider_value_sync')
+def handle_slider_value_sync(payload):
+    """Sincroniza los cambios de sliders de ajustes - A TODOS LOS CLIENTES"""
+    try:
+        setting = payload.get('setting')
+        value = payload.get('value')
+        # No imprimir cada cambio de slider porque genera mucho spam
+        socketio.emit('slider_value_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en slider_value_sync: {e}")
+
+# Sincronización inicial de todos los ajustes
+@socketio.on('settings_initial_sync')
+def handle_settings_initial_sync(payload):
+    """Sincroniza todos los valores de ajustes al cargar - A TODOS LOS CLIENTES"""
+    try:
+        print(f"[SYNC AJUSTES INICIALES → TODOS] Enviando valores actuales")
+        socketio.emit('settings_initial_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en settings_initial_sync: {e}")
+
+# ==================================================================================
+# FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_PILOTO
+# ==================================================================================
+
 # Recibir comandos de la WebApp y reenviarlos a la Estación de Tierra
 @socketio.on('flight_event')
 def handle_flight_event(data):

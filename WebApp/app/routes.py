@@ -19,6 +19,10 @@ def movimiento():
 def alumno_control():
     return render_template('alumno_control.html')
 
+@main.route('/alumno_piloto')
+def alumno_piloto():
+    return render_template('alumno_piloto.html')
+
 # Ruta para servir fotos capturadas desde EstacionTierra
 @main.route('/static/captured_photos/<path:filename>')
 def captured_photos(filename):
