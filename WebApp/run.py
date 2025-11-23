@@ -285,6 +285,18 @@ def handle_video_modal_sync(payload):
     except Exception as e:
         print(f"❌ Error en video_modal_sync: {e}")
 
+# Sincronización del estado del gamepad
+@socketio.on('gamepad_status_sync')
+def handle_gamepad_status_sync(payload):
+    """Sincroniza el estado de conexión del gamepad - SOLO A ALUMNOS"""
+    try:
+        connected = payload.get('connected')
+        status = 'CONECTADO' if connected else 'DESCONECTADO'
+        print(f"[SYNC GAMEPAD → ALUMNOS] {status}")
+        socketio.emit('gamepad_status_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en gamepad_status_sync: {e}")
+
 # Sincronización de modal de galería
 @socketio.on('gallery_modal_sync')
 def handle_gallery_modal_sync(payload):

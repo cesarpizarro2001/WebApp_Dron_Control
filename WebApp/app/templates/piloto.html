@@ -2000,6 +2000,13 @@
         // Eventos Socket.IO
         socket.on('connect', () => {
             console.log('Conectado');
+            
+            // Enviar tipo de dispositivo al servidor
+            const isTouchDevice = !isDesktop();
+            console.log('✅ Profesor conectado, enviando tipo de dispositivo:', isTouchDevice ? 'TÁCTIL' : 'NO TÁCTIL (DESKTOP)');
+            socket.emit('professor_device_type', {
+                isTouchDevice: isTouchDevice
+            });
         });
 
         // Variable para controlar si ya se cambió a LOITER automáticamente
@@ -2477,6 +2484,11 @@
                 statusElement.textContent = 'Desconectado';
                 statusElement.style.color = '#f44336'; // Rojo
             }
+            
+            // Sincronizar estado del gamepad con alumnos
+            socket.emit('gamepad_status_sync', {
+                connected: connected
+            });
         }
 
         // ========== FUNCIONES PARA MODAL DE INSTRUCCIONES DE GAMEPAD ==========

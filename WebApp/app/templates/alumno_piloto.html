@@ -2005,6 +2005,38 @@
             }
         });
 
+        // Recibir tipo de dispositivo del profesor
+        socket.on('professor_device_type', (data) => {
+            console.log(`[ALUMNO] 📱 Dispositivo del profesor: ${data.isTouchDevice ? 'TÁCTIL (Móvil)' : 'NO TÁCTIL (Desktop con gamepad)'}`);
+            
+            const gamepadTelemetry = document.getElementById('gamepad-telemetry');
+            if (gamepadTelemetry) {
+                if (data.isTouchDevice) {
+                    // Profesor en móvil: ocultar telemetría del gamepad
+                    gamepadTelemetry.style.display = 'none';
+                } else {
+                    // Profesor en desktop: mostrar telemetría del gamepad
+                    gamepadTelemetry.style.display = 'flex';
+                }
+            }
+        });
+
+        // Sincronización del estado del gamepad
+        socket.on('gamepad_status_sync', (data) => {
+            const statusElement = document.getElementById('gamepad-status');
+            if (statusElement) {
+                if (data.connected) {
+                    statusElement.textContent = 'Conectado';
+                    statusElement.style.color = '#4CAF50'; // Verde
+                    console.log('[ALUMNO] 🎮 Gamepad: Conectado');
+                } else {
+                    statusElement.textContent = 'Desconectado';
+                    statusElement.style.color = '#f44336'; // Rojo
+                    console.log('[ALUMNO] 🎮 Gamepad: Desconectado');
+                }
+            }
+        });
+
         function getStateColor(state) {
             const stateColors = {
                 'connected': '#4CAF50',
