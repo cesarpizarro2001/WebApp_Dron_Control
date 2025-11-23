@@ -463,6 +463,17 @@ def handle_pilot_button_sync(payload):
     except Exception as e:
         print(f"❌ Error en pilot_button_sync: {e}")
 
+# Sincronización del modal de instrucciones del mando
+@socketio.on('gamepad_modal_sync')
+def handle_gamepad_modal_sync(payload):
+    """Sincroniza apertura/cierre del modal de instrucciones del mando - A TODOS LOS CLIENTES"""
+    try:
+        action = payload.get('action')
+        print(f"[SYNC MODAL MANDO → TODOS] {action.upper()}")
+        socketio.emit('gamepad_modal_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en gamepad_modal_sync: {e}")
+
 # ==================================================================================
 # FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_PILOTO
 # ==================================================================================

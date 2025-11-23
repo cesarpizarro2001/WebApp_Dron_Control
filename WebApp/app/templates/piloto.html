@@ -1094,22 +1094,25 @@
 
         .gamepad-modal-content {
             background: white;
-            border-radius: 20px;
+            border-radius: 16px;
             padding: 0;
-            max-width: 650px;
-            width: 90%;
+            max-width: min(90vw, 700px);
+            max-height: 95vh;
+            max-height: 95svh;
+            max-height: 95dvh;
+            width: auto;
+            height: auto;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             animation: slideIn 0.4s ease;
-            max-height: 90vh;
             overflow: hidden;
-            display: flex;
+            display: inline-flex;
             flex-direction: column;
         }
 
         .gamepad-modal-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px 24px;
+            padding: 12px 16px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -1118,43 +1121,49 @@
 
         .gamepad-modal-header h3 {
             margin: 0;
-            font-size: 24px;
+            font-size: 17px;
             font-weight: 700;
             color: white;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .gamepad-modal-body {
-            padding: 24px;
-            flex: 1;
-            overflow-y: auto;
-            text-align: center;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
 
         .gamepad-modal-body img {
-            width: 100%;
+            display: block;
+            max-width: 100%;
+            max-height: calc(95vh - 50px);
+            max-height: calc(95svh - 50px);
+            max-height: calc(95dvh - 50px);
+            width: auto;
             height: auto;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            object-fit: contain;
         }
 
         .gamepad-modal-footer {
-            padding: 16px 24px;
+            padding: 12px 16px;
             background: #f8f9fa;
             border-top: 2px solid #e9ecef;
             display: flex;
             justify-content: center;
             flex-shrink: 0;
+            width: 100%;
         }
 
         .gamepad-ok-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 14px 36px;
+            padding: 12px 32px;
             border-radius: 10px;
             font-weight: 700;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
@@ -1173,16 +1182,30 @@
         /* Responsive para el modal de gamepad */
         @media (max-width: 768px) {
             .gamepad-modal-content {
-                max-width: 95%;
-                border-radius: 16px;
+                max-width: 90vw;
+                border-radius: 12px;
             }
 
             .gamepad-modal-header {
-                padding: 16px 20px;
+                padding: 10px 12px;
             }
 
             .gamepad-modal-header h3 {
-                font-size: 20px;
+                font-size: 15px;
+            }
+
+            .gamepad-modal-body img {
+                max-height: calc(95vh - 45px);
+                max-height: calc(95svh - 45px);
+                max-height: calc(95dvh - 45px);
+            }
+
+            .gamepad-modal-header {
+                padding: 12px 16px;
+            }
+
+            .gamepad-modal-header h3 {
+                font-size: 16px;
             }
 
             .gamepad-close-btn {
@@ -1192,16 +1215,16 @@
             }
 
             .gamepad-modal-body {
-                padding: 20px;
+                padding: 12px;
             }
 
             .gamepad-modal-footer {
-                padding: 12px 20px;
+                padding: 10px 12px;
             }
 
             .gamepad-ok-btn {
-                padding: 12px 28px;
-                font-size: 14px;
+                padding: 10px 24px;
+                font-size: 13px;
             }
         }
     </style>
@@ -1573,9 +1596,6 @@
             </div>
             <div class="gamepad-modal-body">
                 <img src="{{ url_for('static', filename='MANDO_botones.png') }}" alt="Instrucciones del mando">
-            </div>
-            <div class="gamepad-modal-footer">
-                <button class="gamepad-ok-btn" onclick="closeGamepadModal()">¡Entendido!</button>
             </div>
         </div>
     </div>
@@ -2434,6 +2454,9 @@
                 gamepadInstructionsModalOpen = true;
                 gamepadInstructionsShown = true; // Marcar que ya se mostraron las instrucciones
                 console.log('📖 Mostrando instrucciones del mando');
+                
+                // Sincronizar con alumnos
+                socket.emit('gamepad_modal_sync', { action: 'open' });
             }
         }
 
@@ -2443,6 +2466,9 @@
                 modal.classList.remove('show');
                 gamepadInstructionsModalOpen = false;
                 console.log('✅ Instrucciones cerradas');
+                
+                // Sincronizar con alumnos
+                socket.emit('gamepad_modal_sync', { action: 'close' });
             }
         }
 
