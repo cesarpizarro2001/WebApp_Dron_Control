@@ -1021,10 +1021,10 @@
 
         .capture-modal-content {
             max-width: 90%;
-            max-height: 90%;
+            max-height: 95%;
             background: white;
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
@@ -1033,15 +1033,21 @@
         }
 
         .capture-modal-content h3 {
-            margin: 0 0 15px 0;
+            margin: 0 0 12px 0;
             color: #667eea;
-            font-size: 20px;
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .capture-modal-content img,
         .capture-modal-content video {
             max-width: 100%;
-            max-height: 70vh;
+            max-height: calc(95vh - 100px);
+            max-height: calc(95svh - 100px);
+            max-height: calc(95dvh - 100px);
+            width: auto;
+            height: auto;
+            object-fit: contain;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
@@ -1177,6 +1183,34 @@
         .gamepad-ok-btn:active {
             transform: translateY(0);
             box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Responsive para modales de foto/video */
+        @media (max-width: 768px) {
+            .capture-modal-content {
+                max-width: 95%;
+                max-height: 95%;
+                padding: 12px;
+                border-radius: 10px;
+            }
+
+            .capture-modal-content h3 {
+                font-size: 16px;
+                margin: 0 0 10px 0;
+            }
+
+            .capture-modal-content img,
+            .capture-modal-content video {
+                max-height: calc(95vh - 80px);
+                max-height: calc(95svh - 80px);
+                max-height: calc(95dvh - 80px);
+                border-radius: 6px;
+            }
+
+            .capture-modal-hint {
+                font-size: 12px;
+                margin-top: 10px;
+            }
         }
 
         /* Responsive para el modal de gamepad */
@@ -1736,6 +1770,7 @@
         // Conectar al servidor
         socket.on('connect', () => {
             console.log('✅ Conectado al servidor como alumno');
+            socket.emit('join_alumno');
         });
 
         // Recibir telemetría del profesor
@@ -1904,6 +1939,69 @@
             } else if (data.action === 'close') {
                 modal.classList.remove('show');
                 console.log('[SYNC MODAL MANDO] CERRAR');
+            }
+        });
+
+        // Sincronización de modal de foto capturada
+        socket.on('photo_modal_sync', (payload) => {
+            const modal = document.getElementById('photo-modal');
+            const img = document.getElementById('captured-photo');
+            
+            if (payload.action === 'open') {
+                console.log('[ALUMNO] 📸 Mostrando foto capturada:', payload.photoName);
+                if (modal && img) {
+                    const timestamp = new Date().getTime();
+                    const fotoUrl = `/static/captured_photos/${payload.photoName}?t=${timestamp}`;
+                    img.src = fotoUrl;
+                    modal.classList.add('show');
+                }
+            } else if (payload.action === 'close') {
+                console.log('[ALUMNO] 📸 Cerrando foto capturada');
+                if (modal) {
+                    modal.classList.remove('show');
+                }
+            }
+        });
+
+        // Sincronización de modal de video grabado
+        socket.on('video_modal_sync', (payload) => {
+            const modal = document.getElementById('video-modal');
+            const video = document.getElementById('captured-video');
+            
+            if (payload.action === 'open') {
+                console.log('[ALUMNO] 🎥 Mostrando video grabado:', payload.videoName);
+                if (modal && video) {
+                    const timestamp = new Date().getTime();
+                    const videoUrl = `/static/captured_videos/${payload.videoName}?t=${timestamp}`;
+                    video.src = videoUrl;
+                    modal.classList.add('show');
+                    // Auto-reproducir el video
+                    video.play().catch(err => console.log('No se pudo auto-reproducir:', err));
+                }
+            } else if (payload.action === 'close') {
+                console.log('[ALUMNO] 🎥 Cerrando video grabado');
+                if (modal && video) {
+                    video.pause();
+                    video.currentTime = 0;
+                    modal.classList.remove('show');
+                }
+            } else if (payload.action === 'play') {
+                console.log('[ALUMNO] ▶️ Reproduciendo video en:', payload.currentTime);
+                if (video) {
+                    video.currentTime = payload.currentTime;
+                    video.play();
+                }
+            } else if (payload.action === 'pause') {
+                console.log('[ALUMNO] ⏸️ Pausando video en:', payload.currentTime);
+                if (video) {
+                    video.currentTime = payload.currentTime;
+                    video.pause();
+                }
+            } else if (payload.action === 'seek') {
+                console.log('[ALUMNO] ⏩ Saltando a:', payload.currentTime);
+                if (video) {
+                    video.currentTime = payload.currentTime;
+                }
             }
         });
 

@@ -1021,10 +1021,10 @@
 
         .capture-modal-content {
             max-width: 90%;
-            max-height: 90%;
+            max-height: 95%;
             background: white;
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
@@ -1033,15 +1033,21 @@
         }
 
         .capture-modal-content h3 {
-            margin: 0 0 15px 0;
+            margin: 0 0 12px 0;
             color: #667eea;
-            font-size: 20px;
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .capture-modal-content img,
         .capture-modal-content video {
             max-width: 100%;
-            max-height: 70vh;
+            max-height: calc(95vh - 100px);
+            max-height: calc(95svh - 100px);
+            max-height: calc(95dvh - 100px);
+            width: auto;
+            height: auto;
+            object-fit: contain;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
@@ -1177,6 +1183,34 @@
         .gamepad-ok-btn:active {
             transform: translateY(0);
             box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Responsive para modales de foto/video */
+        @media (max-width: 768px) {
+            .capture-modal-content {
+                max-width: 95%;
+                max-height: 95%;
+                padding: 12px;
+                border-radius: 10px;
+            }
+
+            .capture-modal-content h3 {
+                font-size: 16px;
+                margin: 0 0 10px 0;
+            }
+
+            .capture-modal-content img,
+            .capture-modal-content video {
+                max-height: calc(95vh - 80px);
+                max-height: calc(95svh - 80px);
+                max-height: calc(95dvh - 80px);
+                border-radius: 6px;
+            }
+
+            .capture-modal-hint {
+                font-size: 12px;
+                margin-top: 10px;
+            }
         }
 
         /* Responsive para el modal de gamepad */
@@ -2773,6 +2807,12 @@
             img.src = fotoUrl;
             modal.classList.add('show');
             anyModalOpen = true;
+            
+            // Sincronizar con alumnos
+            socket.emit('photo_modal_sync', {
+                action: 'open',
+                photoName: nombreFoto
+            });
         }
 
         // Función para cerrar el modal de foto
@@ -2780,6 +2820,11 @@
             const modal = document.getElementById('photo-modal');
             modal.classList.remove('show');
             anyModalOpen = false;
+            
+            // Sincronizar con alumnos
+            socket.emit('photo_modal_sync', {
+                action: 'close'
+            });
         }
 
         // Función para mostrar el video grabado
@@ -2800,6 +2845,34 @@
             
             // Auto-reproducir el video
             video.play().catch(err => console.log('No se pudo auto-reproducir:', err));
+            
+            // Sincronizar con alumnos - mostrar video
+            socket.emit('video_modal_sync', {
+                action: 'open',
+                videoName: nombreVideo
+            });
+            
+            // Sincronizar play/pause/seek con alumnos
+            video.onplay = function() {
+                socket.emit('video_modal_sync', {
+                    action: 'play',
+                    currentTime: video.currentTime
+                });
+            };
+            
+            video.onpause = function() {
+                socket.emit('video_modal_sync', {
+                    action: 'pause',
+                    currentTime: video.currentTime
+                });
+            };
+            
+            video.onseeked = function() {
+                socket.emit('video_modal_sync', {
+                    action: 'seek',
+                    currentTime: video.currentTime
+                });
+            };
         }
 
         // Función para cerrar el modal de video
@@ -2813,6 +2886,11 @@
             
             modal.classList.remove('show');
             anyModalOpen = false;
+            
+            // Sincronizar con alumnos
+            socket.emit('video_modal_sync', {
+                action: 'close'
+            });
         }
 
         // Eventos Socket.IO para captura de foto y video
