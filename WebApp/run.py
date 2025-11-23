@@ -347,6 +347,45 @@ def handle_joystick_position(payload):
     except Exception as e:
         print(f"❌ Error en joystick_position: {e}")
 
+# Sincronización de waypoints individuales
+@socketio.on('waypoint_sync')
+def handle_waypoint_sync(payload):
+    """Sincroniza la creación de waypoints individuales - SOLO A ALUMNOS"""
+    try:
+        if payload.get('action') == 'add':
+            waypoint = payload.get('waypoint')
+            print(f"[SYNC WAYPOINT → ALUMNOS] Nuevo waypoint #{waypoint.get('num')} - {waypoint.get('captura')}")
+        socketio.emit('waypoint_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en waypoint_sync: {e}")
+
+# Sincronización del modal de instrucciones de ruta
+@socketio.on('route_instructions_modal_sync')
+def handle_route_instructions_modal_sync(payload):
+    """Sincroniza apertura/cierre del modal de instrucciones de ruta - SOLO A ALUMNOS"""
+    try:
+        action = payload.get('action')
+        print(f"[SYNC MODAL INSTRUCCIONES → ALUMNOS] {action.upper()}")
+        socketio.emit('route_instructions_modal_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en route_instructions_modal_sync: {e}")
+
+# Sincronización del modal de crear waypoint
+@socketio.on('waypoint_modal_sync')
+def handle_waypoint_modal_sync(payload):
+    """Sincroniza el modal de crear waypoint (abrir/cerrar/cambiar tipo) - SOLO A ALUMNOS"""
+    try:
+        action = payload.get('action')
+        if action == 'open':
+            print(f"[SYNC MODAL WAYPOINT → ALUMNOS] ABRIR - Waypoint #{payload.get('waypointNum')}")
+        elif action == 'close':
+            print(f"[SYNC MODAL WAYPOINT → ALUMNOS] CERRAR")
+        elif action == 'change_type':
+            print(f"[SYNC MODAL WAYPOINT → ALUMNOS] CAMBIO TIPO -> {payload.get('selectedType')}")
+        socketio.emit('waypoint_modal_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en waypoint_modal_sync: {e}")
+
 # ==================================================================================
 # FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_CONTROL
 # ==================================================================================

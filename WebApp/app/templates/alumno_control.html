@@ -1556,6 +1556,8 @@
             padding: 20px 22px;
             max-width: 360px;
             width: 85%;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             animation: confirmSlideIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             margin: 10px;
@@ -2856,8 +2858,7 @@
     <div id="waypoint-modal" class="waypoint-modal-overlay">
         <div class="waypoint-modal-content">
             <div class="waypoint-modal-header">
-                <div class="waypoint-modal-icon">📍</div>
-                <div class="waypoint-modal-title">Nuevo Waypoint</div>
+                <div class="waypoint-modal-title">📍 Nuevo Waypoint</div>
                 <div class="waypoint-modal-subtitle">Punto <span id="waypoint-number">1</span></div>
             </div>
             <div class="waypoint-modal-body">
@@ -2957,10 +2958,73 @@
         `;
     }
     
+    // Función para crear el SVG del marcador de waypoint en forma de pin
+    function createWaypointPinSVG(number, color = "#FFC107") {
+        // Determinar color de sombra basado en el color principal
+        let shadowColor = color === "#FFC107" ? "#F57C00" : 
+                        color === "#2196F3" ? "#1565C0" : "#C62828";
+        
+        return `
+            <svg width="32" height="44" viewBox="0 0 40 60" xmlns="http://www.w3.org/2000/svg">
+                <!-- Sombra del pin -->
+                <ellipse cx="20" cy="58" rx="8" ry="2" fill="rgba(0,0,0,0.3)"/>
+                
+                <!-- Pin principal con gradiente -->
+                <defs>
+                    <linearGradient id="pinGradient${number}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:${shadowColor};stop-opacity:1" />
+                    </linearGradient>
+                    <filter id="pinShadow${number}" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                        <feOffset dx="0" dy="2" result="offsetblur"/>
+                        <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.3"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                
+                <!-- Forma del pin con sombra -->
+                <path d="M20 2C10.6 2 3 9.6 3 19C3 31 20 54 20 54C20 54 37 31 37 19C37 9.6 29.4 2 20 2Z" 
+                      fill="url(#pinGradient${number})" 
+                      stroke="white" 
+                      stroke-width="2"
+                      filter="url(#pinShadow${number})"/>
+                
+                <!-- Círculo interno blanco -->
+                <circle cx="20" cy="19" r="11" fill="white" opacity="0.95"/>
+                
+                <!-- Borde del círculo interno -->
+                <circle cx="20" cy="19" r="11" fill="none" stroke="${shadowColor}" stroke-width="1.5" opacity="0.3"/>
+                
+                <!-- Número del waypoint -->
+                <text x="20" y="25" 
+                      font-family="Arial, sans-serif" 
+                      font-size="14" 
+                      font-weight="bold" 
+                      text-anchor="middle" 
+                      fill="${shadowColor}">${number}</text>
+            </svg>
+        `;
+    }
+    
     var DirectionArrow = L.Icon.extend({
         options: {
             iconSize: [arrowSize, arrowSize],
             iconAnchor: [arrowAnchor, arrowAnchor]
+        }
+    });
+    
+    // Definir el icono de waypoint personalizado
+    var WaypointIcon = L.Icon.extend({
+        options: {
+            iconSize: [32, 44],
+            iconAnchor: [16, 43],  // Punto de anclaje en la punta inferior del pin
+            popupAnchor: [0, -43]  // Punto de anclaje para popups
         }
     });
     
@@ -3300,6 +3364,112 @@
         }
     });
     
+    // Sincronización de waypoints individuales
+    socket.on('waypoint_sync', (payload) => {
+        if (payload.action === 'add') {
+            console.log('[ALUMNO] 📍 Waypoint añadido por el profesor:', payload.waypoint);
+            
+            // Crear el marcador del waypoint
+            const waypointIcon = new WaypointIcon({
+                iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+                    createWaypointPinSVG(payload.waypoint.num, payload.color)
+                )
+            });
+            
+            const marker = L.marker([payload.waypoint.lat, payload.waypoint.lng], { 
+                icon: waypointIcon 
+            }).addTo(map);
+            waypointMarkers.push(marker);
+            
+            // Actualizar la polyline
+            const latLngs = waypointMarkers.map(m => m.getLatLng());
+            rutaPolyline.setLatLngs(latLngs);
+        }
+    });
+    
+    // Sincronización del modal de instrucciones de ruta
+    socket.on('route_instructions_modal_sync', (payload) => {
+        const modal = document.getElementById('modal-instrucciones');
+        
+        if (payload.action === 'open') {
+            console.log('[ALUMNO] 📖 Abriendo modal de instrucciones de ruta');
+            if (modal) {
+                modal.classList.add('show');
+            }
+        } else if (payload.action === 'close') {
+            console.log('[ALUMNO] 📖 Cerrando modal de instrucciones de ruta');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+    });
+    
+    // Sincronización del modal de crear waypoint
+    socket.on('waypoint_modal_sync', (payload) => {
+        const modal = document.getElementById('waypoint-modal');
+        
+        if (payload.action === 'open') {
+            console.log('[ALUMNO] 📌 Abriendo modal de waypoint #' + payload.waypointNum);
+            if (modal) {
+                // Actualizar número de waypoint
+                const waypointNumberEl = document.getElementById('waypoint-number');
+                if (waypointNumberEl) {
+                    waypointNumberEl.textContent = payload.waypointNum;
+                }
+                
+                // Resetear selección
+                const optionBtns = modal.querySelectorAll('.waypoint-option-btn');
+                optionBtns.forEach(btn => btn.classList.remove('selected'));
+                
+                // Seleccionar el tipo indicado
+                const selectedBtn = modal.querySelector(`.waypoint-option-btn.${payload.selectedType}`);
+                if (selectedBtn) {
+                    selectedBtn.classList.add('selected');
+                }
+                
+                // Mostrar/ocultar duración
+                const durationContainer = document.getElementById('waypoint-duration');
+                const durationInput = document.getElementById('waypoint-duration-input');
+                if (payload.selectedType === 'video') {
+                    durationContainer.classList.add('show');
+                    durationInput.value = payload.duration;
+                } else {
+                    durationContainer.classList.remove('show');
+                }
+                
+                // Mostrar modal
+                modal.classList.add('show');
+            }
+        } else if (payload.action === 'close') {
+            console.log('[ALUMNO] 📌 Cerrando modal de waypoint');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        } else if (payload.action === 'change_type') {
+            console.log('[ALUMNO] 📌 Cambio de tipo de captura:', payload.selectedType);
+            if (modal) {
+                // Actualizar selección
+                const optionBtns = modal.querySelectorAll('.waypoint-option-btn');
+                optionBtns.forEach(btn => btn.classList.remove('selected'));
+                
+                const selectedBtn = modal.querySelector(`.waypoint-option-btn.${payload.selectedType}`);
+                if (selectedBtn) {
+                    selectedBtn.classList.add('selected');
+                }
+                
+                // Mostrar/ocultar duración
+                const durationContainer = document.getElementById('waypoint-duration');
+                const durationInput = document.getElementById('waypoint-duration-input');
+                if (payload.selectedType === 'video') {
+                    durationContainer.classList.add('show');
+                    durationInput.value = payload.duration;
+                } else {
+                    durationContainer.classList.remove('show');
+                }
+            }
+        }
+    });
+    
     // Recibir waypoints de la ruta del profesor
     socket.on('ruta_waypoints', (waypoints) => {
         // Limpiar marcadores anteriores
@@ -3382,6 +3552,17 @@
     }
     
     // ===== FUNCIONES INTERACTIVAS PARA ALUMNO =====
+    
+    // Funciones placeholder para botones de modal (no hacen nada en vista alumno)
+    function cerrarModalInstrucciones() {
+        // No hacer nada - el alumno no puede cerrar el modal, solo el profesor
+        console.log('[ALUMNO] Intento de cerrar modal de instrucciones (ignorado)');
+    }
+    
+    function cerrarGaleria() {
+        // No hacer nada - el alumno no puede cerrar la galería, solo el profesor
+        console.log('[ALUMNO] Intento de cerrar galería (ignorado)');
+    }
     
     // Función para alternar pantalla completa
     function toggleFullscreen() {
