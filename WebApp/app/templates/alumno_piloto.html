@@ -1924,8 +1924,6 @@
             
             // Actualizar estado disabled
             button.disabled = data.disabled;
-            
-            console.log(`[SYNC BOTÓN] ${data.buttonId}: ${data.text}`);
         });
 
         // Sincronización del modal de instrucciones del mando
@@ -2010,13 +2008,51 @@
             console.log(`[ALUMNO] 📱 Dispositivo del profesor: ${data.isTouchDevice ? 'TÁCTIL (Móvil)' : 'NO TÁCTIL (Desktop con gamepad)'}`);
             
             const gamepadTelemetry = document.getElementById('gamepad-telemetry');
-            if (gamepadTelemetry) {
-                if (data.isTouchDevice) {
-                    // Profesor en móvil: ocultar telemetría del gamepad
-                    gamepadTelemetry.style.display = 'none';
-                } else {
-                    // Profesor en desktop: mostrar telemetría del gamepad
-                    gamepadTelemetry.style.display = 'flex';
+            const gamepadMappingSection = document.getElementById('gamepad-mapping-section');
+            
+            if (data.isTouchDevice) {
+                // Profesor en móvil: ocultar telemetría y mapeo del gamepad
+                if (gamepadTelemetry) gamepadTelemetry.style.display = 'none';
+                if (gamepadMappingSection) gamepadMappingSection.style.display = 'none';
+            } else {
+                // Profesor en desktop: mostrar telemetría y mapeo del gamepad
+                if (gamepadTelemetry) gamepadTelemetry.style.display = 'flex';
+                if (gamepadMappingSection) gamepadMappingSection.style.display = 'block';
+            }
+            
+            // Si viene el buttonMapping del profesor, actualizarlo
+            if (data.buttonMapping) {
+                console.log('[ALUMNO] 🎮 Actualizando buttonMapping inicial:', data.buttonMapping);
+                
+                const buttonNames = {
+                    0: 'Botón 1 / Botón Y',
+                    1: 'Botón 2 / Botón B',
+                    2: 'Botón 3 / Botón A',
+                    3: 'Botón 4 / Botón X',
+                    4: 'L1 / LB',
+                    5: 'R1 / RB',
+                    6: 'L2 / LT',
+                    7: 'R2 / RT',
+                    8: 'Select',
+                    9: 'Start',
+                    10: 'L3',
+                    11: 'R3',
+                    12: 'D-Pad Arriba',
+                    13: 'D-Pad Abajo',
+                    14: 'D-Pad Izquierda',
+                    15: 'D-Pad Derecha',
+                    16: 'Home'
+                };
+                
+                const mapping = data.buttonMapping;
+                for (let action in mapping) {
+                    const buttonIndex = mapping[action];
+                    const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
+                    const button = document.getElementById(`${action}RemapButton`);
+                    
+                    if (button) {
+                        button.innerHTML = `<span class="remap-icon">🎯</span> <span id="${action}ButtonLabel">${buttonName}</span>`;
+                    }
                 }
             }
         });
@@ -2033,6 +2069,189 @@
                     statusElement.textContent = 'Desconectado';
                     statusElement.style.color = '#f44336'; // Rojo
                     console.log('[ALUMNO] 🎮 Gamepad: Desconectado');
+                }
+            }
+        });
+
+        // Sincronización de navegación por ajustes
+        socket.on('settings_navigation_sync', (data) => {
+            console.log('📥 [ALUMNO] Recibido settings_navigation_sync:', data);
+            
+            const settingsContent = document.querySelector('.settings-content');
+            if (!settingsContent) {
+                console.log('❌ [ALUMNO] No se encontró settings-content');
+                return;
+            }
+            
+            // Construir el mismo array que usa el profesor
+            let navigableItems = [];
+            
+            // Añadir sliders (setting-item que NO sean button-mapping-item)
+            const sliders = settingsContent.querySelectorAll('.setting-item:not(.button-mapping-item)');
+            sliders.forEach(item => {
+                const slider = item.querySelector('.setting-slider');
+                if (slider) {
+                    navigableItems.push(item);
+                }
+            });
+            
+            console.log('🔍 [ALUMNO] Sliders encontrados:', navigableItems.length);
+            
+            // Añadir botones de remapeo (si están visibles)
+            const gampadMappingSection = document.getElementById('gamepad-mapping-section');
+            if (gampadMappingSection && gampadMappingSection.style.display !== 'none') {
+                const remapItems = settingsContent.querySelectorAll('.button-mapping-item');
+                remapItems.forEach(item => {
+                    const button = item.querySelector('.remap-button');
+                    if (button) {
+                        navigableItems.push(item);
+                    }
+                });
+                console.log('🔍 [ALUMNO] Total con remapeo:', navigableItems.length);
+            }
+            
+            // Quitar resaltado de todos los elementos
+            navigableItems.forEach(item => {
+                item.classList.remove('gamepad-selected');
+            });
+            
+            // Resaltar el elemento seleccionado por el profesor
+            const itemIndex = data.itemIndex;
+            if (itemIndex >= 0 && itemIndex < navigableItems.length) {
+                const selectedItem = navigableItems[itemIndex];
+                selectedItem.classList.add('gamepad-selected');
+                selectedItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                console.log(`✅ [ALUMNO] Highlighting item ${itemIndex} de ${navigableItems.length}`);
+            } else {
+                console.log(`❌ [ALUMNO] Index ${itemIndex} fuera de rango (0-${navigableItems.length-1})`);
+            }
+        });
+
+        // Sincronización de remapeo de botones
+        socket.on('button_remap_sync', (data) => {
+            console.log('🎯 [ALUMNO] Recibido button_remap_sync:', data);
+            
+            const action = data.action;
+            const buttonName = data.buttonName;
+            
+            // Actualizar el botón de remapeo correspondiente
+            const button = document.getElementById(`${action}RemapButton`);
+            if (button) {
+                button.classList.remove('listening');
+                button.innerHTML = `<span class="remap-icon">🎯</span> <span id="${action}ButtonLabel">${buttonName}</span>`;
+                console.log(`✅ [ALUMNO] Botón ${action} actualizado a: ${buttonName}`);
+            } else {
+                console.log(`❌ [ALUMNO] No se encontró botón: ${action}RemapButton`);
+            }
+        });
+
+        // Sincronización de estado de remapeo (listening/cancelled)
+        socket.on('remap_state_sync', (data) => {
+            console.log('🎯 [ALUMNO] Recibido remap_state_sync:', data);
+            
+            const action = data.action;
+            const state = data.state;
+            const button = document.getElementById(`${action}RemapButton`);
+            
+            if (!button) {
+                console.log(`❌ [ALUMNO] No se encontró botón: ${action}RemapButton`);
+                return;
+            }
+            
+            if (state === 'listening') {
+                // Poner botón en estado de espera (verde)
+                button.classList.add('listening');
+                button.innerHTML = '<span class="remap-icon">⏳</span> Presiona un botón...';
+                console.log(`✅ [ALUMNO] Botón ${action} en estado listening`);
+            } else if (state === 'cancelled') {
+                // Restaurar botón a estado normal
+                button.classList.remove('listening');
+                // El texto se restaurará con el mapeo actual
+                console.log(`✅ [ALUMNO] Remapeo de ${action} cancelado`);
+            }
+        });
+
+        // Sincronización de acciones de ajustes (apply/reset)
+        socket.on('settings_action_sync', (data) => {
+            console.log('⚙️ [ALUMNO] Recibido settings_action_sync:', data);
+            
+            const action = data.action;
+            
+            if (action === 'apply') {
+                console.log('✅ [ALUMNO] Profesor aplicó los ajustes');
+                
+                // Mostrar feedback visual en el botón
+                const applyBtn = document.querySelector('.apply-btn');
+                if (applyBtn && data.buttonState === 'applied') {
+                    const originalText = applyBtn.innerHTML;
+                    const originalBackground = applyBtn.style.background;
+                    
+                    applyBtn.innerHTML = '✓ ¡Aplicado!';
+                    applyBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+                    
+                    setTimeout(() => {
+                        applyBtn.innerHTML = originalText;
+                        applyBtn.style.background = originalBackground || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    }, 1500);
+                }
+            } else if (action === 'reset') {
+                console.log('🔄 [ALUMNO] Profesor restauró los ajustes');
+                console.log('🔍 [ALUMNO] data.settings existe?', !!data.settings);
+                console.log('🔍 [ALUMNO] data.buttonMapping existe?', !!data.buttonMapping);
+                
+                // Si vienen los settings y buttonMapping, actualizarlos
+                if (data.settings) {
+                    // Actualizar sliders con valores por defecto
+                    const settings = data.settings;
+                    for (let key in settings) {
+                        const slider = document.getElementById(key + 'Slider');
+                        const valueSpan = document.getElementById(key + 'Value');
+                        if (slider && valueSpan) {
+                            slider.value = settings[key];
+                            valueSpan.textContent = settings[key];
+                        }
+                    }
+                }
+                
+                if (data.buttonMapping) {
+                    console.log('🔄 [ALUMNO] Actualizando buttonMapping:', data.buttonMapping);
+                    
+                    // Actualizar etiquetas de botones de remapeo
+                    const buttonNames = {
+                        0: 'Botón 1 / Botón Y',
+                        1: 'Botón 2 / Botón B',
+                        2: 'Botón 3 / Botón A',
+                        3: 'Botón 4 / Botón X',
+                        4: 'L1 / LB',
+                        5: 'R1 / RB',
+                        6: 'L2 / LT',
+                        7: 'R2 / RT',
+                        8: 'Select',
+                        9: 'Start',
+                        10: 'L3',
+                        11: 'R3',
+                        12: 'D-Pad Arriba',
+                        13: 'D-Pad Abajo',
+                        14: 'D-Pad Izquierda',
+                        15: 'D-Pad Derecha',
+                        16: 'Home'
+                    };
+                    
+                    const mapping = data.buttonMapping;
+                    for (let action in mapping) {
+                        const buttonIndex = mapping[action];
+                        const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
+                        const button = document.getElementById(`${action}RemapButton`);
+                        
+                        console.log(`  - ${action}: index=${buttonIndex}, name=${buttonName}`);
+                        
+                        if (button) {
+                            button.innerHTML = `<span class="remap-icon">🎯</span> <span id="${action}ButtonLabel">${buttonName}</span>`;
+                            console.log(`    ✅ Actualizado ${action}RemapButton`);
+                        } else {
+                            console.log(`    ❌ No se encontró ${action}RemapButton`);
+                        }
+                    }
                 }
             }
         });

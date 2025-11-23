@@ -2005,7 +2005,8 @@
             const isTouchDevice = !isDesktop();
             console.log('✅ Profesor conectado, enviando tipo de dispositivo:', isTouchDevice ? 'TÁCTIL' : 'NO TÁCTIL (DESKTOP)');
             socket.emit('professor_device_type', {
-                isTouchDevice: isTouchDevice
+                isTouchDevice: isTouchDevice,
+                buttonMapping: buttonMapping
             });
         });
 
@@ -2639,6 +2640,12 @@
 
             console.log(`🎯 Esperando botón para: ${action}`);
 
+            // Sincronizar con alumnos
+            socket.emit('remap_state_sync', {
+                action: action,
+                state: 'listening'
+            });
+
             // Auto-cancelar después de 10 segundos
             setTimeout(() => {
                 if (isRemapping && currentRemapAction === action) {
@@ -2664,6 +2671,12 @@
             }
 
             console.log('❌ Remapeo cancelado');
+
+            // Sincronizar con alumnos
+            socket.emit('remap_state_sync', {
+                action: action,
+                state: 'cancelled'
+            });
         }
 
         // Completar remapeo
@@ -2687,6 +2700,13 @@
             // Mostrar confirmación visual
             const buttonName = buttonNames[buttonIndex] || `Botón ${buttonIndex}`;
             console.log(`✅ ${action} remapeado a ${buttonName}`);
+
+            // Sincronizar con alumnos
+            socket.emit('button_remap_sync', {
+                action: action,
+                buttonIndex: buttonIndex,
+                buttonName: buttonName
+            });
 
             isRemapping = false;
             currentRemapAction = null;
@@ -3039,6 +3059,8 @@
 
         // Resaltar elemento seleccionado
         function highlightSettingItem(index) {
+            console.log('🔍 highlightSettingItem llamado con index:', index, 'total items:', settingsItems.length);
+            
             // Quitar resaltado anterior
             settingsItems.forEach(item => {
                 item.element.classList.remove('gamepad-selected');
@@ -3053,6 +3075,12 @@
                 item.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
                 currentSettingIndex = index;
+                
+                // Sincronizar con alumnos
+                console.log('📤 Emitiendo settings_navigation_sync con itemIndex:', index);
+                socket.emit('settings_navigation_sync', {
+                    itemIndex: index
+                });
             }
         }
 
@@ -3239,6 +3267,13 @@
                 updateAllButtonLabels();
                 
                 console.log('✅ Ajustes y mapeo restaurados a valores por defecto');
+                
+                // Sincronizar con alumnos
+                socket.emit('settings_action_sync', {
+                    action: 'reset',
+                    settings: currentSettings,
+                    buttonMapping: buttonMapping
+                });
             }
         }
 
@@ -3277,6 +3312,12 @@
             const originalText = applyBtn.innerHTML;
             applyBtn.innerHTML = '✓ ¡Aplicado!';
             applyBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+            
+            // Sincronizar con alumnos (incluye estado del botón)
+            socket.emit('settings_action_sync', {
+                action: 'apply',
+                buttonState: 'applied'
+            });
             
             setTimeout(() => {
                 applyBtn.innerHTML = originalText;

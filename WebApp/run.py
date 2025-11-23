@@ -191,7 +191,14 @@ def handle_join_alumno():
     if professor_device_info['isTouchDevice'] is not None:
         tipo = "TÁCTIL (Joystick)" if professor_device_info['isTouchDevice'] else "NO TÁCTIL (Cruceta)"
         print(f"  └─> Enviando info de dispositivo del profesor: {tipo}")
-        emit('professor_device_type', {'isTouchDevice': professor_device_info['isTouchDevice']})
+        payload = {'isTouchDevice': professor_device_info['isTouchDevice']}
+        
+        # Si hay buttonMapping guardado, enviarlo también
+        if 'buttonMapping' in professor_device_info:
+            payload['buttonMapping'] = professor_device_info['buttonMapping']
+            print(f"  └─> Enviando buttonMapping del profesor: {professor_device_info['buttonMapping']}")
+        
+        emit('professor_device_type', payload)
 
 # ==================================================================================
 
@@ -297,6 +304,52 @@ def handle_gamepad_status_sync(payload):
     except Exception as e:
         print(f"❌ Error en gamepad_status_sync: {e}")
 
+# Sincronización de navegación por ajustes
+@socketio.on('settings_navigation_sync')
+def handle_settings_navigation_sync(payload):
+    """Sincroniza el elemento seleccionado en ajustes - SOLO A ALUMNOS"""
+    try:
+        item_index = payload.get('itemIndex')
+        print(f"[SYNC NAVEGACIÓN AJUSTES → ALUMNOS] Item {item_index}")
+        socketio.emit('settings_navigation_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en settings_navigation_sync: {e}")
+
+# Sincronización de remapeo de botones
+@socketio.on('button_remap_sync')
+def handle_button_remap_sync(payload):
+    """Sincroniza el remapeo de botones del gamepad - SOLO A ALUMNOS"""
+    try:
+        action = payload.get('action')
+        button_name = payload.get('buttonName')
+        print(f"[SYNC REMAPEO → ALUMNOS] {action} → {button_name}")
+        socketio.emit('button_remap_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en button_remap_sync: {e}")
+
+# Sincronización de estado de remapeo (listening/cancelled)
+@socketio.on('remap_state_sync')
+def handle_remap_state_sync(payload):
+    """Sincroniza el estado del proceso de remapeo - SOLO A ALUMNOS"""
+    try:
+        action = payload.get('action')
+        state = payload.get('state')
+        print(f"[SYNC ESTADO REMAPEO → ALUMNOS] {action}: {state}")
+        socketio.emit('remap_state_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en remap_state_sync: {e}")
+
+# Sincronización de acciones de ajustes (apply/reset)
+@socketio.on('settings_action_sync')
+def handle_settings_action_sync(payload):
+    """Sincroniza acciones de aplicar/restaurar ajustes - SOLO A ALUMNOS"""
+    try:
+        action = payload.get('action')
+        print(f"[SYNC ACCIÓN AJUSTES → ALUMNOS] {action}")
+        socketio.emit('settings_action_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en settings_action_sync: {e}")
+
 # Sincronización de modal de galería
 @socketio.on('gallery_modal_sync')
 def handle_gallery_modal_sync(payload):
@@ -335,14 +388,18 @@ def handle_gallery_folder_sync(payload):
 # Sincronización del tipo de dispositivo del profesor
 @socketio.on('professor_device_type')
 def handle_professor_device_type(payload):
-    """Sincroniza el tipo de dispositivo del profesor (táctil/no táctil) - SOLO A ALUMNOS"""
+    """Sincroniza el tipo de dispositivo del profesor (táctil/no táctil) y su buttonMapping - SOLO A ALUMNOS"""
     try:
         is_touch = payload.get('isTouchDevice')
+        button_mapping = payload.get('buttonMapping')
         tipo = "TÁCTIL (Joystick)" if is_touch else "NO TÁCTIL (Cruceta)"
         print(f"[SYNC DISPOSITIVO PROFESOR → ALUMNOS] {tipo}")
         
-        # Guardar el tipo de dispositivo del profesor
+        # Guardar el tipo de dispositivo y buttonMapping del profesor
         professor_device_info['isTouchDevice'] = is_touch
+        if button_mapping:
+            professor_device_info['buttonMapping'] = button_mapping
+            print(f"[SYNC BUTTON MAPPING → ALUMNOS] {button_mapping}")
         
         # Emitir a todos los alumnos
         socketio.emit('professor_device_type', payload, room='alumnos')
