@@ -451,6 +451,18 @@ def handle_settings_initial_sync(payload):
     except Exception as e:
         print(f"❌ Error en settings_initial_sync: {e}")
 
+# Sincronización de botones de control (despegar, aterrizar, RTL)
+@socketio.on('pilot_button_sync')
+def handle_pilot_button_sync(payload):
+    """Sincroniza el estado de los botones de control del modo piloto - A TODOS LOS CLIENTES"""
+    try:
+        button_id = payload.get('buttonId')
+        text = payload.get('text')
+        print(f"[SYNC BOTÓN PILOTO → TODOS] {button_id}: {text}")
+        socketio.emit('pilot_button_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en pilot_button_sync: {e}")
+
 # ==================================================================================
 # FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_PILOTO
 # ==================================================================================

@@ -1758,10 +1758,6 @@
                 }
             }
 
-            // Actualizar estados de botones
-            if (data.state) {
-                updateButtonStates(data.state);
-            }
         });
 
         // Recibir stream de video (ya viene de run.py)
@@ -1855,6 +1851,28 @@
             }
         });
 
+        // Sincronización de botones de control (despegar, aterrizar, RTL)
+        socket.on('pilot_button_sync', (data) => {
+            const button = document.getElementById(data.buttonId);
+            if (!button) return;
+            
+            // Actualizar texto
+            button.textContent = data.text;
+            
+            // Resetear todas las clases de color
+            button.classList.remove('boton-verde', 'boton-amarillo', 'boton-rojo');
+            
+            // Agregar nuevas clases
+            if (data.classes && data.classes.length > 0) {
+                data.classes.forEach(cls => button.classList.add(cls));
+            }
+            
+            // Actualizar estado disabled
+            button.disabled = data.disabled;
+            
+            console.log(`[SYNC BOTÓN] ${data.buttonId}: ${data.text}`);
+        });
+
         function getStateColor(state) {
             const stateColors = {
                 'connected': '#4CAF50',
@@ -1866,104 +1884,6 @@
                 'disconnected': '#f44336'
             };
             return stateColors[state] || '#fff';
-        }
-
-        // Función para actualizar el estado de todos los botones según el estado del dron
-        function updateButtonStates(droneState) {
-            const botonDespegar = document.getElementById('botonDespegar');
-            const botonAterrizar = document.getElementById('botonAterrizar');
-            const botonRTL = document.getElementById('botonRTL');
-
-            // Resetear clases de todos los botones
-            function resetButtonClasses(button) {
-                button.classList.remove('boton-verde', 'boton-amarillo', 'boton-rojo');
-            }
-
-            switch (droneState) {
-                case 'connected':
-                    // Dron conectado pero en tierra
-                    volviendoABase = false;
-                    aterrizando = false;
-                    if (!despegando) {
-                        botonDespegar.disabled = false;
-                        botonDespegar.textContent = 'DESPEGAR';
-                        resetButtonClasses(botonDespegar);
-                    }
-                    
-                    botonAterrizar.disabled = true;
-                    botonAterrizar.textContent = 'ATERRIZAR';
-                    resetButtonClasses(botonAterrizar);
-                    
-                    botonRTL.disabled = true;
-                    botonRTL.textContent = 'RTL';
-                    resetButtonClasses(botonRTL);
-                    break;
-
-                case 'arming':
-                case 'takingOff':
-                    // Mantener amarillo mientras despega
-                    break;
-
-                case 'flying':
-                    // Dron volando - botón despegar en verde
-                    despegando = false;
-                    botonDespegar.disabled = true;
-                    botonDespegar.textContent = 'VOLANDO';
-                    resetButtonClasses(botonDespegar);
-                    botonDespegar.classList.add('boton-verde');
-                    
-                    // No resetear aterrizar si ya se ha activado
-                    if (!aterrizando) {
-                        botonAterrizar.disabled = false;
-                        botonAterrizar.textContent = 'ATERRIZAR';
-                        resetButtonClasses(botonAterrizar);
-                    }
-                    
-                    // No resetear RTL si ya se ha activado
-                    if (!volviendoABase) {
-                        botonRTL.disabled = false;
-                        botonRTL.textContent = 'RTL';
-                        resetButtonClasses(botonRTL);
-                    }
-                    break;
-
-                case 'landing':
-                    // Dron aterrizando
-                    aterrizando = true;
-                    botonDespegar.disabled = true;
-                    botonAterrizar.disabled = true;
-                    botonAterrizar.textContent = 'Aterrizando...';
-                    resetButtonClasses(botonAterrizar);
-                    botonAterrizar.classList.add('boton-amarillo');
-                    botonRTL.disabled = true;
-                    break;
-
-                case 'returning':
-                    // Dron volviendo a base (RTL)
-                    volviendoABase = true;
-                    botonDespegar.disabled = true;
-                    botonAterrizar.disabled = true;
-                    botonRTL.disabled = true;
-                    botonRTL.textContent = 'Volviendo a base...';
-                    resetButtonClasses(botonRTL);
-                    botonRTL.classList.add('boton-amarillo');
-                    break;
-
-                default:
-                    // Estado desconocido
-                    botonDespegar.disabled = true;
-                    botonDespegar.textContent = 'DESPEGAR';
-                    resetButtonClasses(botonDespegar);
-                    
-                    botonAterrizar.disabled = true;
-                    botonAterrizar.textContent = 'ATERRIZAR';
-                    resetButtonClasses(botonAterrizar);
-                    
-                    botonRTL.disabled = true;
-                    botonRTL.textContent = 'RTL';
-                    resetButtonClasses(botonRTL);
-                    break;
-            }
         }
 
         // Inicializar al cargar la página

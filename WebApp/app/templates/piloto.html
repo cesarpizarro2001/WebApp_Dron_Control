@@ -1829,6 +1829,14 @@
             botonDespegar.classList.remove('boton-verde');
             botonDespegar.classList.add('boton-amarillo');
             botonDespegar.disabled = true;
+            
+            // Sincronizar con alumnos
+            socket.emit('pilot_button_sync', {
+                buttonId: 'botonDespegar',
+                text: 'Despegando...',
+                classes: ['boton-amarillo'],
+                disabled: true
+            });
         }
 
         function aterrizarDron() {
@@ -1840,6 +1848,14 @@
             botonAterrizar.textContent = 'Aterrizando...';
             botonAterrizar.classList.add('boton-amarillo');
             botonAterrizar.disabled = true;
+            
+            // Sincronizar con alumnos
+            socket.emit('pilot_button_sync', {
+                buttonId: 'botonAterrizar',
+                text: 'Aterrizando...',
+                classes: ['boton-amarillo'],
+                disabled: true
+            });
         }
 
         function returnToLaunch() {
@@ -1851,6 +1867,14 @@
             botonRTL.textContent = 'Volviendo a base...';
             botonRTL.classList.add('boton-amarillo');
             botonRTL.disabled = true;
+            
+            // Sincronizar con alumnos
+            socket.emit('pilot_button_sync', {
+                buttonId: 'botonRTL',
+                text: 'Volviendo a base...',
+                classes: ['boton-amarillo'],
+                disabled: true
+            });
         }
 
         function goHome() {
@@ -2030,6 +2054,16 @@
             function resetButtonClasses(button) {
                 button.classList.remove('boton-verde', 'boton-amarillo', 'boton-rojo');
             }
+            
+            // Función auxiliar para sincronizar un botón
+            function syncButton(buttonId, text, classes, disabled) {
+                socket.emit('pilot_button_sync', {
+                    buttonId: buttonId,
+                    text: text,
+                    classes: classes,
+                    disabled: disabled
+                });
+            }
 
             switch (droneState) {
                 case 'connected':
@@ -2040,15 +2074,18 @@
                         botonDespegar.disabled = false;
                         botonDespegar.textContent = 'DESPEGAR';
                         resetButtonClasses(botonDespegar);
+                        syncButton('botonDespegar', 'DESPEGAR', [], false);
                     }
                     
                     botonAterrizar.disabled = true;
                     botonAterrizar.textContent = 'ATERRIZAR';
                     resetButtonClasses(botonAterrizar);
+                    syncButton('botonAterrizar', 'ATERRIZAR', [], true);
                     
                     botonRTL.disabled = true;
                     botonRTL.textContent = 'RTL';
                     resetButtonClasses(botonRTL);
+                    syncButton('botonRTL', 'RTL', [], true);
                     break;
 
                 case 'arming':
@@ -2063,12 +2100,14 @@
                     botonDespegar.textContent = 'VOLANDO';
                     resetButtonClasses(botonDespegar);
                     botonDespegar.classList.add('boton-verde');
+                    syncButton('botonDespegar', 'VOLANDO', ['boton-verde'], true);
                     
                     // No resetear aterrizar si ya se ha activado
                     if (!aterrizando) {
                         botonAterrizar.disabled = false;
                         botonAterrizar.textContent = 'ATERRIZAR';
                         resetButtonClasses(botonAterrizar);
+                        syncButton('botonAterrizar', 'ATERRIZAR', [], false);
                     }
                     
                     // No resetear RTL si ya se ha activado
@@ -2076,6 +2115,7 @@
                         botonRTL.disabled = false;
                         botonRTL.textContent = 'RTL';
                         resetButtonClasses(botonRTL);
+                        syncButton('botonRTL', 'RTL', [], false);
                     }
                     break;
 
@@ -2087,7 +2127,9 @@
                     botonAterrizar.textContent = 'Aterrizando...';
                     resetButtonClasses(botonAterrizar);
                     botonAterrizar.classList.add('boton-amarillo');
+                    syncButton('botonAterrizar', 'Aterrizando...', ['boton-amarillo'], true);
                     botonRTL.disabled = true;
+                    syncButton('botonRTL', 'RTL', [], true);
                     break;
 
                 case 'returning':
@@ -2099,6 +2141,8 @@
                     botonRTL.textContent = 'Volviendo a base...';
                     resetButtonClasses(botonRTL);
                     botonRTL.classList.add('boton-amarillo');
+                    syncButton('botonRTL', 'Volviendo a base...', ['boton-amarillo'], true);
+                    syncButton('botonAterrizar', 'ATERRIZAR', [], true);
                     break;
 
                 default:
@@ -2106,14 +2150,17 @@
                     botonDespegar.disabled = true;
                     botonDespegar.textContent = 'DESPEGAR';
                     resetButtonClasses(botonDespegar);
+                    syncButton('botonDespegar', 'DESPEGAR', [], true);
                     
                     botonAterrizar.disabled = true;
                     botonAterrizar.textContent = 'ATERRIZAR';
                     resetButtonClasses(botonAterrizar);
+                    syncButton('botonAterrizar', 'ATERRIZAR', [], true);
                     
                     botonRTL.disabled = true;
                     botonRTL.textContent = 'RTL';
                     resetButtonClasses(botonRTL);
+                    syncButton('botonRTL', 'RTL', [], true);
                     break;
             }
         }
