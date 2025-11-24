@@ -547,6 +547,37 @@ def handle_gamepad_modal_sync(payload):
 # FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_PILOTO
 # ==================================================================================
 
+# ==================================================================================
+# HANDLERS DE SINCRONIZACIÓN ALUMNO_MOVIMIENTO (movimiento.html -> alumno_movimiento.html)
+# Estos handlers retransmiten eventos del profesor a todos los alumnos
+# ==================================================================================
+
+# Sincronización de orientación del móvil (motion control)
+@socketio.on('motion_orientation_sync')
+def handle_motion_orientation_sync(payload):
+    """Sincroniza la orientación del móvil en tiempo real - A TODOS LOS CLIENTES"""
+    try:
+        # No imprimir en consola porque genera mucho spam (se actualiza constantemente)
+        socketio.emit('motion_orientation_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en motion_orientation_sync: {e}")
+
+# Sincronización de calibración de motion control
+@socketio.on('motion_calibration_sync')
+def handle_motion_calibration_sync(payload):
+    """Sincroniza el evento de calibración del motion control - A TODOS LOS CLIENTES"""
+    try:
+        side = payload.get('landscapeSide')
+        side_text = "IZQUIERDA" if side == 'LEFT' else "DERECHA"
+        print(f"[SYNC CALIBRACIÓN MOTION → TODOS] Cámara {side_text}")
+        socketio.emit('motion_calibration_sync', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error en motion_calibration_sync: {e}")
+
+# ==================================================================================
+# FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_MOVIMIENTO
+# ==================================================================================
+
 # Recibir comandos de la WebApp y reenviarlos a la Estación de Tierra
 @socketio.on('flight_event')
 def handle_flight_event(data):

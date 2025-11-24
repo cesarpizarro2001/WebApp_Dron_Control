@@ -988,57 +988,26 @@
         </div>
     </div>
 
-    <!-- Botones de control -->
+    <!-- Botones de control (deshabilitados para alumno) -->
     <div class="control-buttons">
-        <button class="control-btn" id="botonDespegar" onclick="despegarDron()">DESPEGAR</button>
-        <button class="control-btn" id="botonAterrizar" onclick="aterrizarDron()" disabled>ATERRIZAR</button>
-        <button class="control-btn" id="botonRTL" onclick="returnToLaunch()" disabled>RTL</button>
+        <button class="control-btn" id="botonDespegar" disabled>DESPEGAR</button>
+        <button class="control-btn" id="botonAterrizar" disabled>ATERRIZAR</button>
+        <button class="control-btn" id="botonRTL" disabled>RTL</button>
     </div>
 
     <script>
         const socket = io();
         let minimap = null;
         let dronMarker = null;
-    let directionArrow = null;
-    let minimapPrevZoom = null; // para restaurar zoom al salir de fullscreen
+        let directionArrow = null;
 
-        // Variables de orientación (móvil en HORIZONTAL/LANDSCAPE)
-        let beta = 0;  // En horizontal: controla ROLL (izquierda/derecha del dron)
-    let gamma = 0; // En horizontal: controla PITCH (adelante/atrás del dron)
-    let alpha = 0; // Rotación (yaw) - opcional
-
-        // Calibración
-        let calibratedBeta = 0;  // Posición neutra (móvil horizontal plano)
-        let calibratedGamma = 0;
-        let calibratedAlpha = 0; // Orientación (yaw) en momento de calibrar
-        let isCalibrated = false;
-        let landscapeSide = 'LEFT'; // LEFT (cámara izquierda) o RIGHT (cámara derecha)
-
-        // Estado del dron
-        let previousDroneState = null;
-        let despegando = false;
-        let volviendoABase = false;
-        let aterrizando = false;
-        let autoLoiterActivated = false;
-
-        // Control RC
-        let joystickState = {
-            throttle: 0,
-            yaw: 0,
-            pitch: 0,
-            roll: 0
-        };
-
-        // Límites de seguridad
-    const MAX_ANGLE_DEVIATION = 30; // ±30° desde la posición calibrada
-        const DEADZONE = 5; // Zona muerta de ±5°
+        // ==================== INICIALIZACIÓN ====================
 
         // Inicializar minimapa
         function initMinimap() {
             minimap = L.map('minimap', {
                 zoomControl: false,
                 attributionControl: false,
-                // permitir pasos de zoom de 0.5 para aplicar el ajuste en fullscreen
                 zoomSnap: 0.5,
                 zoomDelta: 0.5
             }).setView([41.2764, 1.9888], 18);
@@ -1075,747 +1044,187 @@
             `;
         }
 
-        // (El minimapa mantiene tamaño fijo por CSS; no es necesario reajustar por JS)
-
-        // Solicitar permisos y empezar a escuchar orientación
-        function initOrientation() {
-            if (typeof DeviceOrientationEvent !== 'undefined') {
-                // iOS 13+ requiere permiso explícito
-                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    DeviceOrientationEvent.requestPermission()
-                        .then(response => {
-                            if (response === 'granted') {
-                                window.addEventListener('deviceorientation', handleOrientation);
-                                console.log('✅ Permisos de orientación concedidos');
-                            } else {
-                                alert('⚠️ Se necesitan permisos de orientación para usar este modo');
-                            }
-                        })
-                        .catch(console.error);
-                } else {
-                    // Navegadores que no necesitan permiso
-                    window.addEventListener('deviceorientation', handleOrientation);
-                    console.log('✅ Escuchando orientación del dispositivo');
-                }
-            } else {
-                alert('⚠️ Tu dispositivo no soporta sensores de orientación');
-            }
-        }
-
-        // Detectar si el móvil está horizontal con cámara a la izquierda o derecha
-        function detectLandscapeSide(gammaValue) {
-            // En landscape izquierdo (cámara a la izquierda), gamma está cerca de 0 cuando el móvil está plano
-            // En landscape derecho (cámara a la derecha), gamma cambia radicalmente
-            // Usamos gamma para detectar: si gamma > 0 normalmente = LEFT, si gamma < 0 fuertemente = RIGHT
-            // Una heurística más robusta: medir si gamma está en rango "normal" de landscape LEFT (-45 a 45)
-            // o si está en el rango invertido de landscape RIGHT
-            
-            // Landscape LEFT típico: gamma entre -45 y +45 aproximadamente cuando está plano/inclinado
-            // Landscape RIGHT típico: gamma fuera de ese rango o en valores extremos
-            
-            // Mejor enfoque: usar window.orientation si está disponible
-            if (typeof window.orientation !== 'undefined') {
-                // window.orientation:
-                // 0 = portrait, 90 = landscape (cámara derecha), -90 = landscape (cámara izquierda), 180 = portrait invertido
-                if (window.orientation === -90) {
-                    return 'LEFT';
-                } else if (window.orientation === 90) {
-                    return 'RIGHT';
-                }
-            }
-            
-            // Fallback: detectar por el signo y magnitud de gamma
-            // En LEFT, gamma suele estar en rango manejable (-45 a +45)
-            // En RIGHT, los valores se invierten
-            if (gammaValue < -45 || gammaValue > 45) {
-                return 'RIGHT';
-            }
-            return 'LEFT';
-        }
-
-        // Corregir ángulos según la orientación del móvil
-        function fixAnglesForControl(betaValue, gammaValue) {
-            const side = detectLandscapeSide(gammaValue);
-            landscapeSide = side; // Actualizar variable global para referencia
-            
-            if (side === 'RIGHT') {
-                // Cuando la cámara está a la derecha:
-                // - Invertir gamma (pitch)
-                // - Invertir beta (roll)
-                return {
-                    beta: betaValue,
-                    gamma: gammaValue,
-                    side: side
-                };
-            }
-            
-            // Cámara a la izquierda: valores normales
-            return {
-                beta: -betaValue,
-                gamma: -gammaValue,
-                side: side
-            };
-        }
-
-        // Manejar cambios de orientación
-        function handleOrientation(event) {
-            // Leer ángulos del sensor
-            let rawBeta = event.beta || 0;   // -180 a 180 (en horizontal: roll del dron)
-            let rawGamma = event.gamma || 0; // -90 a 90 (en horizontal: pitch del dron)
-            alpha = event.alpha || 0; // 0 a 360 (rotación)
-            
-            // Protección contra gimbal lock: cuando gamma se acerca a ±90°,
-            // los valores de beta se vuelven inestables. Rechazamos lecturas en esta zona.
-            const GIMBAL_LOCK_THRESHOLD = 80; // Ignorar lecturas cuando |gamma| > 80°
-            if (Math.abs(rawGamma) > GIMBAL_LOCK_THRESHOLD) {
-                // Zona de gimbal lock detectada - mantener valores anteriores
-                return;
-            }
-            
-            // Corregir ángulos según orientación del móvil (cámara izquierda vs derecha)
-            const corrected = fixAnglesForControl(rawBeta, rawGamma);
-            
-            // Actualizar valores globales solo si la lectura es válida
-            beta = corrected.beta;
-            gamma = corrected.gamma;
-            
-            // Las cajas de ángulo ahora muestran el ángulo RELATIVO respecto a la posición neutra calibrada.
-            // (Se actualizan dentro de updatePhoneVisualization para usar los valores ya limitados/clamped)
-            // Actualizar visualización del teléfono
-            updatePhoneVisualization();
-
-            // Si está calibrado, calcular comandos de control
-            if (isCalibrated) {
-                calculateMotionCommands();
-            }
-        }
-
-        // Actualizar visualización 3D del teléfono (en posición horizontal)
-        function updatePhoneVisualization() {
-            const phoneContainer = document.getElementById('phone-container');
-
-            // Diferencias respecto a la posición calibrada
-            const betaDiff = beta - calibratedBeta;
-            const gammaDiff = gamma - calibratedGamma;
-
-            // Limitar visualización a ±30°
-            const displayBeta = Math.max(-MAX_ANGLE_DEVIATION, Math.min(MAX_ANGLE_DEVIATION, betaDiff));
-            const displayGamma = Math.max(-MAX_ANGLE_DEVIATION, Math.min(MAX_ANGLE_DEVIATION, gammaDiff));
-
-            // Aplicar transformación relativa al neutro
-            phoneContainer.style.transform = `rotateY(${displayBeta}deg) rotateX(${displayGamma}deg)`;
-
-            // Actualizar cajas de ángulo usando los mismos valores relativos y limitados
-            if (isCalibrated) {
-                document.getElementById('beta-value').textContent = displayBeta.toFixed(1);
-                document.getElementById('gamma-value').textContent = displayGamma.toFixed(1);
-            } else {
-                // Antes de calibrar mostramos 0 para indicar que se requiere calibración para valores relativos
-                document.getElementById('beta-value').textContent = '0.0';
-                document.getElementById('gamma-value').textContent = '0.0';
-            }
-        }
-
-
-        // Calibrar posición neutra
-        function calibrate() {
-            // Establecer neutro lógico para control
-            calibratedBeta = beta;
-            calibratedGamma = gamma;
-            calibratedAlpha = alpha; // Guardar orientación en momento de calibrar
-
-            isCalibrated = true;
-            
-            const sideText = landscapeSide === 'LEFT' ? '📱← Cámara IZQUIERDA' : '📱→ Cámara DERECHA';
-            const statusMsg = document.getElementById('status-message');
-            statusMsg.innerHTML = `✅ Calibrado correctamente<br>${sideText}<br>Mueve el móvil para controlar el dron`;
-            statusMsg.style.background = 'rgba(76, 175, 80, 0.2)';
-            statusMsg.style.borderColor = 'rgba(76, 175, 80, 0.5)';
-            statusMsg.style.color = '#4CAF50';
-            
-            console.log(`🎯 Calibrado: Beta=${calibratedBeta.toFixed(1)}°, Gamma=${calibratedGamma.toFixed(1)}°, Alpha=${calibratedAlpha.toFixed(1)}°, Side=${landscapeSide}`);
-            
-            // Sincronizar calibración con alumnos
-            socket.emit('motion_calibration_sync', {
-                landscapeSide: landscapeSide
-            });
-        }
-
-        // Calcular comandos de movimiento basados en la orientación (MÓVIL HORIZONTAL)
-        function calculateMotionCommands() {
-            // Calcular desviación desde la posición calibrada
-            const betaDiff = beta - calibratedBeta;
-            const gammaDiff = gamma - calibratedGamma;
-
-            // Aplicar zona muerta
-            const effectiveBetaDiff = Math.abs(betaDiff) < DEADZONE ? 0 : betaDiff;
-            const effectiveGammaDiff = Math.abs(gammaDiff) < DEADZONE ? 0 : gammaDiff;
-
-            // Limitar a rango seguro
-            const clampedBeta = Math.max(-MAX_ANGLE_DEVIATION, Math.min(MAX_ANGLE_DEVIATION, effectiveBetaDiff));
-            const clampedGamma = Math.max(-MAX_ANGLE_DEVIATION, Math.min(MAX_ANGLE_DEVIATION, effectiveGammaDiff));
-
-            // Mostrar advertencia si estamos en zona extrema
-            const warningZone = document.getElementById('warning-zone');
-            if (Math.abs(betaDiff) > MAX_ANGLE_DEVIATION || Math.abs(gammaDiff) > MAX_ANGLE_DEVIATION) {
-                warningZone.style.display = 'block';
-            } else {
-                warningZone.style.display = 'none';
-            }
-
-            // Normalizar a rango -1 a 1
-            // EN HORIZONTAL:
-            // Beta: negativo = izquierda, positivo = derecha (ROLL)
-            // Gamma: negativo = atrás, positivo = adelante (PITCH) - invertir signo para el dron
-            joystickState.roll = clampedBeta / MAX_ANGLE_DEVIATION;  // Roll: inclinación lateral
-            joystickState.pitch = -(clampedGamma / MAX_ANGLE_DEVIATION);  // Pitch: INVERTIDO - gamma positivo envía comando negativo para avanzar
-            
-            // Throttle y yaw se mantienen en 0 (controlados manualmente si es necesario)
-            joystickState.throttle = 0;
-            joystickState.yaw = 0;
-
-            // Actualizar indicador de dirección
-            updateDirectionIndicator();
-
-            // Enviar comandos al dron
-            sendMotionCommands();
-        }
-
-        // Actualizar indicador de dirección
-        function updateDirectionIndicator() {
-            const directionElement = document.getElementById('direction-value');
-            const pitch = joystickState.pitch;
-            const roll = joystickState.roll;
-
-            let direction = '';
-            let color = '#4CAF50';
-
-            if (Math.abs(pitch) < 0.1 && Math.abs(roll) < 0.1) {
-                direction = 'NEUTRO';
-                color = '#4CAF50';
-            } else {
-                // Determinar dirección principal
-                // Nota: pitch está invertido, así que pitch negativo = avanzar, pitch positivo = retroceder
-                if (Math.abs(pitch) > Math.abs(roll)) {
-                    if (pitch < 0) {
-                        direction = '⬆️ AVANZAR';
-                        color = '#2196F3';
-                    } else {
-                        direction = '⬇️ RETROCEDER';
-                        color = '#FF9800';
-                    }
-                } else {
-                    if (roll > 0) {
-                        direction = '➡️ DERECHA';
-                        color = '#9C27B0';
-                    } else {
-                        direction = '⬅️ IZQUIERDA';
-                        color = '#00BCD4';
-                    }
-                }
-
-                // Dirección diagonal
-                if (Math.abs(pitch) > 0.3 && Math.abs(roll) > 0.3) {
-                    if (pitch < 0 && roll > 0) direction = '↗️ ADELANTE-DERECHA';
-                    else if (pitch < 0 && roll < 0) direction = '↖️ ADELANTE-IZQUIERDA';
-                    else if (pitch > 0 && roll > 0) direction = '↘️ ATRÁS-DERECHA';
-                    else if (pitch > 0 && roll < 0) direction = '↙️ ATRÁS-IZQUIERDA';
-                    color = '#FFC107';
-                }
-            }
-
-            directionElement.textContent = direction;
-            directionElement.style.color = color;
-            
-            // Sincronizar orientación del móvil con alumnos
-            if (isCalibrated) {
-                const betaDiff = beta - calibratedBeta;
-                const gammaDiff = gamma - calibratedGamma;
-                const displayBeta = Math.max(-MAX_ANGLE_DEVIATION, Math.min(MAX_ANGLE_DEVIATION, betaDiff));
-                const displayGamma = Math.max(-MAX_ANGLE_DEVIATION, Math.min(MAX_ANGLE_DEVIATION, gammaDiff));
-                const warningZone = Math.abs(betaDiff) > MAX_ANGLE_DEVIATION || Math.abs(gammaDiff) > MAX_ANGLE_DEVIATION;
-                
-                socket.emit('motion_orientation_sync', {
-                    displayBeta: displayBeta,
-                    displayGamma: displayGamma,
-                    direction: direction,
-                    color: color,
-                    warningZone: warningZone
-                });
-            }
-        }
-
-        // Enviar comandos de movimiento
-        let lastSendTime = 0;
-        function sendMotionCommands() {
-            const now = Date.now();
-            if (now - lastSendTime < 50) return;  // 20Hz
-            lastSendTime = now;
-
-            const rcData = [
-                joystickState.throttle,
-                joystickState.yaw,
-                joystickState.pitch,
-                joystickState.roll
-            ];
-            
-            socket.emit('pilot_rc', rcData);
-        }
-
-        // Funciones de control del dron
-        function despegarDron() {
-            const altura = 3;
-            console.log('Despegando a', altura, 'metros');
-            socket.emit('command', { action: 'arm_takeOff', altura: String(altura), pilot_mode: true });
-            
-            despegando = true;
-            const botonDespegar = document.getElementById('botonDespegar');
-            botonDespegar.textContent = 'Despegando...';
-            botonDespegar.classList.remove('boton-verde');
-            botonDespegar.classList.add('boton-amarillo');
-            botonDespegar.disabled = true;
-            
-            // Sincronizar con alumnos
-            socket.emit('pilot_button_sync', {
-                buttonId: 'botonDespegar',
-                text: 'Despegando...',
-                classes: ['boton-amarillo'],
-                disabled: true
-            });
-        }
-
-        function aterrizarDron() {
-            console.log('Aterrizando');
-            socket.emit('pilot_action', { action: 'land' });
-            
-            aterrizando = true;
-            const botonAterrizar = document.getElementById('botonAterrizar');
-            botonAterrizar.textContent = 'Aterrizando...';
-            botonAterrizar.classList.add('boton-amarillo');
-            botonAterrizar.disabled = true;
-            
-            // Sincronizar con alumnos
-            socket.emit('pilot_button_sync', {
-                buttonId: 'botonAterrizar',
-                text: 'Aterrizando...',
-                classes: ['boton-amarillo'],
-                disabled: true
-            });
-        }
-
-        function returnToLaunch() {
-            console.log('RTL');
-            socket.emit('pilot_action', { action: 'rtl' });
-            
-            volviendoABase = true;
-            const botonRTL = document.getElementById('botonRTL');
-            botonRTL.textContent = 'Volviendo a base...';
-            botonRTL.classList.add('boton-amarillo');
-            botonRTL.disabled = true;
-            
-            // Sincronizar con alumnos
-            socket.emit('pilot_button_sync', {
-                buttonId: 'botonRTL',
-                text: 'Volviendo a base...',
-                classes: ['boton-amarillo'],
-                disabled: true
-            });
-        }
-
+        // ==================== FUNCIONES DUMMY (NO OPERATIVAS) ====================
+        
         function goHome() {
             window.location.href = '/';
         }
 
-        // Funciones de pantalla completa (como en piloto.html)
-        let isFullscreen = false;
+        // ==================== SOCKET LISTENERS ====================
 
-        function toggleFullscreen() {
-            const elem = document.documentElement;
-            if (!isFullscreen) {
-                if (elem.requestFullscreen) {
-                    elem.requestFullscreen();
-                } else if (elem.webkitRequestFullscreen) { // Safari
-                    elem.webkitRequestFullscreen();
-                } else if (elem.msRequestFullscreen) { // IE11
-                    elem.msRequestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { // Safari
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) { // IE11
-                    document.msExitFullscreen();
-                }
-            }
-        }
-
-        function handleFullscreenChange() {
-            const btn = document.getElementById('fullscreenBtn');
-            const icon = document.getElementById('fullscreenIcon');
-            isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
-            if (isFullscreen) {
-                document.body.classList.add('is-fullscreen');
-                if (btn) btn.classList.add('active');
-                if (icon) icon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>';
-                if (btn) btn.title = 'Salir de pantalla completa';
-                // Reducir el zoom del minimapa en 0.5
-                if (minimap) {
-                    minimapPrevZoom = minimap.getZoom();
-                    minimap.setZoom(minimapPrevZoom - 0.5);
-                }
-            } else {
-                document.body.classList.remove('is-fullscreen');
-                if (btn) btn.classList.remove('active');
-                if (icon) icon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
-                if (btn) btn.title = 'Pantalla completa';
-                // Restaurar zoom original del minimapa
-                if (minimap && minimapPrevZoom !== null) {
-                    minimap.setZoom(minimapPrevZoom);
-                    minimapPrevZoom = null;
-                }
-            }
-            // minimapa con tamaño fijo: sin reajuste JS
-        }
-
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        document.addEventListener('msfullscreenchange', handleFullscreenChange);
-
-        // Eventos Socket.IO
         socket.on('connect', () => {
-            console.log('Conectado al servidor');
+            console.log('👨‍🎓 Alumno conectado al servidor');
+            socket.emit('join_alumno');
         });
 
+        // Telemetría del dron
         socket.on('telemetry_info', (data) => {
-            // Actualizar estado
-            if (data.state !== undefined) {
-                const stateElement = document.getElementById('state');
-                stateElement.textContent = data.state;
-                stateElement.style.color = getStateColor(data.state);
-                
-                if (data.state !== previousDroneState) {
-                    console.log(`Estado: ${data.state}`);
-                    previousDroneState = data.state;
-                }
-                
-                // Activar modo piloto automáticamente al entrar en estado flying
-                if (data.state === 'flying' && !autoLoiterActivated && !volviendoABase && !aterrizando) {
-                    console.log('🎮 Dron en estado flying, activando modo piloto (RC loop + LOITER)...');
-                    socket.emit('command', { action: 'enable_pilot_mode' });
-                    autoLoiterActivated = true;
-                }
-                
-                if (data.state === 'connected') {
-                    autoLoiterActivated = false;
-                }
-            }
-            
-            // Actualizar altitud
-            if (data.alt !== undefined) {
-                document.getElementById('altitude').textContent = data.alt.toFixed(1);
-            }
-            
-            // Actualizar velocidad
-            if (data.groundSpeed !== undefined) {
-                document.getElementById('speed').textContent = data.groundSpeed.toFixed(1);
-            }
+            // Actualizar telemetría en la barra superior
+            document.getElementById('state').textContent = data.state || 'disconnected';
+            document.getElementById('altitude').textContent = data.relative_alt ? data.relative_alt.toFixed(1) : '0.0';
+            document.getElementById('speed').textContent = data.groundspeed ? data.groundspeed.toFixed(1) : '0.0';
 
-            // Actualizar minimapa
-            if (data.lat && data.lon && minimap) {
-                const newPos = [data.lat, data.lon];
-                dronMarker.setLatLng(newPos);
-                minimap.setView(newPos);
-                
-                if (data.heading !== undefined) {
-                    const mapContainer = document.getElementById('minimap');
-                    mapContainer.style.transform = `rotate(${-data.heading}deg)`;
-                    
-                    if (directionArrow) {
-                        directionArrow.setLatLng(newPos);
-                        directionArrow.setIcon(L.icon({
-                            iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(data.heading)),
-                            iconSize: [100, 100],
-                            iconAnchor: [50, 50]
-                        }));
-                    }
-                }
-            }
+            // Actualizar posición en el minimapa
+            if (data.lat && data.lon && dronMarker && minimap) {
+                const newLatLng = [data.lat, data.lon];
+                dronMarker.setLatLng(newLatLng);
+                minimap.setView(newLatLng);
 
-            // Actualizar estados de botones
-            if (data.state) {
-                updateButtonStates(data.state);
+                // Actualizar flecha de dirección
+                if (directionArrow) {
+                    directionArrow.setLatLng(newLatLng);
+                    const heading = data.heading || 0;
+                    const newIcon = L.icon({
+                        iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(createArrowSVG(heading)),
+                        iconSize: [100, 100],
+                        iconAnchor: [50, 50]
+                    });
+                    directionArrow.setIcon(newIcon);
+                }
             }
         });
 
-        function getStateColor(state) {
-            const stateColors = {
-                'connected': '#4CAF50',
-                'arming': '#FFC107',
-                'takingOff': '#FFA500',
-                'flying': '#4CAF50',
-                'landing': '#FFC107',
-                'returning': '#FFC107',
-                'disconnected': '#f44336'
-            };
-            return stateColors[state] || '#fff';
-        }
-
-    // La barra superior es fija; el espaciador bajo la barra
-    // y la variable --topbar-height aseguran que el contenido
-    // no quede tapado en ningún dispositivo.
-
-        function updateButtonStates(droneState) {
-            const botonDespegar = document.getElementById('botonDespegar');
-            const botonAterrizar = document.getElementById('botonAterrizar');
-            const botonRTL = document.getElementById('botonRTL');
-
-            function resetButtonClasses(button) {
-                button.classList.remove('boton-verde', 'boton-amarillo', 'boton-rojo');
+        // Sincronización de botones de control
+        socket.on('pilot_button_sync', (data) => {
+            const button = document.getElementById(data.buttonId);
+            if (!button) return;
+            
+            // Actualizar texto
+            button.textContent = data.text;
+            
+            // Resetear todas las clases de color
+            button.classList.remove('boton-verde', 'boton-amarillo', 'boton-rojo');
+            
+            // Agregar nuevas clases
+            if (data.classes && data.classes.length > 0) {
+                data.classes.forEach(cls => button.classList.add(cls));
             }
             
-            // Función auxiliar para sincronizar un botón
-            function syncButton(buttonId, text, classes, disabled) {
-                socket.emit('pilot_button_sync', {
-                    buttonId: buttonId,
-                    text: text,
-                    classes: classes,
-                    disabled: disabled
-                });
+            // Actualizar estado disabled (siempre disabled para alumno, pero actualizamos estilo visual)
+            // Los botones del alumno siempre están disabled, solo cambiamos su apariencia
+        });
+
+        // ========== SINCRONIZACIÓN DE ORIENTACIÓN DEL MÓVIL ==========
+
+        // Sincronización de la orientación del móvil del profesor
+        socket.on('motion_orientation_sync', (data) => {
+            // Actualizar visualización 3D del teléfono
+            const phoneContainer = document.getElementById('phone-container');
+            phoneContainer.style.transform = `rotateY(${data.displayBeta}deg) rotateX(${data.displayGamma}deg)`;
+
+            // Actualizar valores de ángulos
+            document.getElementById('beta-value').textContent = data.displayBeta.toFixed(1);
+            document.getElementById('gamma-value').textContent = data.displayGamma.toFixed(1);
+
+            // Actualizar dirección del dron
+            const directionElement = document.getElementById('direction-value');
+            directionElement.textContent = data.direction;
+            directionElement.style.color = data.color;
+
+            // Mostrar/ocultar zona de advertencia
+            const warningZone = document.getElementById('warning-zone');
+            warningZone.style.display = data.warningZone ? 'block' : 'none';
+        });
+
+        // Sincronización de calibración
+        socket.on('motion_calibration_sync', (data) => {
+            const side = data.landscapeSide;
+            const sideText = side === 'LEFT' ? '📱← Cámara IZQUIERDA' : '📱→ Cámara DERECHA';
+            console.log(`🎯 Profesor calibró: ${sideText}`);
+            
+            // Actualizar mensaje de estado si existe
+            const statusMsg = document.getElementById('status-message');
+            if (statusMsg) {
+                statusMsg.innerHTML = `✅ Profesor calibrado<br>${sideText}<br>Visualizando movimiento del profesor`;
+                statusMsg.style.background = 'rgba(76, 175, 80, 0.2)';
+                statusMsg.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+                statusMsg.style.color = '#4CAF50';
             }
+        });
 
-            switch (droneState) {
-                case 'connected':
-                    volviendoABase = false;
-                    aterrizando = false;
-                    if (!despegando) {
-                        botonDespegar.disabled = false;
-                        botonDespegar.textContent = 'DESPEGAR';
-                        resetButtonClasses(botonDespegar);
-                        syncButton('botonDespegar', 'DESPEGAR', [], false);
-                    }
-                    
-                    botonAterrizar.disabled = true;
-                    botonAterrizar.textContent = 'ATERRIZAR';
-                    resetButtonClasses(botonAterrizar);
-                    syncButton('botonAterrizar', 'ATERRIZAR', [], true);
-                    
-                    botonRTL.disabled = true;
-                    botonRTL.textContent = 'RTL';
-                    resetButtonClasses(botonRTL);
-                    syncButton('botonRTL', 'RTL', [], true);
-                    break;
+        // ========== SINCRONIZACIÓN DE AJUSTES ==========
 
-                case 'flying':
-                    despegando = false;
-                    botonDespegar.disabled = true;
-                    botonDespegar.textContent = 'VOLANDO';
-                    resetButtonClasses(botonDespegar);
-                    botonDespegar.classList.add('boton-verde');
-                    syncButton('botonDespegar', 'VOLANDO', ['boton-verde'], true);
-                    
-                    if (!aterrizando) {
-                        botonAterrizar.disabled = false;
-                        botonAterrizar.textContent = 'ATERRIZAR';
-                        resetButtonClasses(botonAterrizar);
-                        syncButton('botonAterrizar', 'ATERRIZAR', [], false);
-                    }
-                    
-                    if (!volviendoABase) {
-                        botonRTL.disabled = false;
-                        botonRTL.textContent = 'RTL';
-                        resetButtonClasses(botonRTL);
-                        syncButton('botonRTL', 'RTL', [], false);
-                    }
-                    break;
-
-                case 'landing':
-                    aterrizando = true;
-                    botonDespegar.disabled = true;
-                    botonAterrizar.disabled = true;
-                    botonAterrizar.textContent = 'Aterrizando...';
-                    resetButtonClasses(botonAterrizar);
-                    botonAterrizar.classList.add('boton-amarillo');
-                    syncButton('botonAterrizar', 'Aterrizando...', ['boton-amarillo'], true);
-                    botonRTL.disabled = true;
-                    break;
-
-                case 'returning':
-                    volviendoABase = true;
-                    botonDespegar.disabled = true;
-                    botonAterrizar.disabled = true;
-                    botonRTL.disabled = true;
-                    botonRTL.textContent = 'Volviendo a base...';
-                    resetButtonClasses(botonRTL);
-                    syncButton('botonRTL', 'Volviendo a base...', ['boton-amarillo'], true);
-                    botonRTL.classList.add('boton-amarillo');
-                    break;
-
-                default:
-                    botonDespegar.disabled = true;
-                    botonAterrizar.disabled = true;
-                    botonRTL.disabled = true;
-                    break;
-            }
-        }
-
-        // Ajuste dinámico de la altura real de la barra fija
-        function setupTopbarOffset() {
-            const apply = () => {
-                const tb = document.querySelector('.top-bar');
-                if (!tb) return;
-                const rect = tb.getBoundingClientRect();
-                const measured = Math.max(tb.offsetHeight || 0, rect.height || 0);
-                // Altura real de la barra (incluye safe-area si el navegador lo aplica)
-                const h = Math.ceil(measured);
-                document.documentElement.style.setProperty('--topbar-height', h + 'px');
-            };
-            apply();
-            const tb = document.querySelector('.top-bar');
-            if (window.ResizeObserver && tb) {
-                const ro = new ResizeObserver(() => apply());
-                ro.observe(tb);
-            }
-            window.addEventListener('resize', apply);
-            window.addEventListener('orientationchange', apply);
-            window.addEventListener('pageshow', apply);
-        }
-
-        // ========== FUNCIONES DEL PANEL DE AJUSTES ==========
-        
-        // Valores por defecto de los parámetros
-        const defaultSettings = {
-            speedUp: 250,
-            speedDn: 150,
-            loitSpeed: 1250,
-            yawRate: 90,
-            accelZ: 250,
-            loitAcc: 500
-        };
-
-        // Valores actuales
-        let currentSettings = {...defaultSettings};
-
-        // Abrir/Cerrar panel de ajustes
-        function toggleSettings() {
+        // Sincronización de apertura/cierre del panel de ajustes
+        socket.on('settings_panel_sync', (data) => {
             const panel = document.getElementById('settingsPanel');
             const overlay = document.getElementById('settingsOverlay');
             
-            if (panel.classList.contains('open')) {
-                panel.classList.remove('open');
-                overlay.classList.remove('open');
-            } else {
+            if (data.open) {
                 panel.classList.add('open');
                 overlay.classList.add('open');
-                loadSettings();
-            }
-            
-            // Sincronizar con alumnos
-            const isOpen = panel.classList.contains('open');
-            socket.emit('settings_panel_sync', { 
-                open: isOpen,
-                settings: isOpen ? currentSettings : null  // Enviar valores actuales al abrir
-            });
-        }
-
-        // Actualizar valor del slider en tiempo real
-        function updateSliderValue(setting, value) {
-            const span = document.getElementById(setting + 'Value');
-            if (span) span.textContent = value;
-            currentSettings[setting] = parseFloat(value);
-            
-            // Sincronizar cambio de slider con alumnos
-            socket.emit('slider_value_sync', {
-                setting: setting,
-                value: value
-            });
-        }
-
-        // Cargar ajustes guardados (o valores por defecto)
-        function loadSettings() {
-            const saved = localStorage.getItem('pilotSettings');
-            if (saved) {
-                try {
-                    currentSettings = {...defaultSettings, ...JSON.parse(saved)};
-                } catch (e) {
-                    console.error('Error cargando ajustes:', e);
-                    currentSettings = {...defaultSettings};
-                }
-            }
-            for (const key in currentSettings) {
-                const slider = document.getElementById(key + 'Slider');
-                const valueSpan = document.getElementById(key + 'Value');
-                if (slider && valueSpan) {
-                    slider.value = currentSettings[key];
-                    valueSpan.textContent = currentSettings[key];
-                }
-            }
-        }
-
-        // Restaurar valores por defecto
-        function resetSettings() {
-            if (confirm('¿Restaurar todos los ajustes a los valores por defecto?')) {
-                currentSettings = {...defaultSettings};
-                for (const key in defaultSettings) {
-                    const slider = document.getElementById(key + 'Slider');
-                    const valueSpan = document.getElementById(key + 'Value');
-                    if (slider && valueSpan) {
-                        slider.value = defaultSettings[key];
-                        valueSpan.textContent = defaultSettings[key];
+                
+                // Si vienen los valores actuales del profesor, actualizarlos
+                if (data.settings) {
+                    for (let key in data.settings) {
+                        const slider = document.getElementById(key + 'Slider');
+                        const valueSpan = document.getElementById(key + 'Value');
+                        if (slider && valueSpan) {
+                            slider.value = data.settings[key];
+                            valueSpan.textContent = data.settings[key];
+                        }
                     }
                 }
-                localStorage.setItem('pilotSettings', JSON.stringify(currentSettings));
-                
-                // Sincronizar con alumnos
-                socket.emit('settings_action_sync', {
-                    action: 'reset',
-                    settings: currentSettings
-                });
-                
-                applySettings();
+            } else {
+                panel.classList.remove('open');
+                overlay.classList.remove('open');
             }
-        }
+        });
 
-        // Aplicar ajustes al dron
-        function applySettings() {
-            // Guardar ajustes
-            localStorage.setItem('pilotSettings', JSON.stringify(currentSettings));
-            // Construir parámetros para enviar (idéntico a piloto, sólo parámetros de vuelo)
-            const params = [
-                {ID: 'PILOT_SPEED_UP', Value: currentSettings.speedUp},
-                {ID: 'PILOT_SPEED_DN', Value: currentSettings.speedDn},
-                {ID: 'LOIT_SPEED', Value: currentSettings.loitSpeed},
-                {ID: 'ATC_RATE_Y_MAX', Value: currentSettings.yawRate},
-                {ID: 'PILOT_ACCEL_Z', Value: currentSettings.accelZ},
-                {ID: 'LOIT_ACC_MAX', Value: currentSettings.loitAcc}
-            ];
-            socket.emit('set_parameters', params);
-            console.log('✅ Aplicando parámetros:', params);
-            const applyBtn = document.querySelector('.apply-btn');
-            const originalText = applyBtn.innerHTML;
-            applyBtn.innerHTML = '✓ ¡Aplicado!';
-            applyBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+        // Sincronización de valores de sliders
+        socket.on('slider_value_sync', (data) => {
+            const slider = document.getElementById(data.setting + 'Slider');
+            const valueSpan = document.getElementById(data.setting + 'Value');
             
-            // Sincronizar con alumnos (incluye estado del botón)
-            socket.emit('settings_action_sync', {
-                action: 'apply',
-                buttonState: 'applied'
-            });
-            
-            setTimeout(() => {
-                applyBtn.innerHTML = originalText;
-                applyBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                toggleSettings();
-            }, 1500);
-        }
+            if (slider && valueSpan) {
+                slider.value = data.value;
+                valueSpan.textContent = data.value;
+            }
+        });
 
-        // Inicializar
+        // Sincronización de acciones de ajustes (aplicar/resetear)
+        socket.on('settings_action_sync', (data) => {
+            const action = data.action;
+            
+            if (action === 'apply') {
+                console.log('✅ [ALUMNO] Profesor aplicó los ajustes');
+                
+                // Mostrar feedback visual en el botón
+                const applyBtn = document.querySelector('.apply-btn');
+                if (applyBtn && data.buttonState === 'applied') {
+                    const originalText = applyBtn.innerHTML;
+                    const originalBackground = applyBtn.style.background;
+                    
+                    applyBtn.innerHTML = '✓ ¡Aplicado!';
+                    applyBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+                    
+                    setTimeout(() => {
+                        applyBtn.innerHTML = originalText;
+                        applyBtn.style.background = originalBackground || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    }, 1500);
+                }
+            } else if (action === 'reset') {
+                console.log('🔄 [ALUMNO] Profesor restauró los ajustes');
+                
+                // Si vienen los settings, actualizarlos
+                if (data.settings) {
+                    const settings = data.settings;
+                    for (let key in settings) {
+                        const slider = document.getElementById(key + 'Slider');
+                        const valueSpan = document.getElementById(key + 'Value');
+                        if (slider && valueSpan) {
+                            slider.value = settings[key];
+                            valueSpan.textContent = settings[key];
+                        }
+                    }
+                }
+            }
+        });
+
+        // ==================== INICIO ====================
+        
         window.addEventListener('load', () => {
-            setupTopbarOffset();
             initMinimap();
-            initOrientation();
-            loadSettings(); // Cargar ajustes guardados
-            // minimapa con tamaño fijo: sin reajuste JS
+            console.log('👨‍🎓 Vista de alumno cargada - Solo visualización');
         });
     </script>
 </body>
