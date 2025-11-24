@@ -1423,6 +1423,8 @@
         }
 
         function goHome() {
+            // Sincronizar navegación con alumnos
+            socket.emit('page_navigation_sync', { page: 'control' });
             window.location.href = '/';
         }
 

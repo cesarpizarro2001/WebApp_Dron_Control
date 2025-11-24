@@ -1767,7 +1767,6 @@ if not connect_to_socketio_server():
 def processed_frame(data):
     # aqui entramos cada vez que recibimos un frame de la cámara del movil
     global latest_frame
-    print ("recibo frame de camara")
     frame_bytes = base64.b64decode(data.split(",")[1])
     # Convertir los bytes en un array NumPy
     np_arr = np.frombuffer(frame_bytes, np.uint8)

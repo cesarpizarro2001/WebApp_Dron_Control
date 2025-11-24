@@ -108,7 +108,6 @@ def draw_gesture_cheat_sheet(frame, gesture_images):
 # Recibimos los frames del video que nos envía la estación de tierra por el websocket, enviamos el frame al navegador
 @socketio.on('video_frame')
 def handle_video_frame(data):
-    print ("Recibo frame")
     socketio.emit('stream_frame', data)
 
 # Recibir comandos de la WebApp y reenviarlos a la Estación de Tierra
@@ -219,7 +218,6 @@ def handle_telemetry(data):
 def handle_button_style_sync(payload):
     """Sincroniza cambios de texto y clases CSS de botones principales - SOLO A ALUMNOS"""
     try:
-        print(f"[SYNC BOTONES → ALUMNOS] {payload.get('buttonId')} -> {payload.get('text')}")
         socketio.emit('button_style_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en button_style_sync: {e}")
@@ -595,6 +593,25 @@ def handle_motion_calibration_sync(payload):
 # FIN HANDLERS DE SINCRONIZACIÓN ALUMNO_MOVIMIENTO
 # ==================================================================================
 
+# ==================================================================================
+# SINCRONIZACIÓN DE NAVEGACIÓN ENTRE PÁGINAS
+# Cuando el profesor cambia de página, los alumnos le siguen automáticamente
+# ==================================================================================
+
+@socketio.on('page_navigation_sync')
+def handle_page_navigation_sync(payload):
+    """Sincroniza la navegación del profesor a los alumnos - SOLO A ALUMNOS"""
+    try:
+        page = payload.get('page')
+        print(f"[SYNC NAVEGACIÓN → ALUMNOS] Profesor fue a: {page}")
+        socketio.emit('page_navigation_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en page_navigation_sync: {e}")
+
+# ==================================================================================
+# FIN SINCRONIZACIÓN DE NAVEGACIÓN
+# ==================================================================================
+
 # Recibir comandos de la WebApp y reenviarlos a la Estación de Tierra
 @socketio.on('flight_event')
 def handle_flight_event(data):
@@ -633,15 +650,34 @@ def handle_flight_event(data):
 # Enviar frame de video del movil procesado al navegador y a la estación de tierra
 @socketio.on("frame_from_camera")
 def handle_video(data):
-    processed_frame = process_frame_hands (data)
-    socketio.emit("processed_frame", f"data:image/jpeg;base64,{processed_frame}")
+    processed_frame = process_frame_hands(data)
+    if processed_frame:
+        socketio.emit("processed_frame", f"data:image/jpeg;base64,{processed_frame}")
 
 # Procesa el video que se recibe de la cámara del móvil
 def process_frame_hands(data):
     try:
+        # Validar que los datos no estén vacíos
+        if not data or ',' not in data:
+            return None
+            
         img_data = base64.b64decode(data.split(",")[1])
+        
+        # Validar que los datos decodificados no estén vacíos
+        if len(img_data) == 0:
+            return None
+            
         np_arr = np.frombuffer(img_data, np.uint8)
+        
+        # Validar que el array no esté vacío
+        if np_arr.size == 0:
+            return None
+            
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        
+        # Validar que el frame se haya decodificado correctamente
+        if frame is None or frame.size == 0:
+            return None
 
         # Convertir a RGB para MediaPipe
         image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

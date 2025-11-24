@@ -2269,6 +2269,31 @@
             return stateColors[state] || '#fff';
         }
 
+        // ==================================================================================
+        // SINCRONIZACIÓN DE NAVEGACIÓN ENTRE PÁGINAS
+        // Cuando el profesor cambia de página, el alumno le sigue automáticamente
+        // ==================================================================================
+        
+        socket.on('page_navigation_sync', (payload) => {
+            const page = payload.page;
+            console.log(`[ALUMNO] 🔄 Profesor navegó a: ${page}`);
+            
+            // Mapear página del profesor a página del alumno
+            const pageMap = {
+                'control': '/alumno_control',
+                'piloto': '/alumno_piloto',
+                'movimiento': '/alumno_movimiento'
+            };
+            
+            const alumnoPage = pageMap[page];
+            if (alumnoPage) {
+                console.log(`[ALUMNO] 🔄 Redirigiendo a: ${alumnoPage}`);
+                window.location.href = alumnoPage;
+            } else {
+                console.warn(`[ALUMNO] ⚠️ Página desconocida: ${page}`);
+            }
+        });
+
         // Inicializar al cargar la página
         window.addEventListener('load', () => {
             initMinimap();

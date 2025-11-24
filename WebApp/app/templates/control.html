@@ -3877,11 +3877,15 @@
 
         // Función para ir al modo piloto
         function irAModoPiloto() {
+            // Sincronizar navegación con alumnos
+            socket.emit('page_navigation_sync', { page: 'piloto' });
             window.location.href = '/piloto';
         }
 
         // Función para ir al modo movimiento
         function irAModoMovimiento() {
+            // Sincronizar navegación con alumnos
+            socket.emit('page_navigation_sync', { page: 'movimiento' });
             window.location.href = '/movimiento';
         }
 
