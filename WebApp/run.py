@@ -385,6 +385,23 @@ def handle_gallery_folder_sync(payload):
     except Exception as e:
         print(f"❌ Error en gallery_folder_sync: {e}")
 
+# Sincronización del modal de confirmación
+@socketio.on('confirm_modal_sync')
+def handle_confirm_modal_sync(payload):
+    """Sincroniza el modal de confirmación - SOLO A ALUMNOS"""
+    try:
+        action = payload.get('action')
+        if action == 'open':
+            title = payload.get('title', 'Confirmación')
+            print(f"[SYNC MODAL CONFIRMACIÓN → ALUMNOS] ABRIR - {title}")
+        else:
+            result = payload.get('result')
+            resultado_texto = 'ACEPTADO' if result else 'CANCELADO'
+            print(f"[SYNC MODAL CONFIRMACIÓN → ALUMNOS] CERRAR - {resultado_texto}")
+        socketio.emit('confirm_modal_sync', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en confirm_modal_sync: {e}")
+
 # Sincronización del tipo de dispositivo del profesor
 @socketio.on('professor_device_type')
 def handle_professor_device_type(payload):

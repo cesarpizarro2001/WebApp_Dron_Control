@@ -3384,6 +3384,15 @@
             // Actualizar la polyline
             const latLngs = waypointMarkers.map(m => m.getLatLng());
             rutaPolyline.setLatLngs(latLngs);
+        } else if (payload.action === 'clear_all') {
+            console.log('[ALUMNO] 🗑️ Profesor canceló la ruta - borrando todos los waypoints');
+            
+            // Limpiar todos los marcadores del mapa
+            waypointMarkers.forEach(m => map.removeLayer(m));
+            waypointMarkers = [];
+            
+            // Limpiar la polyline
+            rutaPolyline.setLatLngs([]);
         }
     });
     
@@ -3398,6 +3407,49 @@
             }
         } else if (payload.action === 'close') {
             console.log('[ALUMNO] 📖 Cerrando modal de instrucciones de ruta');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+    });
+    
+    // Sincronización del modal de confirmación
+    socket.on('confirm_modal_sync', (payload) => {
+        const modal = document.getElementById('confirm-modal');
+        
+        if (payload.action === 'open') {
+            console.log('[ALUMNO] ❓ Abriendo modal de confirmación:', payload.title);
+            if (modal) {
+                const iconEl = document.getElementById('confirm-icon');
+                const titleEl = document.getElementById('confirm-title');
+                const messageEl = document.getElementById('confirm-message');
+                const okBtn = document.getElementById('confirm-ok-btn');
+                
+                // Configurar contenido
+                iconEl.textContent = payload.icon;
+                titleEl.textContent = payload.title;
+                messageEl.textContent = payload.message;
+                
+                // Configurar estilo del botón OK según el tipo
+                okBtn.className = 'confirm-modal-button';
+                switch(payload.type) {
+                    case 'danger':
+                        okBtn.classList.add('confirm-modal-button-danger');
+                        break;
+                    case 'success':
+                        okBtn.classList.add('confirm-modal-button-confirm');
+                        break;
+                    case 'warning':
+                        okBtn.classList.add('confirm-modal-button-info');
+                        break;
+                    default:
+                        okBtn.classList.add('confirm-modal-button-info');
+                }
+                
+                modal.classList.add('show');
+            }
+        } else if (payload.action === 'close') {
+            console.log('[ALUMNO] ❓ Cerrando modal de confirmación');
             if (modal) {
                 modal.classList.remove('show');
             }

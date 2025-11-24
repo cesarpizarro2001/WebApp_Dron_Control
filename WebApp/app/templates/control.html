@@ -3211,6 +3211,15 @@
                 modal.classList.add('show');
                 console.log('Modal classList después de add:', modal.classList);
                 console.log('Modal display después de show:', window.getComputedStyle(modal).display);
+                
+                // Sincronizar con alumnos
+                socket.emit('confirm_modal_sync', {
+                    action: 'open',
+                    message: message,
+                    title: title,
+                    icon: icon,
+                    type: type
+                });
             });
         }
 
@@ -3257,6 +3266,12 @@
             // Restaurar estados
             cancelBtn.style.display = 'block';
             okBtn.textContent = 'Aceptar';
+            
+            // Sincronizar con alumnos
+            socket.emit('confirm_modal_sync', {
+                action: 'close',
+                result: result
+            });
             
             if (confirmResolve) {
                 confirmResolve(result);
@@ -3655,6 +3670,11 @@
             waypointMarkers = [];
             rutaPolyline.setLatLngs([]);
             
+            // Sincronizar con alumnos - borrar todos los waypoints
+            socket.emit('waypoint_sync', {
+                action: 'clear_all'
+            });
+            
             // Restaurar botón y ocultar contenedor de botones de ruta
             const botonRuta = document.getElementById('botonRuta');
             const rutaButtonsContainer = document.getElementById('rutaButtonsContainer');
@@ -3684,6 +3704,11 @@
         function cerrarModalInstrucciones() {
             const modal = document.getElementById('modal-instrucciones');
             modal.classList.remove('show');
+            
+            // Sincronizar con alumnos - modal instrucciones cerrado
+            socket.emit('route_instructions_modal_sync', {
+                action: 'close'
+            });
             
             // Activar modo de creación de ruta
             rutaMode = true;
