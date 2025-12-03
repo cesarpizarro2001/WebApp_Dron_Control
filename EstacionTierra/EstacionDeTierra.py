@@ -14,6 +14,9 @@ from PIL import Image, ImageTk
 from tkinter import ttk
 import numpy as np
 import re
+import asyncio
+from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
+from av import VideoFrame
 
 
 def allowExternal():
@@ -46,12 +49,144 @@ def allowExternal():
 
 def procesarTelemetria(telemetryInfo):
     # Enviar telemetría al servidor Flask via Socket.IO
-    sio.emit('telemetry_data', telemetryInfo)
+    try:
+        sio.emit('telemetry_data', telemetryInfo)
+    except Exception:
+        pass
 
 def publish_event(event):
     # Publicar evento al servidor Flask
     print(f'Evento: {event}')
     sio.emit('flight_event', {'event': event})
+
+
+# ========================================================================
+# WEBRTC - Emisor de video del dron
+# ========================================================================
+
+# Cola de frames compartida para WebRTC (todas las instancias de DronCameraTrack la usan)
+webrtc_shared_frame_queue = []
+webrtc_shared_queue_lock = threading.Lock()
+
+class DronCameraTrack(VideoStreamTrack):
+    """
+    VideoStreamTrack para transmitir frames de la cámara del dron vía WebRTC.
+    Similar a CameraVideoTrack del ejemplo de tu profesor, pero adaptado
+    para usar los frames que ya captura video_Websocket_thread().
+    
+    IMPORTANTE: Cada conexión debe tener su PROPIA INSTANCIA de este track.
+    No se puede compartir el mismo track entre múltiples RTCPeerConnection.
+    """
+    kind = "video"
+    
+    def __init__(self):
+        super().__init__()
+        self.last_frame = None
+    
+    async def recv(self):
+        """
+        Método requerido por VideoStreamTrack.
+        Devuelve el siguiente frame disponible para WebRTC.
+        """
+        pts, time_base = await self.next_timestamp()
+        
+        # Obtener frame de la cola COMPARTIDA
+        with webrtc_shared_queue_lock:
+            if len(webrtc_shared_frame_queue) > 0:
+                frame_bgr = webrtc_shared_frame_queue[0]  # Leer sin eliminar (múltiples tracks)
+                # Convertir BGR (OpenCV) a RGB (WebRTC)
+                frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+                self.last_frame = frame_rgb
+            elif self.last_frame is not None:
+                # Reutilizar último frame si no hay nuevo
+                frame_rgb = self.last_frame
+            else:
+                # Si no hay ningún frame, crear uno negro
+                frame_rgb = np.zeros((480, 640, 3), dtype=np.uint8)
+        
+        # Convertir a formato VideoFrame de aiortc
+        video_frame = VideoFrame.from_ndarray(frame_rgb, format="rgb24")
+        video_frame.pts = pts
+        video_frame.time_base = time_base
+        
+        return video_frame
+
+
+def push_webrtc_frame(frame):
+    """
+    Agregar un frame a la cola compartida (llamado desde video_Websocket_thread).
+    Todas las instancias de DronCameraTrack leerán de esta cola.
+    
+    Args:
+        frame: Frame de OpenCV (numpy array BGR)
+    """
+    with webrtc_shared_queue_lock:
+        # Mantener solo el frame más reciente (no acumular)
+        webrtc_shared_frame_queue.clear()
+        webrtc_shared_frame_queue.append(frame)
+
+
+# Variables globales para WebRTC
+webrtc_peer_connections = {}  # {connection_id: RTCPeerConnection}
+webrtc_event_loop = None  # Event loop de asyncio para WebRTC
+webrtc_thread = None  # Thread del event loop
+
+
+def start_webrtc_emitter():
+    """
+    Inicia el emisor WebRTC en un thread separado.
+    Similar a la lógica de senderGlobalWebRTC.py
+    """
+    global webrtc_event_loop, webrtc_thread
+    
+    if webrtc_event_loop is not None:
+        print("⚠️  Emisor WebRTC ya está en ejecución")
+        return
+    
+    # NO crear track aquí - se crean instancias nuevas por cada conexión
+    
+    # Crear y arrancar event loop en thread separado
+    def run_event_loop():
+        global webrtc_event_loop
+        webrtc_event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(webrtc_event_loop)
+        print("📡 [WebRTC] Event loop iniciado")
+        webrtc_event_loop.run_forever()
+    
+    webrtc_thread = threading.Thread(target=run_event_loop, daemon=True)
+    webrtc_thread.start()
+    
+    # Registrarse como emisor en el servidor
+    sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
+    print("📡 [WebRTC] Emisor registrado: dron_camera")
+
+
+def stop_webrtc_emitter():
+    """
+    Detiene el emisor WebRTC y cierra todas las conexiones.
+    """
+    global webrtc_event_loop, webrtc_peer_connections
+    
+    if webrtc_event_loop is None:
+        return
+    
+    print("📡 [WebRTC] Deteniendo emisor...")
+    
+    # Cerrar todas las conexiones peer
+    async def close_all_peers():
+        for conn_id, pc in list(webrtc_peer_connections.items()):
+            await pc.close()
+            del webrtc_peer_connections[conn_id]
+    
+    if len(webrtc_peer_connections) > 0:
+        asyncio.run_coroutine_threadsafe(close_all_peers(), webrtc_event_loop)
+        time.sleep(0.5)  # Dar tiempo para cerrar
+    
+    # Detener event loop
+    webrtc_event_loop.call_soon_threadsafe(webrtc_event_loop.stop)
+    webrtc_event_loop = None
+    
+    print("📡 [WebRTC] Emisor detenido")
 
 
 # Variables globales para el modo de conexión
@@ -885,6 +1020,9 @@ def video_Websocket_thread():
             print("Error: No se pudo abrir la cámara del dron")
             return
 
+    # Iniciar emisor WebRTC
+    start_webrtc_emitter()
+    
     sendingWebsockets = True
     while sendingWebsockets:
         if frequencySlider.get() > 0:
@@ -894,15 +1032,25 @@ def video_Websocket_thread():
                 break
             # Almacena el último frame capturado
             last_frame = frame.copy()
-            # genero el frame con el nivel de calidad seleccionado (entre 0 y 100)
-            quality = qualitySlider.get()
-            _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
-            frame_b64 = base64.b64encode(buffer).decode('utf-8')
-            # envio el frame por el websocket
-            sio.emit('video_frame', frame_b64)
+            
+            # NUEVO: Enviar frame a la cola compartida de WebRTC
+            push_webrtc_frame(frame)
+            
+            # [DESHABILITADO] Envío por Socket.IO de frames (usamos WebRTC)
+            # quality = qualitySlider.get()
+            # _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
+            # frame_b64 = base64.b64encode(buffer).decode('utf-8')
+            # try:
+            #     sio.emit('video_frame', frame_b64)
+            # except Exception:
+            #     pass
+            
             # espera el tiempo establecido según la frecuencia seleccionada
             periodo = 1/frequencySlider.get()
             time.sleep(periodo)
+    
+    # Detener emisor WebRTC al finalizar
+    stop_webrtc_emitter()
 
 # Captura una foto de la cámara del dron
 def capturar_foto():
@@ -953,7 +1101,7 @@ def start_recording():
         os.makedirs(videos_dir)
         print(f"Directorio {videos_dir} creado.")
 
-    # Genera nombre de archivo con timestamp
+    # Genera nombre de archivo con timestamp (la extensión puede cambiar según el codec)
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     filename = f"video_dron_{timestamp}.mp4"
     filepath = os.path.join(videos_dir, filename)
@@ -962,23 +1110,61 @@ def start_recording():
     if last_frame is not None:
         height, width = last_frame.shape[:2]
         # Intentar con diferentes codecs según disponibilidad
-        # H264 es el mejor para navegadores, pero puede no estar disponible
-        # X264 es alternativa, si no MJPG es más compatible
+        # Preferencia: H264 (avc1) → mp4v (MPEG-4 Part 2) → MJPG (AVI)
+        writer_opened = False
+        # Intento 1: H264 (puede requerir OpenH264/x264 instalado en el sistema)
         try:
             fourcc = cv2.VideoWriter_fourcc(*'H264')
-            video_writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
-            if not video_writer.isOpened():
-                raise Exception("H264 no disponible")
-        except:
+            vw = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+            if vw.isOpened():
+                video_writer = vw
+                writer_opened = True
+            else:
+                try:
+                    vw.release()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # Intento 2: mp4v (MPEG-4 Part 2), más ampliamente soportado en OpenCV/FFMPEG
+        if not writer_opened:
             try:
-                fourcc = cv2.VideoWriter_fourcc(*'X264')
-                video_writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
-                if not video_writer.isOpened():
-                    raise Exception("X264 no disponible")
-            except:
-                # Fallback a MJPG que es más compatible pero genera archivos más grandes
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                vw = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+                if vw.isOpened():
+                    video_writer = vw
+                    writer_opened = True
+                else:
+                    try:
+                        vw.release()
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+        # Intento 3: MJPG (AVI). Cambiar extensión si los anteriores fallan
+        if not writer_opened:
+            filename = f"video_dron_{timestamp}.avi"
+            filepath = os.path.join(videos_dir, filename)
+            try:
                 fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-                video_writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+                vw = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
+                if vw.isOpened():
+                    video_writer = vw
+                    writer_opened = True
+                else:
+                    try:
+                        vw.release()
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+        if not writer_opened:
+            print("Error: No se pudo inicializar el VideoWriter con H264/mp4v/MJPG")
+            sio.emit('flight_event', {'event': 'video_error', 'message': 'No hay codecs soportados por OpenCV/FFMPEG'})
+            return False
 
         # Guarda el nombre del archivo con la ruta relativa (incluyendo flight_name si existe)
         relative_path = os.path.join(current_flight_name, filename) if current_flight_name else filename
@@ -1462,54 +1648,7 @@ def record_video_thread(filepath):
     finally:
         if video_writer is not None:
             video_writer.release()
-            print(f"Video guardado: {filepath}")
-
-# Grabar video sin estar viendo la camara
-def grabar_video_en_background(duracion, flight_name, frame_inicial):
-    global last_frame
-
-    if frame_inicial is None:
-        print("No hay frame para iniciar la grabación")
-        return
-
-    # Crear carpeta
-    videos_dir = os.path.join("captured_videos", flight_name)
-    if not os.path.exists(videos_dir):
-        os.makedirs(videos_dir)
-
-    # Nombre del archivo
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    filename = f"video_dron_{timestamp}.mp4"
-    filepath = os.path.join(videos_dir, filename)
-
-    # VideoWriter independiente
-    height, width = frame_inicial.shape[:2]
-    try:
-        fourcc = cv2.VideoWriter_fourcc(*'H264')
-        writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
-        if not writer.isOpened():
-            raise Exception("H264 no disponible")
-    except:
-        try:
-            fourcc = cv2.VideoWriter_fourcc(*'X264')
-            writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
-            if not writer.isOpened():
-                raise Exception("X264 no disponible")
-        except:
-            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-            writer = cv2.VideoWriter(filepath, fourcc, 20.0, (width, height))
-
-    # Grabación en bucle
-    start_time = time.time()
-    while time.time() - start_time < duracion:
-        if last_frame is not None:
-            writer.write(last_frame)
-        time.sleep(0.05)
-
-    writer.release()
-    print(f"Video guardado en {filepath}")
-    sio.emit('flight_event', {'event': 'video_iniciado', 'filename': filename})
-    sio.emit('flight_event', {'event': 'video_detenido'})
+            print(f"Video guardado: {filepath}") 
 
 # Recibir thread del frame de la camara del movil
 def recibirCamaraThread():
@@ -1713,6 +1852,200 @@ def handle_ground_station_command(data):
     # Si está autorizado, procesar el comando
     on_command_received(data)
 
+
+# ========================================================================
+# WEBRTC HANDLERS - Responder a señales del servidor
+# ========================================================================
+
+@sio.on('webrtc_prepare_offer')
+def handle_webrtc_prepare_offer(data):
+    """
+    El servidor pide preparar una oferta para un nuevo receptor.
+    Similar a cuando el proxy avisa: {"type": "receptor", "id": 0}
+    
+    data = {'connection_id': str, 'receiver_sid': str}
+    """
+    connection_id = data.get('connection_id')
+    receiver_sid = data.get('receiver_sid')
+    
+    print(f"📤 [WebRTC] Preparando oferta para receptor: {receiver_sid}")
+    
+    if webrtc_event_loop is None:
+        print("   └─> ⚠️ Event loop no disponible")
+        return
+    
+    # Crear la oferta en el event loop de asyncio
+    asyncio.run_coroutine_threadsafe(
+        create_webrtc_offer(connection_id),
+        webrtc_event_loop
+    )
+
+
+@sio.on('webrtc_answer')
+def handle_webrtc_answer(data):
+    """
+    El receptor envía su respuesta SDP.
+    Similar a cuando el receiver acepta la oferta.
+    
+    data = {'connection_id': str, 'sdp': str, 'sdp_type': str}
+    """
+    connection_id = data.get('connection_id')
+    sdp = data.get('sdp')
+    sdp_type = data.get('sdp_type')
+    
+    print(f"📥 [WebRTC] Respuesta recibida para conexión: {connection_id}")
+    
+    if webrtc_event_loop is None:
+        print("   └─> ⚠️ Event loop no disponible")
+        return
+    
+    # Procesar la respuesta en el event loop
+    asyncio.run_coroutine_threadsafe(
+        process_webrtc_answer(connection_id, sdp, sdp_type),
+        webrtc_event_loop
+    )
+
+
+@sio.on('webrtc_close_connection')
+def handle_webrtc_close_connection(data):
+    """
+    El servidor notifica que una conexión se cerró (receptor cerró la cámara).
+    """
+    connection_id = data.get('connection_id')
+    
+    if connection_id in webrtc_peer_connections:
+        print(f"🗑️ [WebRTC] Cerrando conexión: {connection_id}")
+        pc = webrtc_peer_connections[connection_id]
+        
+        # Eliminar inmediatamente del diccionario para permitir reconexión
+        del webrtc_peer_connections[connection_id]
+        
+        # Cerrar la peer connection de forma asíncrona
+        if webrtc_event_loop:
+            async def close_pc():
+                try:
+                    await pc.close()
+                    print(f"   └─> ✅ Conexión cerrada completamente")
+                except Exception as e:
+                    print(f"   └─> ⚠️ Error cerrando conexión: {e}")
+            
+            asyncio.run_coroutine_threadsafe(close_pc(), webrtc_event_loop)
+    else:
+        print(f"🗑️ [WebRTC] Conexión {connection_id} ya no existe (ya cerrada)")
+
+
+@sio.on('webrtc_ice_candidate')
+def handle_webrtc_ice_candidate(data):
+    """
+    Recibir ICE candidate del receptor.
+    """
+    connection_id = data.get('connection_id')
+    
+    if webrtc_event_loop is None or connection_id not in webrtc_peer_connections:
+        return
+    
+    # Agregar ICE candidate en el event loop
+    pc = webrtc_peer_connections[connection_id]
+    
+    async def add_ice():
+        try:
+            from aiortc.sdp import candidate_from_sdp
+            
+            # Extraer datos del candidate
+            candidate_str = data.get('candidate')
+            sdp_mid = data.get('sdpMid')
+            sdp_index = data.get('sdpMLineIndex')
+            
+            # Parsear el candidate string a objeto RTCIceCandidate
+            ice_candidate = candidate_from_sdp(candidate_str.split(':', 1)[1])
+            ice_candidate.sdpMid = sdp_mid
+            ice_candidate.sdpMLineIndex = sdp_index
+            
+            await pc.addIceCandidate(ice_candidate)
+        except Exception as e:
+            print(f"   └─> Error agregando ICE candidate: {e}")
+    
+    asyncio.run_coroutine_threadsafe(add_ice(), webrtc_event_loop)
+
+
+async def create_webrtc_offer(connection_id):
+    """
+    Crea una conexión peer y genera una oferta SDP.
+    Equivalente a la lógica del sender cuando recibe {"type": "receptor"}
+    """
+    global webrtc_peer_connections
+    
+    try:
+        # Cerrar conexión anterior si existe (para reconexiones limpias)
+        if connection_id in webrtc_peer_connections:
+            print(f"   └─> ⚠️ Cerrando conexión anterior antes de crear nueva")
+            old_pc = webrtc_peer_connections[connection_id]
+            try:
+                await old_pc.close()
+            except:
+                pass
+            del webrtc_peer_connections[connection_id]
+        
+        # Crear NUEVA RTCPeerConnection (instancia fresca)
+        pc = RTCPeerConnection()
+        webrtc_peer_connections[connection_id] = pc
+        print(f"   └─> Nueva RTCPeerConnection creada")
+        
+        # CRÍTICO: Crear NUEVA instancia de DronCameraTrack para esta conexión
+        # No se puede reutilizar el mismo track entre múltiples RTCPeerConnection
+        camera_track = DronCameraTrack()
+        pc.addTrack(camera_track)
+        print(f"   └─> Track de video NUEVO agregado (kind: {camera_track.kind})")
+        
+        # Crear oferta
+        offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+        print(f"   └─> Oferta SDP creada")
+        
+        # Enviar oferta al servidor vía Socket.IO
+        sio.emit('webrtc_offer', {
+            'connection_id': connection_id,
+            'sdp': pc.localDescription.sdp,
+            'sdp_type': pc.localDescription.type
+        })
+        print(f"   └─> ✅ Oferta enviada al servidor")
+        
+    except Exception as e:
+        print(f"   └─> ❌ Error creando oferta: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+async def process_webrtc_answer(connection_id, sdp, sdp_type):
+    """
+    Procesa la respuesta SDP del receptor.
+    Equivalente a cuando el sender recibe el answer.
+    """
+    global webrtc_peer_connections
+    
+    try:
+        if connection_id not in webrtc_peer_connections:
+            print(f"   └─> ⚠️ Conexión no encontrada: {connection_id}")
+            return
+        
+        pc = webrtc_peer_connections[connection_id]
+        
+        # Verificar si la conexión ya está en estado estable (ya procesó una respuesta)
+        if pc.signalingState == 'stable':
+            print(f"   └─> ⚠️ Respuesta duplicada ignorada (conexión ya estable)")
+            return
+        
+        # Configurar remote description con la respuesta
+        answer = RTCSessionDescription(sdp=sdp, type=sdp_type)
+        await pc.setRemoteDescription(answer)
+        
+        print(f"   └─> ✅ Respuesta procesada. Stream en marcha")
+        
+    except Exception as e:
+        print(f"   └─> ❌ Error procesando respuesta: {e}")
+        import traceback
+        traceback.print_exc()
+
 recording = False
 video_writer = None
 video_thread = None
@@ -1909,7 +2242,7 @@ def handle_set_parameters(params):
 @sio.on("video_settings")
 def handle_video_settings(settings):
     """Handler para configurar calidad y fps del video"""
-    global qualitySlider, frequencySlider, webapp_commands_enabled
+    global qualitySlider, frequencySlider, webapp_commands_enabled, ventana
     
     if not webapp_commands_enabled:
         print('CONFIGURACIÓN DE VIDEO BLOQUEADA: (WebApp no autorizada)')
@@ -1925,12 +2258,20 @@ def handle_video_settings(settings):
     print('=' * 50)
     
     try:
-        # Actualizar los sliders de la interfaz de EstacionDeTierra
-        qualitySlider.set(quality)
-        frequencySlider.set(fps)
-        print('✓ Configuración de video aplicada correctamente')
-        print(f'  - Slider de calidad actualizado a: {quality}%')
-        print(f'  - Slider de FPS actualizado a: {fps} fps')
+        # Actualizar los sliders de la interfaz de EstacionDeTierra usando root.after()
+        # para evitar problemas de thread-safety con Tkinter
+        def update_sliders():
+            try:
+                qualitySlider.set(quality)
+                frequencySlider.set(fps)
+                print('✓ Configuración de video aplicada correctamente')
+                print(f'  - Slider de calidad actualizado a: {quality}%')
+                print(f'  - Slider de FPS actualizado a: {fps} fps')
+            except Exception as e:
+                print(f'✗ Error al actualizar sliders: {e}')
+        
+        # Programar la actualización en el thread principal de Tkinter
+        ventana.after(0, update_sliders)
         
     except Exception as e:
         print(f'✗ Error al configurar video: {e}')

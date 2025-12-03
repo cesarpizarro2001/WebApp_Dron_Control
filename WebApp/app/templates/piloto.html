@@ -12,6 +12,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     
+    <!-- WebRTC receptor para video del dron -->
+    <script src="{{ url_for('static', filename='webrtc_drone_receiver.js') }}"></script>
+    
     <style>
         * {
             margin: 0;
@@ -1577,7 +1580,7 @@
 
         <!-- CÁMARA Y MINIMAPA (CENTRO) -->
         <div class="camera-section">
-            <img id="camera-feed" style="display: none;" />
+            <video id="camera-feed" autoplay playsinline muted style="display: none;"></video>
             <div id="camera-placeholder" style="color: white;">📹 Esperando video...</div>
             
             <div class="minimap-container">
@@ -1934,6 +1937,15 @@
         function goHome() {
             // Sincronizar navegación con alumnos
             socket.emit('page_navigation_sync', { page: 'control' });
+            // Cerrar conexión WebRTC antes de volver
+            if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
+                try {
+                    console.log('🔄 [Piloto] Cerrando receptor WebRTC antes de volver');
+                    webrtcReceiver.stop();
+                } catch (e) {
+                    console.warn('⚠️ Error al cerrar receptor WebRTC:', e);
+                }
+            }
             window.location.href = '/';
         }
 
@@ -1999,6 +2011,17 @@
             }
         }
 
+        // Inicializar receptor WebRTC para el video del dron
+        let webrtcReceiver = null;
+        
+        // Limpiar conexión WebRTC al cerrar/cambiar página
+        window.addEventListener('beforeunload', () => {
+            if (webrtcReceiver) {
+                console.log('🔄 [Piloto] Limpiando conexión WebRTC...');
+                webrtcReceiver.stop();
+            }
+        });
+        
         // Eventos Socket.IO
         socket.on('connect', () => {
             console.log('Conectado');
@@ -2010,11 +2033,33 @@
                 isTouchDevice: isTouchDevice,
                 buttonMapping: buttonMapping
             });
+            
+            // Iniciar receptor WebRTC (después de que DOM esté listo)
+            setTimeout(() => {
+                const videoElement = document.getElementById('camera-feed');
+                console.log('🎥 [Piloto] Buscando elemento video:', videoElement ? 'ENCONTRADO' : 'NO ENCONTRADO');
+                
+                if (videoElement) {
+                    if (webrtcReceiver) {
+                        console.log('🔄 [Piloto] Deteniendo receptor anterior');
+                        webrtcReceiver.stop();
+                    }
+                    
+                    console.log('🚀 [Piloto] Creando nuevo receptor WebRTC...');
+                    webrtcReceiver = new WebRTCDroneReceiver(videoElement, socket);
+                    webrtcReceiver.requestStream();
+                    console.log('📡 [Piloto] Receptor WebRTC iniciado, stream solicitado');
+                } else {
+                    console.error('❌ [Piloto] Elemento video no encontrado en DOM');
+                }
+            }, 100);
         });
 
         // Variable para controlar si ya se cambió a LOITER automáticamente
         let autoLoiterActivated = false;
 
+        // Handler stream_frame eliminado - ahora usamos WebRTC exclusivamente
+        
         socket.on('telemetry_info', (data) => {
             // console.log('Telemetría recibida:', data);  // Comentado para no llenar la consola
             
@@ -2229,15 +2274,7 @@
             }
         }
 
-        socket.on('stream_frame', (data) => {
-            const cameraFeed = document.getElementById('camera-feed');
-            const placeholder = document.getElementById('camera-placeholder');
-            
-            // console.log('Frame de cámara recibido');  // Comentado para no llenar la consola
-            cameraFeed.src = 'data:image/jpeg;base64,' + data;
-            cameraFeed.style.display = 'block';
-            placeholder.style.display = 'none';
-        });
+        // Handler stream_frame eliminado - piloto.html ahora usa WebRTC exclusivamente
 
         // Inicializar
         window.addEventListener('load', () => {

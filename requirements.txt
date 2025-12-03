@@ -11,3 +11,7 @@ pyserial
 pymavlink
 jax==0.4.13
 jaxlib==0.4.13
+# WebRTC dependencies
+cryptography
+av
+aiortc

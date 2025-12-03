@@ -18,6 +18,19 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Variable global para almacenar el tipo de dispositivo del profesor
 professor_device_info = {'isTouchDevice': None}
 
+# ========================================================================
+# WEBRTC SIGNALING - Gestión de emisores y receptores
+# ========================================================================
+# Diccionario de emisores: {stream_id: socket_id}
+# stream_id puede ser 'dron_camera' o 'mobile_camera_{user_id}'
+webrtc_emitters = {}
+
+# Diccionario de receptores esperando: {stream_id: [socket_ids]}
+webrtc_pending_receivers = {}
+
+# Diccionario de conexiones activas: {connection_id: {'emitter': sid, 'receiver': sid}}
+webrtc_active_connections = {}
+
 # Cargar imágenes de gestos de MediaPipe
 def load_gesture_images():
     gesture_images = {}
@@ -540,9 +553,6 @@ def handle_settings_initial_sync(payload):
 def handle_pilot_button_sync(payload):
     """Sincroniza el estado de los botones de control del modo piloto - A TODOS LOS CLIENTES"""
     try:
-        button_id = payload.get('buttonId')
-        text = payload.get('text')
-        print(f"[SYNC BOTÓN PILOTO → TODOS] {button_id}: {text}")
         socketio.emit('pilot_button_sync', payload, include_self=False)
     except Exception as e:
         print(f"❌ Error en pilot_button_sync: {e}")
@@ -808,6 +818,262 @@ def process_frame_hands(data):
         print(f"Error al procesar el frame: {e}")
         traceback.print_exc()
         return None
+
+
+# ========================================================================
+# WEBRTC SIGNALING HANDLERS - Negociación de conexiones WebRTC
+# ========================================================================
+
+@socketio.on('webrtc_register_emitter')
+def handle_webrtc_register_emitter(data):
+    """
+    El emisor (EstacionDeTierra) se registra para transmitir video.
+    Similar al 'registro' del ejemplo de tu profesor.
+    
+    data = {'stream_id': 'dron_camera'}
+    """
+    from flask import request
+    stream_id = data.get('stream_id')
+    socket_id = request.sid
+    
+    print(f"📡 [WebRTC] Emisor registrado: {stream_id} (socket: {socket_id})")
+    webrtc_emitters[stream_id] = socket_id
+    
+    # Si hay receptores esperando, avisarles que el emisor ya está disponible
+    if stream_id in webrtc_pending_receivers:
+        pending = webrtc_pending_receivers[stream_id]
+        print(f"   └─> Hay {len(pending)} receptor(es) esperando")
+        
+        for receiver_sid in pending:
+            # Avisar a cada receptor que el emisor está listo
+            emit('webrtc_emitter_ready', {
+                'stream_id': stream_id
+            }, room=receiver_sid)
+        
+        # Limpiar lista de pendientes
+        webrtc_pending_receivers[stream_id] = []
+
+
+@socketio.on('webrtc_request_stream')
+def handle_webrtc_request_stream(data):
+    """
+    Un receptor (navegador) solicita recibir un stream de video.
+    Similar a la 'peticion' del ejemplo de tu profesor.
+    
+    data = {'stream_id': 'dron_camera'}
+    """
+    from flask import request
+    import time
+    
+    stream_id = data.get('stream_id')
+    receiver_sid = request.sid
+    
+    print(f"📺 [WebRTC] Receptor solicita stream: {stream_id} (socket: {receiver_sid})")
+    
+    # Verificar si el emisor ya está registrado
+    if stream_id in webrtc_emitters:
+        emitter_sid = webrtc_emitters[stream_id]
+        
+        # Limpiar TODAS las conexiones anteriores de este receptor (si existen)
+        old_connections = [conn_id for conn_id, conn in webrtc_active_connections.items() 
+                          if conn['receiver'] == receiver_sid]
+        
+        for old_conn_id in old_connections:
+            print(f"   └─> 🗑️ Cerrando conexión anterior: {old_conn_id}")
+            # Notificar al emisor que cierre la conexión anterior
+            emit('webrtc_close_connection', {'connection_id': old_conn_id}, room=emitter_sid)
+            # Eliminar de activas
+            del webrtc_active_connections[old_conn_id]
+        
+        # Crear ID ÚNICO para esta conexión (con timestamp para evitar colisiones)
+        timestamp = int(time.time() * 1000)  # Milisegundos
+        connection_id = f"{emitter_sid}_{receiver_sid}_{timestamp}"
+        
+        print(f"   └─> Emisor disponible. Creando nueva conexión: {connection_id}")
+        
+        # Registrar nueva conexión
+        webrtc_active_connections[connection_id] = {
+            'emitter': emitter_sid,
+            'receiver': receiver_sid,
+            'timestamp': timestamp
+        }
+        
+        # Pedir al emisor que prepare una oferta para este receptor
+        # Similar a cuando el proxy avisa: {"type": "receptor", "id": 0}
+        emit('webrtc_prepare_offer', {
+            'connection_id': connection_id,
+            'receiver_sid': receiver_sid
+        }, room=emitter_sid)
+    else:
+        # Emisor no disponible, agregar a lista de espera
+        print(f"   └─> Emisor no disponible. Receptor en espera.")
+        if stream_id not in webrtc_pending_receivers:
+            webrtc_pending_receivers[stream_id] = []
+        
+        if receiver_sid not in webrtc_pending_receivers[stream_id]:
+            webrtc_pending_receivers[stream_id].append(receiver_sid)
+
+
+@socketio.on('webrtc_offer')
+def handle_webrtc_offer(data):
+    """
+    El emisor envía una oferta SDP al receptor.
+    Similar a cuando el sender envía {"type": "sdp", "role": "emisor"}
+    
+    data = {
+        'connection_id': str,
+        'sdp': str,
+        'sdp_type': str
+    }
+    """
+    from flask import request
+    connection_id = data.get('connection_id')
+    sdp = data.get('sdp')
+    sdp_type = data.get('sdp_type')
+    
+    print(f"📤 [WebRTC] Oferta recibida para conexión: {connection_id}")
+    
+    # Obtener el receptor de esta conexión
+    if connection_id in webrtc_active_connections:
+        receiver_sid = webrtc_active_connections[connection_id]['receiver']
+        
+        # Reenviar la oferta al receptor
+        emit('webrtc_offer', {
+            'connection_id': connection_id,
+            'sdp': sdp,
+            'sdp_type': sdp_type
+        }, room=receiver_sid)
+        
+        print(f"   └─> Oferta reenviada al receptor: {receiver_sid}")
+    else:
+        print(f"   └─> ⚠️ Conexión no encontrada: {connection_id}")
+
+
+@socketio.on('webrtc_answer')
+def handle_webrtc_answer(data):
+    """
+    El receptor envía una respuesta SDP al emisor.
+    Similar a cuando el receiver envía {"type": "sdp", "role": "receiver"}
+    
+    data = {
+        'connection_id': str,
+        'sdp': str,
+        'sdp_type': str
+    }
+    """
+    from flask import request
+    connection_id = data.get('connection_id')
+    sdp = data.get('sdp')
+    sdp_type = data.get('sdp_type')
+    
+    print(f"📥 [WebRTC] Respuesta recibida para conexión: {connection_id}")
+    
+    # Obtener el emisor de esta conexión
+    if connection_id in webrtc_active_connections:
+        emitter_sid = webrtc_active_connections[connection_id]['emitter']
+        
+        # Reenviar la respuesta al emisor
+        emit('webrtc_answer', {
+            'connection_id': connection_id,
+            'sdp': sdp,
+            'sdp_type': sdp_type
+        }, room=emitter_sid)
+        
+        print(f"   └─> Respuesta reenviada al emisor: {emitter_sid}")
+        print(f"   └─> ✅ Conexión WebRTC establecida")
+    else:
+        print(f"   └─> ⚠️ Conexión no encontrada: {connection_id}")
+
+
+@socketio.on('webrtc_ice_candidate')
+def handle_webrtc_ice_candidate(data):
+    """
+    Intercambio de ICE candidates entre emisor y receptor.
+    Necesario para establecer la conexión peer-to-peer.
+    
+    data = {
+        'connection_id': str,
+        'candidate': str,
+        'sdpMid': str,
+        'sdpMLineIndex': int
+    }
+    """
+    from flask import request
+    connection_id = data.get('connection_id')
+    socket_id = request.sid
+    
+    if connection_id not in webrtc_active_connections:
+        return
+    
+    conn = webrtc_active_connections[connection_id]
+    
+    # Determinar quién es el destinatario (el otro peer)
+    if conn['emitter'] == socket_id:
+        # Quien envía es el emisor, reenviar al receptor
+        target_sid = conn['receiver']
+    elif conn['receiver'] == socket_id:
+        # Quien envía es el receptor, reenviar al emisor
+        target_sid = conn['emitter']
+    else:
+        return
+    
+    # Reenviar el ICE candidate al peer correspondiente
+    emit('webrtc_ice_candidate', data, room=target_sid)
+
+
+@socketio.on('webrtc_close_connection')
+def handle_webrtc_close_connection(data):
+    """
+    El receptor notifica que cierra su conexión (para permitir reconectar).
+    """
+    connection_id = data.get('connection_id')
+    
+    if connection_id in webrtc_active_connections:
+        print(f"🗑️ [WebRTC] Cerrando conexión: {connection_id}")
+        
+        # Notificar al emisor que cierre también
+        emitter_sid = webrtc_active_connections[connection_id]['emitter']
+        emit('webrtc_close_connection', {'connection_id': connection_id}, room=emitter_sid)
+        
+        del webrtc_active_connections[connection_id]
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """
+    Limpiar recursos WebRTC cuando un socket se desconecta.
+    """
+    from flask import request
+    socket_id = request.sid
+    
+    print(f"🔌 [WebRTC] Socket desconectado: {socket_id}")
+    
+    # Limpiar como emisor
+    stream_to_remove = None
+    for stream_id, emitter_sid in webrtc_emitters.items():
+        if emitter_sid == socket_id:
+            stream_to_remove = stream_id
+            break
+    
+    if stream_to_remove:
+        print(f"   └─> Emisor eliminado: {stream_to_remove}")
+        del webrtc_emitters[stream_to_remove]
+    
+    # Limpiar de receptores pendientes
+    for stream_id in list(webrtc_pending_receivers.keys()):
+        if socket_id in webrtc_pending_receivers[stream_id]:
+            webrtc_pending_receivers[stream_id].remove(socket_id)
+    
+    # Limpiar conexiones activas
+    connections_to_remove = []
+    for conn_id, conn in webrtc_active_connections.items():
+        if conn['emitter'] == socket_id or conn['receiver'] == socket_id:
+            connections_to_remove.append(conn_id)
+    
+    for conn_id in connections_to_remove:
+        print(f"   └─> Conexión cerrada: {conn_id}")
+        del webrtc_active_connections[conn_id]
+
 
 if __name__ == '__main__':
     print('=' * 60)
