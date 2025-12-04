@@ -15,3 +15,5 @@ jaxlib==0.4.13
 cryptography
 av
 aiortc
+#QR code generation
+qrcode[pil]
