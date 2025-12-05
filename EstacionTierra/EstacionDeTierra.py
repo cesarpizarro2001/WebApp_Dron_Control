@@ -17,6 +17,7 @@ import re
 import asyncio
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from av import VideoFrame
+from ultralytics import YOLO
 
 
 def allowExternal():
@@ -137,11 +138,21 @@ def start_webrtc_emitter():
     Inicia el emisor WebRTC en un thread separado.
     Similar a la lógica de senderGlobalWebRTC.py
     """
-    global webrtc_event_loop, webrtc_thread
+    global webrtc_event_loop, webrtc_thread, yolo_model
     
     if webrtc_event_loop is not None:
         print("⚠️  Emisor WebRTC ya está en ejecución")
         return
+    
+    # Cargar modelo YOLO
+    if yolo_model is None:
+        try:
+            print("📦 Cargando modelo YOLO...")
+            yolo_model = YOLO('yolov8n.pt')  # Modelo nano (ligero)
+            print("✅ Modelo YOLO cargado correctamente")
+        except Exception as e:
+            print(f"❌ Error cargando YOLO: {e}")
+            yolo_model = None
     
     # NO crear track aquí - se crean instancias nuevas por cada conexión
     
@@ -198,6 +209,10 @@ webapp_commands_enabled = False
 
 # Variable global para controlar mensajes de estado únicos
 last_printed_state = None
+
+# Variables globales para detección de objetos
+yolo_model = None
+detection_enabled = False
 
 
 # Función para deshabilitar botones virtualmente
@@ -930,6 +945,16 @@ def on_command_received(data):
             except Exception as e:
                 print(f"Error en la ruta: {e}")
 
+    elif action == 'toggle_detection':
+        """Toggle de detección de objetos"""
+        global detection_enabled
+        detection_enabled = data.get('enabled', False)
+        status = "ACTIVADA" if detection_enabled else "DESACTIVADA"
+        print(f"🔍 Detección de objetos: {status}")
+        
+        if detection_enabled and yolo_model is None:
+            print("⚠️  Modelo YOLO no cargado")
+
 # Recibir video de la cámara del dron por websockets
 def videoWebsockets():
     global sendingWebsockets
@@ -1030,6 +1055,15 @@ def video_Websocket_thread():
             if not ret:
                 print("Error: No se pudo leer frame de la cámara")
                 break
+            
+            # DETECCIÓN DE OBJETOS (si está activada)
+            if detection_enabled and yolo_model is not None:
+                try:
+                    results = yolo_model(frame, verbose=False)
+                    frame = results[0].plot()  # Frame con bounding boxes y labels
+                except Exception as e:
+                    print(f"❌ Error en detección: {e}")
+            
             # Almacena el último frame capturado
             last_frame = frame.copy()
             

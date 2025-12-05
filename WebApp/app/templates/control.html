@@ -124,6 +124,13 @@
         }
 
         .camera-top-controls-left {
+            position: absolute;
+            left: 10px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .camera-top-controls-center {
             display: flex;
             gap: 15px;
         }
@@ -683,14 +690,14 @@
             }
 
             .camera-btn-icon {
-                width: 32px !important;
-                height: 32px !important;
-                font-size: 16px !important;
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 14px !important;
             }
 
             #voice-control-modal-btn {
-                width: 32px !important;
-                height: 32px !important;
+                width: 28px !important;
+                height: 28px !important;
                 padding: 0 !important;
             }
 
@@ -2736,6 +2743,9 @@
             <!-- Botones superiores sobre la cámara -->
             <div class="camera-top-controls">
                 <div class="camera-top-controls-left">
+                    <button id="toggleDetectionBtn" class="camera-btn camera-btn-icon" onclick="toggleDetection()" title="Activar detección de objetos" style="background: gray;">🔍</button>
+                </div>
+                <div class="camera-top-controls-center">
                     <button class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar">✈️</button>
                     <button class="camera-btn camera-btn-icon" onclick="aterrizarDron()" title="Aterrizar">🛬</button>
                     <button class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL">🏠</button>
@@ -3799,12 +3809,42 @@
                 console.log('Modo cámara dron activado');
             }
         }
-
+        
+        // Toggle de detección de objetos
+        let detectionEnabled = false;
+        
+        function toggleDetection() {
+            detectionEnabled = !detectionEnabled;
+            const btn = document.getElementById('toggleDetectionBtn');
+            
+            // Enviar comando al servidor
+            socket.emit('command', {
+                action: 'toggle_detection',
+                enabled: detectionEnabled
+            });
+            
+            // Actualizar UI del botón
+            if (detectionEnabled) {
+                btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                btn.title = 'Desactivar detección de objetos';
+                console.log('🔍 Detección de objetos ACTIVADA');
+            } else {
+                btn.style.background = 'gray';
+                btn.title = 'Activar detección de objetos';
+                console.log('🔍 Detección de objetos DESACTIVADA');
+            }
+        }
+        
         // Función para cerrar la cámara del dron
         function cerrarCamaraDron() {
             const webcamContainer = document.getElementById('webcam-container');
             const botonImagenDron = document.getElementById('botonImagenDron');
             const camaraButtonsContainer = document.getElementById('camaraButtonsContainer');
+            
+            // Resetear detección al cerrar cámara
+            if (detectionEnabled) {
+                toggleDetection(); // Desactivar si estaba activa
+            }
             
             // Resetear conexión WebRTC si existe (permite reabrir)
             if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
