@@ -148,7 +148,7 @@ def start_webrtc_emitter():
     if yolo_model is None:
         try:
             print("📦 Cargando modelo YOLO...")
-            yolo_model = YOLO('yolov8n.pt')  # Modelo nano (ligero)
+            yolo_model = YOLO('yolov8m.pt')  # Modelo medium (alta precisión)
             print("✅ Modelo YOLO cargado correctamente")
         except Exception as e:
             print(f"❌ Error cargando YOLO: {e}")
@@ -1059,7 +1059,7 @@ def video_Websocket_thread():
             # DETECCIÓN DE OBJETOS (si está activada)
             if detection_enabled and yolo_model is not None:
                 try:
-                    results = yolo_model(frame, verbose=False)
+                    results = yolo_model(frame, verbose=False, max_det=4, conf=0.5)
                     frame = results[0].plot()  # Frame con bounding boxes y labels
                 except Exception as e:
                     print(f"❌ Error en detección: {e}")
@@ -2282,8 +2282,8 @@ def handle_video_settings(settings):
         print('CONFIGURACIÓN DE VIDEO BLOQUEADA: (WebApp no autorizada)')
         return
     
-    quality = settings.get('quality', 50)
-    fps = settings.get('fps', 5)
+    quality = settings.get('quality', 100)
+    fps = settings.get('fps', 30)
     
     print('=' * 50)
     print('📹 Configuración de video recibida desde WebApp:')
@@ -2484,7 +2484,7 @@ frequencySlider = tk.Scale(
     tickinterval=5,
     resolution=1
 )
-frequencySlider.set(5)
+frequencySlider.set(30)
 frequencySlider.grid(row=1, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 # Deshabilitar todos los botones excepto "Conectar" y "Conectar WebApp" al iniciar
@@ -2502,5 +2502,14 @@ deshabilitar_boton(disconnectBtn, "desconectado")
 deshabilitar_boton(videoWebsocketBtn)
 deshabilitar_boton(galleryBtn)
 deshabilitar_boton(cameraBtn)
+
+# Precargar modelo YOLO al inicio
+print("🚀 Precargando modelo YOLO...")
+try:
+    yolo_model = YOLO('yolov8m.pt')
+    print("✅ Modelo YOLO precargado y listo")
+except Exception as e:
+    print(f"⚠️  No se pudo precargar YOLO: {e}")
+    yolo_model = None
 
 ventana.mainloop()

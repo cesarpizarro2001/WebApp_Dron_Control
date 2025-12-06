@@ -54,6 +54,6 @@ while len(lines2) < max_lines:
     lines2.append(" " * width2)
 
 # Imprimir lado a lado con espaciado adecuado
-spacing = "  "  # Espacio entre QRs
+spacing = "                             "  # Espacio entre QRs
 for l1, l2 in zip(lines1, lines2):
     print(l1 + spacing + l2)

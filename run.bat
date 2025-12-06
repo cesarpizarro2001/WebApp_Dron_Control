@@ -63,7 +63,7 @@ echo                 QR GENERADOS
 echo =================================================
 echo.
 REM === Generar QR ===
-echo QR del Profesor               QR del Alumno
+echo QR del Profesor                                            QR del Alumno
 python Generador_QR_colindante.py %prof_url% %alum_url%
 echo.
 echo.
