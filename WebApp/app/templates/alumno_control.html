@@ -1796,6 +1796,11 @@
                         0 0 0 8px rgba(76, 175, 80, 0.1);
         }
         
+        #voice-control-btn.warning {
+            background: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+            box-shadow: 0 8px 30px rgba(255, 153, 0, 0.5);
+        }
+        
         #voice-control-btn.error {
             background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
             animation: shake 0.5s ease-in-out;
@@ -1873,6 +1878,11 @@
         #voice-control-modal-btn.processing {
             background: rgba(33, 150, 243, 0.9) !important;
             border-color: rgba(33, 150, 243, 0.5) !important;
+        }
+
+        #voice-control-modal-btn.warning {
+            background: rgba(255, 153, 0, 0.9) !important;
+            border-color: rgba(255, 153, 0, 0.5) !important;
         }
 
         #voice-control-modal-btn.error {
@@ -3143,7 +3153,7 @@
         switch(data.status) {
             case 'listening':
                 // Remover estados previos y activar escuchando (rojo)
-                voiceBtn.classList.remove('processing', 'error');
+                voiceBtn.classList.remove('processing', 'warning', 'error');
                 voiceBtn.classList.add('listening');
                 voiceText.textContent = 'ESCUCHANDO...';
                 console.log('[ALUMNO] 🎤 Profesor escuchando comando de voz');
@@ -3151,7 +3161,7 @@
                 
             case 'processing':
                 // Cambiar de escuchando a procesando (verde)
-                voiceBtn.classList.remove('listening', 'error');
+                voiceBtn.classList.remove('listening', 'warning', 'error');
                 voiceBtn.classList.add('processing');
                 voiceText.textContent = data.text ? `"${data.text}"` : 'PROCESANDO...';
                 console.log('[ALUMNO] 🎤 Procesando comando:', data.text);
@@ -3166,9 +3176,21 @@
                 }, 1500);
                 break;
                 
+            case 'warning':
+                // Cambiar a advertencia (amarillo)
+                voiceBtn.classList.remove('listening', 'processing', 'error');
+                voiceBtn.classList.add('warning');
+                voiceText.textContent = 'RECHAZADO';
+                console.log('[ALUMNO] 🎤 Comando rechazado por validación');
+                setTimeout(() => {
+                    voiceBtn.classList.remove('warning');
+                    voiceText.textContent = 'VOZ';
+                }, 2000);
+                break;
+                
             case 'error':
                 // Cambiar a error (naranja)
-                voiceBtn.classList.remove('listening', 'processing');
+                voiceBtn.classList.remove('listening', 'processing', 'warning');
                 voiceBtn.classList.add('error');
                 voiceText.textContent = 'NO ENTENDIDO';
                 console.log('[ALUMNO] 🎤 Comando no entendido');
@@ -3181,7 +3203,7 @@
             case 'idle':
             default:
                 // Limpiar todo
-                voiceBtn.classList.remove('listening', 'processing', 'error');
+                voiceBtn.classList.remove('listening', 'processing', 'warning', 'error');
                 voiceText.textContent = 'VOZ';
                 console.log('[ALUMNO] 🎤 Control de voz en reposo');
                 break;

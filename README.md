@@ -1,33 +1,94 @@
-# WebAppFlask
+# WebApp Control de Drones
 
 ## 1. Presentación
-En este repositorio se describe cómo controlar un dron desde cualquier dispositivo conectado a internet, sin necesidad de instalar ninguna app en el dispositivo. Para ello se utiliza el framework Flask para implementer un servidor web en Python.   
-El repositorio proporciona códigos, vídeos y descripciones. 
+En este repositorio se describe cómo controlar un dron desde cualquier dispositivo conectado a internet, sin necesidad de instalar ninguna app en el dispositivo. Para ello se utiliza el framework Flask para implementar un servidor web en Python.
 
-## 2. Instalación
-Paso 1: Para preparar la instalación de la WebApp primero debemos instalar el interprete de Python 3.9 (el instalador de esta interprete se puede encontrar la página web https://www.python.org/downloads/). 
-Paso 2: Abrir los archivos importantes (run.py, EstacionDeTierra.py, control.html). En la primera línea del código de run.py y EstacionDeTierra.py explica las librerías que se deben instalar. Si no se instalan estas librerias el código dará errores.
-Paso 3: Descargar los certificados https, para ello abrir un Git Bash en la carpeta WebAppMQTT y escribir el siguiente comando: 
+El sistema incluye:
+- Control mediante interfaz web desde cualquier navegador
+- Control por voz en español
+- Control por gestos mediante cámara
+- Control modo piloto (mando real y joysticks virtuales)
+- Control por sensores del movil
+- Telemetría en tiempo real
+- Visualización de video del dron
+- Sistema de waypoints y rutas
+- Galería de fotos y videos capturados
 
-	openssl req -newkey rsa:2048 -nodes -keyout private_key.pem -x509 -days 365 -out public_certificate.pem
+## 2. Requerimientos
 
-	Rellenar campos:
-	Nombre del país (código de 2 letras) []: ES
-	Nombre del estado o provincia (nombre completo) []: Barcelona
-	Nombre de la localidad (p. ej., ciudad) []: Castelldefels
-	Nombre de la organización (p. ej., empresa) []: UPC
-	Nombre de la unidad organizativa (p. ej., sección) []: DAC
-	Nombre común (por ejemplo, nombre de host completo) []: localhost
-	Dirección de correo electrónico []: -
+- Python 3.10.x (versión requerida)
+- Mission Planner (para simulación o conexión con dron real)
+- Navegador web moderno (Chrome, Firefox, Edge)
 
-Paso 4: Una vez hemos realizado los pasos 1, 2 y 3, ejecutamos run.py y EstacionDeTierra.py (importante primero ejecutar run.py).
+## 3. Instalación
 
-## 3. Videos disponibles
-Video tutorial disponible en: https://www.youtube.com/watch?v=iixXgZBE0gM&ab_channel=DronsEETAC
-Video explicación del código disponible en: https://www.youtube.com/watch?v=3-QpJUCHGdY&ab_channel=DronsEETAC
+### Paso 1: Instalar Python 3.10.x
+1. Descargar Python 3.10.x desde la página oficial: https://www.python.org/downloads/release/python-3100/
+   - **IMPORTANTE**: Asegúrate de descargar la versión 3.10.x (ejemplo: 3.10.0)
+   - **NO** instalar versiones superiores ni inferiores
+2. Durante la instalación:
+   - ✅ Marcar la opción **"Add Python to PATH"**
+   - Seleccionar "Install Now" o personalizar la ubicación si lo deseas
+3. Verificar la instalación abriendo CMD y ejecutando:
+   ```
+   python --version
+   ```
+   Debe mostrar: `Python 3.10.x`
 
+### Paso 2: Instalar Dependencias Automáticamente
+1. Navegar hasta la carpeta del proyecto
+2. Ejecutar el archivo **`setup.bat`** haciendo doble clic
+3. El script automáticamente:
+   - ✅ Verificará que tengas Python 3.10.x instalado
+   - ✅ Instalará todas las librerías necesarias desde `requirements.txt`
+   - ✅ Configurará el entorno correctamente
+4. Esperar a que finalice la instalación (puede tardar varios minutos)
+5. Si todo es correcto, verás un mensaje de confirmación
 
-    
+**Nota**: Si el script detecta una versión incorrecta de Python, mostrará un error y deberás instalar Python 3.10.x antes de continuar.
 
+### Paso 3: Configurar Certificados HTTPS
+1. Abrir Git Bash en la carpeta del proyecto
+2. Ejecutar el siguiente comando:
+   ```bash
+   openssl req -newkey rsa:2048 -nodes -keyout private_key.pem -x509 -days 365 -out public_certificate.pem
+   ```
+3. Rellenar los campos solicitados:
+   - Nombre del país (código de 2 letras): `ES`
+   - Nombre del estado o provincia: `Barcelona`
+   - Nombre de la localidad: `Castelldefels`
+   - Nombre de la organización: `UPC`
+   - Nombre de la unidad organizativa: `DAC`
+   - Nombre común: `localhost`
+   - Dirección de correo electrónico: (dejar vacío)
 
+## 4. Ejecución
 
+### Paso 1: Iniciar Mission Planner
+1. Abrir **Mission Planner**
+2. Conectar tu dron real o iniciar simulación SITL:
+   - Para simulación: Ir a `Simulation` → `SITL` → Seleccionar vehículo → `Start`
+   - Para dron real: Configurar puerto COM y conectar
+3. Verificar que la telemetría esté funcionando correctamente
+
+### Paso 2: Ejecutar la Aplicación Web
+1. En la carpeta del proyecto, ejecutar **`run.bat`** haciendo doble clic
+2. El script iniciará automáticamente:
+   - ✅ Servidor Flask (WebApp)
+   - ✅ Estación de Tierra (conexión con el dron)
+3. Esperar a que aparezcan mensajes indicando que los servidores están corriendo
+
+### Paso 3: Acceder a la Interfaz Web
+1. Una vez ejecutado `run.bat`, en la ventana de consola aparecerá:
+   - ✅ El **enlace directo** a la aplicación web
+   - ✅ Un **código QR** para acceder desde dispositivos móviles
+
+## 5. Recursos Adicionales
+
+### Videos Tutorial
+- Video tutorial disponible en: https://www.youtube.com/watch?v=iixXgZBE0gM&ab_channel=DronsEETAC
+- Video explicación del código disponible en: https://www.youtube.com/watch?v=3-QpJUCHGdY&ab_channel=DronsEETAC
+
+---
+
+**Última actualización**: Diciembre 2025

@@ -22,7 +22,6 @@ professor_device_info = {'isTouchDevice': None}
 # WEBRTC SIGNALING - Gestión de emisores y receptores
 # ========================================================================
 # Diccionario de emisores: {stream_id: socket_id}
-# stream_id puede ser 'dron_camera' o 'mobile_camera_{user_id}'
 webrtc_emitters = {}
 
 # Diccionario de receptores esperando: {stream_id: [socket_ids]}
@@ -858,7 +857,6 @@ def handle_webrtc_register_emitter(data):
 def handle_webrtc_request_stream(data):
     """
     Un receptor (navegador) solicita recibir un stream de video.
-    Similar a la 'peticion' del ejemplo de tu profesor.
     
     data = {'stream_id': 'dron_camera'}
     """

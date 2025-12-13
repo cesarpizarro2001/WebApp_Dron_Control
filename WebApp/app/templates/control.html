@@ -1805,6 +1805,11 @@
                         0 0 0 8px rgba(76, 175, 80, 0.1);
         }
         
+        #voice-control-btn.warning {
+            background: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+            box-shadow: 0 8px 30px rgba(255, 153, 0, 0.5);
+        }
+        
         #voice-control-btn.error {
             background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
             animation: shake 0.5s ease-in-out;
@@ -1882,6 +1887,11 @@
         #voice-control-modal-btn.processing {
             background: rgba(33, 150, 243, 0.9) !important;
             border-color: rgba(33, 150, 243, 0.5) !important;
+        }
+
+        #voice-control-modal-btn.warning {
+            background: rgba(255, 153, 0, 0.9) !important;
+            border-color: rgba(255, 153, 0, 0.5) !important;
         }
 
         #voice-control-modal-btn.error {
@@ -2594,9 +2604,118 @@
                 border-radius: 8px;
             }
         }
+
+        /* === MODAL DE ORIENTACIÓN === */
+        #orientation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        #orientation-modal.hidden {
+            display: none;
+        }
+
+        .orientation-modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .orientation-modal-content h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .orientation-modal-content p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .orientation-icon {
+            font-size: 80px;
+            margin: 20px 0;
+            animation: rotatePhone 2s ease-in-out infinite;
+        }
+
+        @keyframes rotatePhone {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            50% {
+                transform: rotate(90deg);
+            }
+        }
+
+        .orientation-modal-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .orientation-modal-btn:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+        }
+
+        .orientation-modal-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Ocultar modal en orientación horizontal */
+        @media (orientation: landscape) {
+            #orientation-modal.auto-hide {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Modal de Orientación -->
+    <div id="orientation-modal" class="auto-hide">
+        <div class="orientation-modal-content">
+            <h2>📱 Recomendación</h2>
+            <div class="orientation-icon">📱</div>
+            <p>Para una mejor experiencia, te recomendamos rotar tu dispositivo a <strong>posición horizontal</strong>.</p>
+            <button class="orientation-modal-btn" onclick="closeOrientationModal()">Entendido</button>
+        </div>
+    </div>
+
     <!-- Botón de pantalla completa -->
     <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Pantalla completa">
         <svg id="fullscreenIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -4548,6 +4667,18 @@
                 case 'flying':
                     // Dron volando
                     despegando = false; // Resetear variable cuando esté volando
+                    
+                    // Asegurar que el botón conectar esté en verde
+                    botonConectar.textContent = 'Conectado';
+                    resetButtonClasses(botonConectar);
+                    botonConectar.classList.add('boton-verde');
+                    socket.emit('button_style_sync', {
+                        buttonId: 'botonConectar',
+                        text: 'Conectado',
+                        removeClass: ['boton-amarillo', 'boton-rojo'],
+                        addClass: ['boton-verde']
+                    });
+                    
                     botonDespegar.disabled = true;
                     botonDespegar.textContent = 'Volando';
                     resetButtonClasses(botonDespegar);
@@ -5252,10 +5383,10 @@
 
                     // Procesar comando (puede ser simple o compuesto)
                     setTimeout(() => {
-                        const exitoso = procesarComandoVoz(transcript);
+                        const resultado = procesarComandoVoz(transcript);
                         
-                        if (exitoso) {
-                            // Sincronizar con alumnos - comando exitoso
+                        if (resultado === true) {
+                            // Comando ejecutado exitosamente
                             socket.emit('voice_command_sync', {
                                 status: 'success'
                             });
@@ -5267,7 +5398,28 @@
                                 voiceText.textContent = 'VOZ';
                                 recognizing = false;
                             }, 1500);
+                        } else if (resultado === 'warning') {
+                            // Comando entendido pero rechazado por validación
+                            btn.classList.remove('processing');
+                            btn.classList.add('warning');
+                            modalBtn.classList.remove('processing');
+                            modalBtn.classList.add('warning');
+                            modalBtn.setAttribute('data-text', 'RECHAZADO');
+                            voiceText.textContent = 'RECHAZADO';
+                            
+                            socket.emit('voice_command_sync', {
+                                status: 'warning'
+                            });
+                            
+                            setTimeout(() => {
+                                btn.classList.remove('warning');
+                                modalBtn.classList.remove('warning');
+                                modalBtn.removeAttribute('data-text');
+                                voiceText.textContent = 'VOZ';
+                                recognizing = false;
+                            }, 2000);
                         } else {
+                            // Comando no reconocido
                             btn.classList.remove('processing');
                             btn.classList.add('error');
                             modalBtn.classList.remove('processing');
@@ -5275,7 +5427,6 @@
                             modalBtn.setAttribute('data-text', 'NO ENTENDIDO');
                             voiceText.textContent = 'NO ENTENDIDO';
                             
-                            // Sincronizar con alumnos - comando no entendido
                             socket.emit('voice_command_sync', {
                                 status: 'error'
                             });
@@ -5509,10 +5660,10 @@
         // Función para extraer distancia de comandos de voz (para movimientos)
         function extraerDistancia(comando) {
             // Buscar patrón: número + "metros" o "metro"
-            // Ejemplos: "avanza 5 metros", "ve al norte 10 metros", "retrocede 3 metros"
+            // Ejemplos: "avanza 5 metros", "ve al norte 10 metros", "ves 3 m al norte", "retrocede 3 metros"
             
-            // Primero buscar números escritos en dígitos CON "metros" (1-50)
-            const regexDigitosConMetros = /(\d+)\s*metros?/i;
+            // Primero buscar números escritos en dígitos CON "metros" o "m" (1-50)
+            const regexDigitosConMetros = /(\d+)\s*(?:metros?|m)\b/i;
             const matchDigitosConMetros = comando.match(regexDigitosConMetros);
             if (matchDigitosConMetros) {
                 const distancia = parseInt(matchDigitosConMetros[1]);
@@ -5523,11 +5674,13 @@
             }
             
             // Buscar números sueltos en dígitos (para cuando se omite "metros")
-            // Ejemplos: "avanza 5", "norte 10", "retrocede 3"
-            const regexDigitosSueltos = /(?:avanza|avanzar|norte|adelante|sur|atrás|retrocede|este|derecha|oeste|izquierda)\s+(\d+)/i;
+            // Ejemplos: "avanza 5", "norte 10", "ves 3 al norte", "retrocede 3"
+            // Patrón más flexible: buscar dígitos cerca de palabras clave de dirección
+            const regexDigitosSueltos = /(\d+)\s*(?:al\s+)?(?:norte|adelante|sur|atrás|este|derecha|oeste|izquierda)|(?:avanza|avanzar|norte|adelante|sur|atrás|retrocede|este|derecha|oeste|izquierda)\s+(\d+)/i;
             const matchDigitosSueltos = comando.match(regexDigitosSueltos);
             if (matchDigitosSueltos) {
-                const distancia = parseInt(matchDigitosSueltos[1]);
+                // El número puede estar en el grupo 1 o 2 dependiendo del patrón
+                const distancia = parseInt(matchDigitosSueltos[1] || matchDigitosSueltos[2]);
                 if (distancia >= 1 && distancia <= 50) {
                     return distancia;
                 }
@@ -5622,10 +5775,10 @@
                 const altura = extraerAltura(comando);
                 
                 if (altura !== null) {
-                    // Validar rango: solo entre 1 y 10 metros
-                    if (altura < 1 || altura > 10) {
+                    // Validar rango: solo entre 2 y 10 metros
+                    if (altura < 2 || altura > 10) {
                         console.log(`Altura fuera de rango: ${altura} metros`);
-                        hablar('Solo se puede despegar entre 1 y 10 metros');
+                        hablar('Solo se puede despegar entre 2 y 10 metros');
                         return false;
                     }
                     
@@ -5772,28 +5925,29 @@
                 const altura = extraerAltura(comando);
                 
                 if (altura !== null) {
-                    // Validar rango máximo: 20 metros
-                    if (altura > 20) {
-                        console.log(`Altura fuera de rango: ${altura} metros`);
-                        hablar('La altura máxima es 20 metros');
-                        return false;
-                    }
-                    
-                    if (altura < 1) {
-                        console.log(`Altura muy baja: ${altura} metros`);
-                        hablar('La altura mínima es 1 metro');
-                        return false;
-                    }
-                    
                     if (esAlturaAbsoluta) {
                         // Altura absoluta: "sube a 15 metros" o "sube hasta 10 metros"
+                        
+                        // VALIDACIÓN: La altura objetivo debe estar dentro de los límites
+                        if (altura < 2) {
+                            console.warn(`❌ Altura objetivo muy baja: ${altura}m < 2m`);
+                            hablar('La altura mínima es 2 metros');
+                            return 'warning'; // Comando entendido, pero rechazado por validación
+                        }
+                        
+                        if (altura > 10) {
+                            console.warn(`❌ Altura objetivo muy alta: ${altura}m > 10m`);
+                            hablar('La altura máxima es 10 metros');
+                            return 'warning'; // Comando entendido, pero rechazado por validación
+                        }
+                        
                         console.log(`Ejecutando: Ir a altura absoluta de ${altura} metros`);
                         hablar(`Subiendo a altura de ${altura} metros`);
                         irAAlturaAbsoluta(altura);
                     } else {
                         // Altura relativa: "sube 5 metros"
                         
-                        // VALIDACIÓN DE SEGURIDAD: Verificar que no se superen los 20m totales
+                        // VALIDACIÓN DE SEGURIDAD: Verificar que no se superen los 10m totales
                         if (!telemetry_info || telemetry_info.alt === undefined) {
                             console.error('❌ No hay telemetría de altitud disponible');
                             hablar('Error: No hay información de altitud');
@@ -5803,13 +5957,13 @@
                         const alturaActual = telemetry_info.alt;
                         const alturaResultante = alturaActual + altura;
                         
-                        if (alturaResultante > 20) {
-                            console.warn(`❌ Altura resultante excedería límite: ${alturaActual.toFixed(2)}m + ${altura}m = ${alturaResultante.toFixed(2)}m > 20m`);
-                            hablar('La altura máxima es 20 metros');
-                            return false;
+                        if (alturaResultante > 10) {
+                            console.warn(`❌ Altura resultante excedería límite: ${alturaActual.toFixed(2)}m + ${altura}m = ${alturaResultante.toFixed(2)}m > 10m`);
+                            hablar('La altura máxima es 10 metros');
+                            return 'warning'; // Comando entendido, pero rechazado por validación
                         }
                         
-                        console.log(`✅ Ajuste seguro: ${alturaActual.toFixed(2)}m + ${altura}m = ${alturaResultante.toFixed(2)}m ≤ 20m`);
+                        console.log(`✅ Ajuste seguro: ${alturaActual.toFixed(2)}m + ${altura}m = ${alturaResultante.toFixed(2)}m ≤ 10m`);
                         console.log(`Ejecutando: Subir ${altura} metros (relativo)`);
                         hablar(`Subiendo ${altura} metros`);
                         ajustarAltitud(altura);
@@ -5827,10 +5981,10 @@
                     const alturaActual = telemetry_info.alt;
                     const alturaResultante = alturaActual + 2;
                     
-                    if (alturaResultante > 20) {
-                        console.warn(`❌ No puedo subir 2m por defecto: ${alturaActual.toFixed(2)}m + 2m = ${alturaResultante.toFixed(2)}m > 20m`);
-                        hablar('La altura máxima es 20 metros');
-                        return false;
+                    if (alturaResultante > 10) {
+                        console.warn(`❌ No puedo subir 2m por defecto: ${alturaActual.toFixed(2)}m + 2m = ${alturaResultante.toFixed(2)}m > 10m`);
+                        hablar('La altura máxima es 10 metros');
+                        return 'warning'; // Comando entendido, pero rechazado por validación
                     }
                     
                     console.log('Ejecutando: Subir altitud (2m por defecto)');
@@ -5850,21 +6004,22 @@
                 const altura = extraerAltura(comando);
                 
                 if (altura !== null) {
-                    // Validar rango máximo: 20 metros
-                    if (altura > 20) {
-                        console.log(`Altura fuera de rango: ${altura} metros`);
-                        hablar('La altura máxima es 20 metros');
-                        return false;
-                    }
-                    
-                    if (altura < 1) {
-                        console.log(`Altura muy baja: ${altura} metros`);
-                        hablar('La altura mínima es 1 metro');
-                        return false;
-                    }
-                    
                     if (esAlturaAbsoluta) {
                         // Altura absoluta: "baja a 5 metros" o "baja hasta 3 metros"
+                        
+                        // Validar que la altura objetivo esté en rango 2m-10m
+                        if (altura < 2) {
+                            console.log(`Altura objetivo muy baja: ${altura} metros`);
+                            hablar('La altura mínima es 2 metros');
+                            return 'warning'; // Comando entendido, pero rechazado por validación
+                        }
+                        
+                        if (altura > 10) {
+                            console.log(`Altura objetivo muy alta: ${altura} metros`);
+                            hablar('La altura máxima es 10 metros');
+                            return 'warning'; // Comando entendido, pero rechazado por validación
+                        }
+                        
                         console.log(`Ejecutando: Ir a altura absoluta de ${altura} metros`);
                         hablar(`Bajando a altura de ${altura} metros`);
                         irAAlturaAbsoluta(altura);
@@ -5881,13 +6036,13 @@
                         const alturaActual = telemetry_info.alt;
                         const alturaResultante = alturaActual - altura;
                         
-                        if (alturaResultante < 1) {
-                            console.warn(`❌ Altura resultante sería menor a 1m: ${alturaActual.toFixed(2)}m - ${altura}m = ${alturaResultante.toFixed(2)}m < 1m`);
-                            hablar('No puedo bajar, la altura mínima es 1 metro');
-                            return false;
+                        if (alturaResultante < 2) {
+                            console.warn(`❌ Altura resultante sería menor a 2m: ${alturaActual.toFixed(2)}m - ${altura}m = ${alturaResultante.toFixed(2)}m < 2m`);
+                            hablar('No puedo bajar, la altura mínima es 2 metros');
+                            return 'warning'; // Comando entendido, pero rechazado por validación
                         }
                         
-                        console.log(`✅ Descenso seguro: ${alturaActual.toFixed(2)}m - ${altura}m = ${alturaResultante.toFixed(2)}m ≥ 1m`);
+                        console.log(`✅ Descenso seguro: ${alturaActual.toFixed(2)}m - ${altura}m = ${alturaResultante.toFixed(2)}m ≥ 2m`);
                         console.log(`Ejecutando: Bajar ${altura} metros (relativo)`);
                         hablar(`Bajando ${altura} metros`);
                         ajustarAltitud(-altura);
@@ -5905,10 +6060,10 @@
                     const alturaActual = telemetry_info.alt;
                     const alturaResultante = alturaActual - 2;
                     
-                    if (alturaResultante < 1) {
-                        console.warn(`❌ No puedo bajar 2m por defecto: ${alturaActual.toFixed(2)}m - 2m = ${alturaResultante.toFixed(2)}m < 1m`);
-                        hablar('No puedo bajar, la altura mínima es 1 metro');
-                        return false;
+                    if (alturaResultante < 2) {
+                        console.warn(`❌ No puedo bajar 2m por defecto: ${alturaActual.toFixed(2)}m - 2m = ${alturaResultante.toFixed(2)}m < 2m`);
+                        hablar('No puedo bajar, la altura mínima es 2 metros');
+                        return 'warning'; // Comando entendido, pero rechazado por validación
                     }
                     
                     console.log('Ejecutando: Bajar altitud (2m por defecto)');
@@ -6623,6 +6778,19 @@
         // Cargar configuración al cargar la página
         window.addEventListener('DOMContentLoaded', () => {
             loadSettings();
+            
+            // Cambiar a modo GUIDED al entrar a control.html (especialmente importante al volver desde piloto.html)
+            // Esperar un momento para asegurar que socket.io esté conectado
+            setTimeout(() => {
+                console.log('🔄 Cambiando a modo GUIDED al entrar a control.html');
+                socket.emit('command', { action: 'change_mode', mode: 'GUIDED' });
+                
+                // Actualizar estado de botones basado en telemetría actual
+                if (telemetry_info && telemetry_info.state) {
+                    console.log('🔄 Actualizando estado de botones:', telemetry_info.state);
+                    updateButtonStates(telemetry_info.state);
+                }
+            }, 500);
         });
 
         // Detectar cambios en el estado de fullscreen
@@ -6652,6 +6820,41 @@
                 console.log('Modo pantalla completa desactivado');
             }
         }
+
+        // === CONTROL DEL MODAL DE ORIENTACIÓN ===
+        function closeOrientationModal() {
+            const modal = document.getElementById('orientation-modal');
+            modal.classList.add('hidden');
+            // Guardar preferencia en sessionStorage para no volver a mostrar
+            sessionStorage.setItem('orientation-modal-closed', 'true');
+        }
+
+        // Mostrar modal solo si no se ha cerrado antes en esta sesión
+        function checkOrientationModal() {
+            const modal = document.getElementById('orientation-modal');
+            const wasClosed = sessionStorage.getItem('orientation-modal-closed');
+            
+            // Solo mostrar en dispositivos móviles/táctiles y si no se cerró antes
+            if (IS_TOUCH_DEVICE && !wasClosed) {
+                // Verificar orientación actual
+                const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+                if (!isLandscape) {
+                    modal.classList.remove('hidden');
+                } else {
+                    modal.classList.add('hidden');
+                }
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Verificar al cargar la página
+        window.addEventListener('DOMContentLoaded', checkOrientationModal);
+
+        // Escuchar cambios de orientación
+        window.addEventListener('orientationchange', function() {
+            setTimeout(checkOrientationModal, 100);
+        });
         
     </script>
 </body>
