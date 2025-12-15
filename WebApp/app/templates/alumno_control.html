@@ -377,6 +377,9 @@
             min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
+            -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+            touch-action: pan-y; /* Permitir scroll vertical en táctiles */
+            overscroll-behavior: contain; /* Evitar arrastre del fondo */
         }
 
         /* Estilo de scrollbar para gallery-grid */
@@ -457,6 +460,9 @@
             max-height: 450px;
             overflow-y: auto;
             overflow-x: hidden;
+            -webkit-overflow-scrolling: touch; /* Scroll suave en iOS dentro de carpeta */
+            touch-action: pan-y; /* Permitir scroll vertical en táctiles */
+            overscroll-behavior: contain; /* Evitar que el scroll burbujee al grid */
         }
 
         /* Estilo de scrollbar para gallery-folder-items */
@@ -2616,25 +2622,6 @@
         </div>
 
         <div class="settings-content">
-            <!-- Calidad del Video -->
-            <div class="setting-item">
-                <div class="setting-label">
-                    <span>Calidad del Video</span>
-                    <span class="setting-value"><span id="videoQualityValue">50</span> %</span>
-                </div>
-                <div class="setting-description">Calidad de compresión del stream de video (mayor = mejor calidad)</div>
-                <div class="slider-container">
-                    <input type="range" class="setting-slider" id="videoQualitySlider" 
-                           min="0" max="100" step="10" value="50"
-                           oninput="updateSliderValue('videoQuality', this.value)">
-                    <div class="slider-labels">
-                        <span>Baja</span>
-                        <span>Media</span>
-                        <span>Alta</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Frames por Segundo -->
             <div class="setting-item">
                 <div class="setting-label">
@@ -3356,8 +3343,22 @@
             console.log('[ALUMNO] 🖼️ Abriendo galería');
             if (galleryModal) {
                 galleryModal.style.display = 'block';
-                // Deshabilitar interacción (el alumno no puede cerrar manualmente)
-                galleryModal.style.pointerEvents = 'none';
+                // Permitir interacción para poder hacer scroll, pero sin cerrar manualmente
+                galleryModal.style.pointerEvents = 'auto';
+                try {
+                    // Deshabilitar interacciones del mapa mientras la galería está abierta
+                    if (map) {
+                        map.dragging.disable();
+                        map.scrollWheelZoom.disable();
+                        map.touchZoom.disable();
+                        map.boxZoom.disable();
+                        map.keyboard.disable();
+                    }
+                } catch (e) { /* noop */ }
+                
+                // Evitar que gestos táctiles propaguen al mapa de fondo
+                galleryModal.addEventListener('touchmove', function(ev){ ev.stopPropagation(); }, { passive: true });
+                galleryModal.addEventListener('wheel', function(ev){ ev.stopPropagation(); }, { passive: true });
                 
                 // Mostrar mensaje de carga
                 const galleryGrid = document.getElementById('gallery-grid');
@@ -3370,6 +3371,16 @@
             if (galleryModal) {
                 galleryModal.style.display = 'none';
                 galleryModal.style.pointerEvents = 'auto';
+                try {
+                    // Rehabilitar interacciones del mapa
+                    if (map) {
+                        map.dragging.enable();
+                        map.scrollWheelZoom.enable();
+                        map.touchZoom.enable();
+                        map.boxZoom.enable();
+                        map.keyboard.enable();
+                    }
+                } catch (e) { /* noop */ }
             }
         }
     });

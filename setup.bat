@@ -75,8 +75,12 @@ echo Actualizando herramientas de instalacion...
 python -m pip install --upgrade pip setuptools wheel
 
 echo.
-echo Instalando dependencias...
-python -m pip install -r requirements.txt
+echo Instalando dependencias de la WebApp...
+python -m pip install -r requirements_webapp.txt
+
+echo.
+echo Instalando dependencias de la Estacion de Tierra...
+python -m pip install -r requirements_estaciontierra.txt
 
 echo.
 echo Setup completado. Puedes ejecutar run.bat para iniciar la aplicacion.

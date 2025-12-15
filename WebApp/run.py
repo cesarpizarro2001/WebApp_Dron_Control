@@ -17,6 +17,10 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Variable global para almacenar el tipo de dispositivo del profesor
 professor_device_info = {'isTouchDevice': None}
+# Estado UI compartido para re-sincronizar a alumnos que se conectan tarde
+ui_state = {
+    'gamepad_modal': None  # 'open' | 'close' | None
+}
 
 # ========================================================================
 # WEBRTC SIGNALING - Gestión de emisores y receptores
@@ -211,6 +215,14 @@ def handle_join_alumno():
         
         emit('professor_device_type', payload)
 
+    # Reenviar estado actual del modal de instrucciones del mando si está abierto
+    try:
+        if ui_state.get('gamepad_modal') == 'open':
+            print("  └─> Re-sincronizando estado: gamepad_modal ABIERTO para el nuevo alumno")
+            emit('gamepad_modal_sync', {'action': 'open'})
+    except Exception as e:
+        print(f"❌ Error re-sincronizando gamepad_modal al alumno: {e}")
+
 # ==================================================================================
 
 # Recibir telemetría de la Estación de Tierra y enviarla al navegador
@@ -313,6 +325,8 @@ def handle_gamepad_status_sync(payload):
         socketio.emit('gamepad_status_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en gamepad_status_sync: {e}")
+
+ 
 
 # Sincronización de navegación por ajustes
 @socketio.on('settings_navigation_sync')
@@ -559,11 +573,14 @@ def handle_pilot_button_sync(payload):
 # Sincronización del modal de instrucciones del mando
 @socketio.on('gamepad_modal_sync')
 def handle_gamepad_modal_sync(payload):
-    """Sincroniza apertura/cierre del modal de instrucciones del mando - A TODOS LOS CLIENTES"""
+    """Sincroniza apertura/cierre del modal de instrucciones del mando - SOLO A ALUMNOS"""
     try:
         action = payload.get('action')
-        print(f"[SYNC MODAL MANDO → TODOS] {action.upper()}")
-        socketio.emit('gamepad_modal_sync', payload, include_self=False)
+        print(f"[SYNC MODAL MANDO → ALUMNOS] {action.upper()}")
+        # Guardar estado para re-sincronizar a alumnos que entren más tarde
+        if action in ('open', 'close'):
+            ui_state['gamepad_modal'] = action
+        socketio.emit('gamepad_modal_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en gamepad_modal_sync: {e}")
 
@@ -655,6 +672,81 @@ def handle_flight_event(data):
         print(f"❌ ERROR al emitir evento {event_type}: {e}", flush=True)
         import traceback
         traceback.print_exc()
+
+# ==================================================================================
+# RECEPCIÓN DE SUBIDAS DE FOTOS/VIDEOS DESDE ESTACIÓN DE TIERRA
+# Guarda los binarios en EstacionTierra/captured_photos o captured_videos
+# ==================================================================================
+
+def _safe_join(base_dir, *paths):
+    target = os.path.normpath(os.path.join(base_dir, *paths))
+    base_abs = os.path.abspath(base_dir)
+    if not os.path.abspath(target).startswith(base_abs):
+        raise ValueError("Ruta fuera del directorio permitido")
+    return target
+
+def _decode_base64(content: str) -> bytes:
+    try:
+        # Permitir 'data:*;base64,' o sólo el contenido
+        if content.startswith('data:'):
+            content = content.split(',', 1)[1]
+        return base64.b64decode(content)
+    except Exception as e:
+        raise ValueError(f"Contenido base64 inválido: {e}")
+
+@socketio.on('upload_photo')
+def handle_upload_photo(data):
+    try:
+        rel_name = (data.get('filename') or '').replace('\\', '/')
+        content = data.get('content') or data.get('data')
+        if not rel_name or not content:
+            print('❌ upload_photo: falta filename o content')
+            return
+
+        if rel_name.startswith('/'):
+            rel_name = rel_name[1:]
+        if '..' in rel_name.split('/'):
+            print('❌ upload_photo: ruta no permitida')
+            return
+
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        photos_root = os.path.join(base_dir, '..', 'EstacionTierra', 'captured_photos')
+        dest_path = _safe_join(photos_root, rel_name)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+        blob = _decode_base64(content)
+        with open(dest_path, 'wb') as f:
+            f.write(blob)
+        print(f"📸 Foto subida y guardada en: {dest_path}")
+    except Exception as e:
+        print(f"❌ Error en upload_photo: {e}")
+
+@socketio.on('upload_video')
+def handle_upload_video(data):
+    try:
+        rel_name = (data.get('filename') or '').replace('\\', '/')
+        content = data.get('content') or data.get('data')
+        if not rel_name or not content:
+            print('❌ upload_video: falta filename o content')
+            return
+
+        if rel_name.startswith('/'):
+            rel_name = rel_name[1:]
+        if '..' in rel_name.split('/'):
+            print('❌ upload_video: ruta no permitida')
+            return
+
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        videos_root = os.path.join(base_dir, '..', 'EstacionTierra', 'captured_videos')
+        dest_path = _safe_join(videos_root, rel_name)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+        blob = _decode_base64(content)
+        with open(dest_path, 'wb') as f:
+            f.write(blob)
+        print(f"🎥 Video subido y guardado en: {dest_path}")
+    except Exception as e:
+        print(f"❌ Error en upload_video: {e}")
 
 # Enviar frame de video del movil procesado al navegador y a la estación de tierra
 @socketio.on("frame_from_camera")
@@ -1085,13 +1177,16 @@ if __name__ == '__main__':
     # Crear contexto SSL para HTTPS
     import ssl
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    #CERTIFICADO LOCALHOST
+    #ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    #CERTIFICADO SERVIDOR
+    ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
     
     # socketio.run() ejecuta tanto Flask como Socket.IO en el mismo puerto
     socketio.run(
         app, 
         host='0.0.0.0', 
-        port=5004,
+        port=8106,
         debug=True,
         allow_unsafe_werkzeug=True,
         use_reloader=False,

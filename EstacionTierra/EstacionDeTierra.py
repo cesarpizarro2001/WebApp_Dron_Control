@@ -1123,6 +1123,17 @@ def capturar_foto():
         print(f"Enviando ruta: {relative_path}")
         # Envia la confirmación al cliente
         sio.emit('flight_event', {'event': 'foto_capturada', 'filename': relative_path})
+
+        # Subir la foto al servidor Flask para que esté disponible vía /static
+        try:
+            with open(filepath, 'rb') as f:
+                content_b64 = base64.b64encode(f.read()).decode('utf-8')
+            sio.emit('upload_photo', {
+                'filename': relative_path,
+                'content': content_b64
+            })
+        except Exception as e:
+            print(f"Error subiendo la foto al servidor: {e}")
         return True
     else:
         print("No hay frame disponible para capturar")
@@ -1131,7 +1142,7 @@ def capturar_foto():
 
 # Inicia una grabación de la cámara del dron
 def start_recording():
-    global recording, video_writer, last_frame, current_flight_name, current_video_filename
+    global recording, video_writer, last_frame, current_flight_name, current_video_filename, current_video_filepath
 
     if recording:
         return False  # Ya estamos grabando
@@ -1213,6 +1224,7 @@ def start_recording():
         # Guarda el nombre del archivo con la ruta relativa (incluyendo flight_name si existe)
         relative_path = os.path.join(current_flight_name, filename) if current_flight_name else filename
         current_video_filename = relative_path.replace('\\', '/')
+        current_video_filepath = filepath
 
         # Inicia grabación en un hilo separado
         recording = True
@@ -1228,7 +1240,7 @@ def start_recording():
 
 # Detiene la grabación del video de la cámara del dron
 def stop_recording():
-    global recording, video_writer, current_video_filename, current_flight_name
+    global recording, video_writer, current_video_filename, current_video_filepath, current_flight_name
 
     if not recording:
         return False  # No estamos grabando
@@ -1241,7 +1253,23 @@ def stop_recording():
         # Enviar la ruta relativa que ya fue construida en start_recording()
         if current_video_filename:
             sio.emit('flight_event', {'event': 'video_detenido', 'filename': current_video_filename})
+
+            # Intentar subir el archivo de video al servidor Flask
+            try:
+                # Pequeña espera para asegurar que el archivo esté cerrado
+                time.sleep(0.2)
+                if current_video_filepath and os.path.exists(current_video_filepath):
+                    with open(current_video_filepath, 'rb') as f:
+                        content_b64 = base64.b64encode(f.read()).decode('utf-8')
+                    sio.emit('upload_video', {
+                        'filename': current_video_filename,
+                        'content': content_b64
+                    })
+            except Exception as e:
+                print(f"Error subiendo el video al servidor: {e}")
+
             current_video_filename = None  # Resetear después de enviar
+            current_video_filepath = None
         else:
             sio.emit('flight_event', {'event': 'video_detenido'})
         
@@ -2094,6 +2122,7 @@ recording = False
 video_writer = None
 video_thread = None
 current_video_filename = None  # Variable para almacenar el nombre del video actual
+current_video_filepath = None  # Ruta absoluta del archivo de video actual
 current_flight_name = None  # Variable para almacenar el nombre del vuelo actual
 gallery_window = None
 selected_flight = None
@@ -2117,7 +2146,7 @@ def connect_to_socketio_server():
             # DESARROLLO: HTTPS con certificado autofirmado (ssl_verify=False configurado en el cliente)
             sio.connect('https://localhost:5004')
             # PRODUCCIÓN: descomentar la siguiente línea
-            #sio.connect('https://dronseetac.upc.edu:8102')
+            #sio.connect('https://dronseetac.upc.edu:8106')
             print("Conectado exitosamente al servidor Socket.IO")
             return True
         except Exception as e:

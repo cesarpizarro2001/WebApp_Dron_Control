@@ -1451,24 +1451,6 @@
                 <h4 style="color: #667eea; text-align: center; margin-bottom: 15px;">📹 Configuración de Video</h4>
             </div>
 
-            <!-- Calidad del Video -->
-            <div class="setting-item">
-                <div class="setting-label">
-                    <span>Calidad del Video</span>
-                    <span class="setting-value"><span id="videoQualityValue">50</span> %</span>
-                </div>
-                <div class="setting-description">Calidad de compresión del stream de video (mayor = mejor calidad)</div>
-                <div class="slider-container">
-                    <input type="range" class="setting-slider" id="videoQualitySlider" 
-                           min="0" max="100" step="5" value="50"
-                           oninput="updateSliderValue('videoQuality', this.value)">
-                    <div class="slider-labels">
-                        <span>Baja (0%)</span>
-                        <span>Alta (100%)</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Frames por Segundo -->
             <div class="setting-item">
                 <div class="setting-label">
@@ -1499,7 +1481,7 @@
                         <span>Despegar</span>
                     </div>
                     <button class="remap-button" onclick="startRemapping('takeoff')" id="takeoffRemapButton">
-                        <span class="remap-icon">🎯</span> <span id="takeoffButtonLabel">Botón 1 (Arriba)</span>
+                        <span class="remap-icon">🎯</span> <span id="takeoffButtonLabel">Start</span>
                     </button>
                 </div>
 
@@ -1509,7 +1491,7 @@
                         <span>Aterrizar</span>
                     </div>
                     <button class="remap-button" onclick="startRemapping('land')" id="landRemapButton">
-                        <span class="remap-icon">🎯</span> <span id="landButtonLabel">Botón 2 (Derecha)</span>
+                        <span class="remap-icon">🎯</span> <span id="landButtonLabel">Botón 2 / Botón B</span>
                     </button>
                 </div>
 
@@ -1519,7 +1501,7 @@
                         <span>Volver a Casa</span>
                     </div>
                     <button class="remap-button" onclick="startRemapping('rtl')" id="rtlRemapButton">
-                        <span class="remap-icon">🎯</span> <span id="rtlButtonLabel">Botón 3 (Abajo)</span>
+                        <span class="remap-icon">🎯</span> <span id="rtlButtonLabel">Botón 1 / Botón Y</span>
                     </button>
                 </div>
 
@@ -1529,7 +1511,7 @@
                         <span>Capturar Foto</span>
                     </div>
                     <button class="remap-button" onclick="startRemapping('photo')" id="photoRemapButton">
-                        <span class="remap-icon">🎯</span> <span id="photoButtonLabel">Botón 4 (Izquierda)</span>
+                        <span class="remap-icon">🎯</span> <span id="photoButtonLabel">Botón 3 / Botón A</span>
                     </button>
                 </div>
 
@@ -1539,7 +1521,7 @@
                         <span>Grabar Video</span>
                     </div>
                     <button class="remap-button" onclick="startRemapping('video')" id="videoRemapButton">
-                        <span class="remap-icon">🎯</span> <span id="videoButtonLabel">Start</span>
+                        <span class="remap-icon">🎯</span> <span id="videoButtonLabel">Botón 4 / Botón X</span>
                     </button>
                 </div>
             </div>
@@ -2542,6 +2524,7 @@
                 console.log('📖 Mostrando instrucciones del mando');
                 
                 // Sincronizar con alumnos
+                console.log('📤 [PROFESOR] Emitiendo gamepad_modal_sync open');
                 socket.emit('gamepad_modal_sync', { action: 'open' });
             }
         }
@@ -2554,6 +2537,7 @@
                 console.log('✅ Instrucciones cerradas');
                 
                 // Sincronizar con alumnos
+                console.log('📤 [PROFESOR] Emitiendo gamepad_modal_sync close');
                 socket.emit('gamepad_modal_sync', { action: 'close' });
             }
         }
@@ -3004,7 +2988,6 @@
             yawRate: 90,       // ATC_RATE_Y_MAX (deg/s)
             accelZ: 250,       // PILOT_ACCEL_Z (cm/s²)
             loitAcc: 500,      // LOIT_ACC_MAX (cm/s²)
-            videoQuality: 50,  // Calidad del video (0-100%)
             videoFps: 5        // Frames por segundo (1-30 fps)
         };
 
@@ -3336,13 +3319,11 @@
             
             // Enviar configuración de video por separado
             socket.emit('video_settings', {
-                quality: currentSettings.videoQuality,
                 fps: currentSettings.videoFps
             });
             
             console.log('Aplicando ajustes del dron:', params);
             console.log('Aplicando ajustes de video:', {
-                quality: currentSettings.videoQuality,
                 fps: currentSettings.videoFps
             });
             

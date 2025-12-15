@@ -1,0 +1,6 @@
+pymavlink
+python-socketio
+opencv-python
+pillow
+aiortc
+ultralytics

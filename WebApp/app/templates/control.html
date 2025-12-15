@@ -2734,25 +2734,6 @@
         </div>
 
         <div class="settings-content">
-            <!-- Calidad del Video -->
-            <div class="setting-item">
-                <div class="setting-label">
-                    <span>Calidad del Video</span>
-                    <span class="setting-value"><span id="videoQualityValue">50</span> %</span>
-                </div>
-                <div class="setting-description">Calidad de compresión del stream de video (mayor = mejor calidad)</div>
-                <div class="slider-container">
-                    <input type="range" class="setting-slider" id="videoQualitySlider" 
-                           min="0" max="100" step="10" value="50"
-                           oninput="updateSliderValue('videoQuality', this.value)">
-                    <div class="slider-labels">
-                        <span>Baja</span>
-                        <span>Media</span>
-                        <span>Alta</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Frames por Segundo -->
             <div class="setting-item">
                 <div class="setting-label">
@@ -6681,7 +6662,6 @@
 
         // ========== SISTEMA DE AJUSTES DE VIDEO ==========
         let currentSettings = {
-            videoQuality: 50,
             videoFps: 5
         };
 
@@ -6693,11 +6673,9 @@
                     currentSettings = JSON.parse(saved);
                     
                     // Actualizar sliders
-                    document.getElementById('videoQualitySlider').value = currentSettings.videoQuality;
                     document.getElementById('videoFpsSlider').value = currentSettings.videoFps;
                     
                     // Actualizar valores mostrados
-                    document.getElementById('videoQualityValue').textContent = currentSettings.videoQuality;
                     document.getElementById('videoFpsValue').textContent = currentSettings.videoFps;
                     
                     console.log('⚙️ Configuración cargada:', currentSettings);
@@ -6720,10 +6698,7 @@
         function updateSliderValue(setting, value) {
             const numValue = parseInt(value);
             
-            if (setting === 'videoQuality') {
-                currentSettings.videoQuality = numValue;
-                document.getElementById('videoQualityValue').textContent = numValue;
-            } else if (setting === 'videoFps') {
+            if (setting === 'videoFps') {
                 currentSettings.videoFps = numValue;
                 document.getElementById('videoFpsValue').textContent = numValue;
             }
@@ -6736,7 +6711,6 @@
             
             // Enviar configuración de video al servidor
             socket.emit('video_settings', {
-                quality: currentSettings.videoQuality,
                 fps: currentSettings.videoFps
             });
             
@@ -6760,16 +6734,13 @@
         // Restablecer valores por defecto
         function resetSettings() {
             currentSettings = {
-                videoQuality: 50,
                 videoFps: 5
             };
             
             // Actualizar sliders
-            document.getElementById('videoQualitySlider').value = 50;
             document.getElementById('videoFpsSlider').value = 5;
             
             // Actualizar valores mostrados
-            document.getElementById('videoQualityValue').textContent = 50;
             document.getElementById('videoFpsValue').textContent = 5;
             
             console.log('🔄 Configuración restablecida a valores por defecto');
