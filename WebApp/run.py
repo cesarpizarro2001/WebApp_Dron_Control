@@ -15,6 +15,23 @@ mp_drawing = mp.solutions.drawing_utils
 app = create_app()
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Rutas base en el servidor (para guardar/listar galería)
+def _server_paths():
+    # Buscar el directorio raíz del proyecto (donde está EstacionTierra)
+    current_file = os.path.abspath(__file__)
+    current_dir = os.path.dirname(current_file)
+    
+    # Si estamos en WebApp/, subir un nivel
+    if os.path.basename(current_dir) == 'WebApp':
+        repo_root = os.path.dirname(current_dir)
+    else:
+        # Si run.py está en la raíz del proyecto directamente
+        repo_root = current_dir
+    
+    photos_root = os.path.join(repo_root, 'EstacionTierra', 'captured_photos')
+    videos_root = os.path.join(repo_root, 'EstacionTierra', 'captured_videos')
+    return photos_root, videos_root
+
 # Variable global para almacenar el tipo de dispositivo del profesor
 professor_device_info = {'isTouchDevice': None}
 # Estado UI compartido para re-sincronizar a alumnos que se conectan tarde
@@ -37,17 +54,22 @@ webrtc_active_connections = {}
 # Cargar imágenes de gestos de MediaPipe
 def load_gesture_images():
     gesture_images = {}
+    # Directorio base para las imágenes de gestos
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    gestos_dir = os.path.join(base_dir, 'gestos')
+    
     gesture_files = {
-        'norte': 'gestos/pulgar_arriba.png',
-        'sur': 'gestos/pulgar_abajo.png',
-        'oeste': 'gestos/pulgar_izquierda.png',
-        'este': 'gestos/pulgar_derecha.png',
-        'stop': 'gestos/cinco_dedos.png',
-        'despegar': 'gestos/ok.png',
-        'aterrizar': 'gestos/pulgar_indice.png'
+        'norte': 'pulgar_arriba.PNG',
+        'sur': 'pulgar_abajo.PNG',
+        'oeste': 'pulgar_izquierda.PNG',
+        'este': 'pulgar_derecha.PNG',
+        'stop': 'cinco_dedos.PNG',
+        'despegar': 'ok.PNG',
+        'aterrizar': 'pulgar_indice.PNG'
     }
 
-    for gesture, file_path in gesture_files.items():
+    for gesture, filename in gesture_files.items():
+        file_path = os.path.join(gestos_dir, filename)
         try:
             if os.path.exists(file_path):
                 img = cv2.imread(file_path, cv2.IMREAD_COLOR)
@@ -179,9 +201,44 @@ def handle_video_settings(settings):
 # Handler para solicitud de galería
 @socketio.on('request_gallery')
 def handle_request_gallery():
-    """Recibe solicitud de galería desde la WebApp y la reenvía a la Estación de Tierra"""
-    print("📂 Solicitud de galería recibida desde WebApp, reenviando a Estación de Tierra")
-    socketio.emit('request_gallery', include_self=False)
+    """Responde la galería desde el servidor con lo que está disponible para descargar"""
+    try:
+        photos_root, videos_root = _server_paths()
+        archivos = []
+
+        # Fotos
+        if os.path.exists(photos_root):
+            for carpeta_vuelo in os.listdir(photos_root):
+                carpeta_path = os.path.join(photos_root, carpeta_vuelo)
+                if os.path.isdir(carpeta_path):
+                    for nombre in os.listdir(carpeta_path):
+                        if nombre.lower().endswith(('.jpg', '.jpeg', '.png')):
+                            full = os.path.join(carpeta_path, nombre)
+                            archivos.append({
+                                'tipo': 'foto',
+                                'nombre': f"{carpeta_vuelo}/{nombre}",
+                                'fecha': os.path.getmtime(full)
+                            })
+
+        # Videos
+        if os.path.exists(videos_root):
+            for carpeta_vuelo in os.listdir(videos_root):
+                carpeta_path = os.path.join(videos_root, carpeta_vuelo)
+                if os.path.isdir(carpeta_path):
+                    for nombre in os.listdir(carpeta_path):
+                        if nombre.lower().endswith(('.mp4', '.avi', '.mov')):
+                            full = os.path.join(carpeta_path, nombre)
+                            archivos.append({
+                                'tipo': 'video',
+                                'nombre': f"{carpeta_vuelo}/{nombre}",
+                                'fecha': os.path.getmtime(full)
+                            })
+
+        print(f"📂 Galería (servidor): {len(archivos)} archivos")
+        socketio.emit('gallery_files', archivos)
+    except Exception as e:
+        print(f"❌ Error listando galería en servidor: {e}")
+        socketio.emit('gallery_files', [])
 
 # Handler para recibir archivos de galería desde la Estación de Tierra
 @socketio.on('gallery_files')
@@ -709,8 +766,7 @@ def handle_upload_photo(data):
             print('❌ upload_photo: ruta no permitida')
             return
 
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        photos_root = os.path.join(base_dir, '..', 'EstacionTierra', 'captured_photos')
+        photos_root, _ = _server_paths()
         dest_path = _safe_join(photos_root, rel_name)
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
@@ -736,8 +792,7 @@ def handle_upload_video(data):
             print('❌ upload_video: ruta no permitida')
             return
 
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        videos_root = os.path.join(base_dir, '..', 'EstacionTierra', 'captured_videos')
+        _, videos_root = _server_paths()
         dest_path = _safe_join(videos_root, rel_name)
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
@@ -1178,9 +1233,9 @@ if __name__ == '__main__':
     import ssl
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     #CERTIFICADO LOCALHOST
-    #ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
     #CERTIFICADO SERVIDOR
-    ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
+    #ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
     
     # socketio.run() ejecuta tanto Flask como Socket.IO en el mismo puerto
     socketio.run(

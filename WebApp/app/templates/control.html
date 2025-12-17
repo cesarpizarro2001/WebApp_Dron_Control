@@ -4081,7 +4081,7 @@
             }
             
             // Construir la ruta y cargar la imagen
-            const photoPath = `/static/captured_photos/${nombreFoto}`;
+            const photoPath = `/files/captured_photos/${nombreFoto}`;
             capturedPhoto.src = photoPath;
             
             // Mostrar el modal
@@ -4142,7 +4142,7 @@
             }
             
             // Construir la ruta y cargar el video
-            const videoPath = `/static/captured_videos/${nombreVideo}`;
+            const videoPath = `/files/captured_videos/${nombreVideo}`;
             
             videoSource.src = videoPath;
             capturedVideo.load(); // Recargar el video con la nueva fuente
@@ -4370,8 +4370,8 @@
                     const esVideo = archivo.tipo === 'video';
                     const icono = esVideo ? '🎥' : '📸';
                     const ruta = esVideo 
-                        ? `/static/captured_videos/${archivo.nombre}`
-                        : `/static/captured_photos/${archivo.nombre}`;
+                        ? `/files/captured_videos/${archivo.nombre}`
+                        : `/files/captured_photos/${archivo.nombre}`;
                     
                     // Extraer solo el nombre del archivo (sin carpeta)
                     const nombreArchivo = archivo.nombre.split('/')[1] || archivo.nombre;

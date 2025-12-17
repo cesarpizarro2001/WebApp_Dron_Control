@@ -17,11 +17,11 @@ echo [1/2] Iniciando servidor Flask + Socket.IO (run.py)...
 start /min cmd /k "cd /d %~dp0WebApp && call ..\.venv\Scripts\activate.bat && python run.py"
 
 REM === Esperar a que el servidor este listo ===
-echo [*] Esperando a que el servidor este listo (puerto 5004)...
+echo [*] Esperando a que el servidor este listo (puerto 8106)...
 set /a counter=0
 :wait_loop
 timeout /t 1 >nul
-netstat -an | find ":5004" | find "LISTENING" >nul 2>&1
+netstat -an | find ":8106" | find "LISTENING" >nul 2>&1
 if errorlevel 1 (
     set /a counter+=1
     if %counter% lss 15 (
@@ -48,8 +48,8 @@ echo            SERVIDORES LISTOS
 echo ================================================
 echo.
 REM === URLs ===
-set prof_url=https://%ip%:5004
-set alum_url=https://%ip%:5004/alumno_control
+set prof_url=https://%ip%:8106
+set alum_url=https://%ip%:8106/alumno_control
 
 echo WebApp Profesor:
 echo    %prof_url%

@@ -1946,7 +1946,7 @@
                 console.log('[ALUMNO] 📸 Mostrando foto capturada:', payload.photoName);
                 if (modal && img) {
                     const timestamp = new Date().getTime();
-                    const fotoUrl = `/static/captured_photos/${payload.photoName}?t=${timestamp}`;
+                    const fotoUrl = `/files/captured_photos/${payload.photoName}?t=${timestamp}`;
                     img.src = fotoUrl;
                     modal.classList.add('show');
                 }
@@ -1967,7 +1967,7 @@
                 console.log('[ALUMNO] 🎥 Mostrando video grabado:', payload.videoName);
                 if (modal && video) {
                     const timestamp = new Date().getTime();
-                    const videoUrl = `/static/captured_videos/${payload.videoName}?t=${timestamp}`;
+                    const videoUrl = `/files/captured_videos/${payload.videoName}?t=${timestamp}`;
                     video.src = videoUrl;
                     modal.classList.add('show');
                     // Auto-reproducir el video

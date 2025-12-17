@@ -2857,7 +2857,7 @@
             // Construir la URL de la foto con timestamp para evitar cache
             // nombreFoto ya incluye el path completo (ej: PruebaPiloto/foto_dron_20251103-174942.jpg)
             const timestamp = new Date().getTime();
-            const fotoUrl = `/static/captured_photos/${nombreFoto}?t=${timestamp}`;
+            const fotoUrl = `/files/captured_photos/${nombreFoto}?t=${timestamp}`;
             
             img.src = fotoUrl;
             modal.classList.add('show');
@@ -2892,7 +2892,7 @@
             // Construir la URL del video con timestamp para evitar cache
             // nombreVideo ya incluye el path completo (ej: PruebaPiloto/video_dron_20251103-174942.mp4)
             const timestamp = new Date().getTime();
-            const videoUrl = `/static/captured_videos/${nombreVideo}?t=${timestamp}`;
+            const videoUrl = `/files/captured_videos/${nombreVideo}?t=${timestamp}`;
             
             video.src = videoUrl;
             modal.classList.add('show');

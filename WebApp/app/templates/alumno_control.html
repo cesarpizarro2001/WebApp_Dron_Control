@@ -3267,7 +3267,7 @@
             console.log('[ALUMNO] 📸 Mostrando foto capturada:', payload.photoName);
             if (photoModal && capturedPhoto) {
                 // Construir la ruta de la foto
-                const photoPath = `/static/captured_photos/${payload.photoName}`;
+                const photoPath = `/files/captured_photos/${payload.photoName}`;
                 capturedPhoto.src = photoPath;
                 
                 // Mostrar el modal
@@ -3296,7 +3296,7 @@
             console.log('[ALUMNO] 🎥 Mostrando video grabado:', payload.videoName);
             if (videoModal && capturedVideo && videoSource) {
                 // Construir la ruta del video
-                const videoPath = `/static/captured_videos/${payload.videoName}`;
+                const videoPath = `/files/captured_videos/${payload.videoName}`;
                 videoSource.src = videoPath;
                 capturedVideo.load();
                 
@@ -3808,8 +3808,8 @@
                 const esVideo = archivo.tipo === 'video';
                 const icono = esVideo ? '🎥' : '📸';
                 const ruta = esVideo 
-                    ? `/static/captured_videos/${archivo.nombre}`
-                    : `/static/captured_photos/${archivo.nombre}`;
+                    ? `/files/captured_videos/${archivo.nombre}`
+                    : `/files/captured_photos/${archivo.nombre}`;
                 
                 // Extraer solo el nombre del archivo (sin carpeta)
                 const nombreArchivo = archivo.nombre.split('/')[1] || archivo.nombre;
