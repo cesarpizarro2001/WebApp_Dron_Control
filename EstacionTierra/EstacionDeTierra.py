@@ -1231,7 +1231,7 @@ def start_recording():
         video_thread = threading.Thread(target=record_video_thread, args=(filepath,))
         video_thread.start()
 
-        sio.emit('flight_event', {'event': 'video_iniciado', 'filename': filename})
+        sio.emit('flight_event', {'event': 'video_iniciado', 'filename': current_video_filename})
         return True
     else:
         print("No hay frame disponible para iniciar grabación")

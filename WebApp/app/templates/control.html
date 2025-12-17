@@ -2764,9 +2764,9 @@
     <div class="top-controls">
         <input type="number" id="altura" placeholder="Altura (m)" />
         <button id="botonConectar" onclick="conectarDron()">Conectar</button>
-        <button id="botonDespegar" onclick="despegarDron()">Despegar</button>
-        <button id="botonAterrizar" onclick="aterrizarDron()">Aterrizar</button>
-        <button id="botonRTL" onclick="returnToLaunch()">RTL</button>
+        <button id="botonDespegar" onclick="despegarDron()" disabled>Despegar</button>
+        <button id="botonAterrizar" onclick="aterrizarDron()" disabled>Aterrizar</button>
+        <button id="botonRTL" onclick="returnToLaunch()" disabled>RTL</button>
     </div>
 
     <!-- Dropdown de funcionalidades -->
@@ -2843,26 +2843,26 @@
             <!-- Botones superiores sobre la cámara -->
             <div class="camera-top-controls">
                 <div class="camera-top-controls-left">
-                    <button id="toggleDetectionBtn" class="camera-btn camera-btn-icon" onclick="toggleDetection()" title="Activar detección de objetos" style="background: gray;">🔍</button>
+                    <button id="toggleDetectionBtn" class="camera-btn camera-btn-icon" onclick="toggleDetection()" title="Activar detección de objetos" style="background: gray;" disabled>🔍</button>
                 </div>
                 <div class="camera-top-controls-center">
-                    <button class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar">✈️</button>
-                    <button class="camera-btn camera-btn-icon" onclick="aterrizarDron()" title="Aterrizar">🛬</button>
-                    <button class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL">🏠</button>
+                    <button id="camera-despegar-btn" class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar" disabled>✈️</button>
+                    <button id="camera-aterrizar-btn" class="camera-btn camera-btn-icon" onclick="aterrizarDron()" title="Aterrizar" disabled>🛬</button>
+                    <button id="camera-rtl-btn" class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL" disabled>🏠</button>
                 </div>
                 <div class="camera-top-controls-right">
-                    <button class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Configuración de Video">⚙️</button>
+                    <button id="camera-settings-btn" class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Configuración de Video" disabled>⚙️</button>
                 </div>
             </div>
             <!-- Cambio de <img> a <video> para WebRTC -->
             <video id='video-stream' autoplay playsinline muted style="width: 100%; height: 100%; object-fit: contain;"></video>
             <!-- Botones inferiores sobre la cámara -->
             <div class="camera-controls">
-                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" onclick="capturarFoto()" title="Hacer foto">📸</button>
-                <button id="voice-control-modal-btn" class="camera-btn camera-btn-icon" onclick="iniciarControlVoz()" title="Control por voz">
+                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" onclick="capturarFoto()" title="Hacer foto" disabled>📸</button>
+                <button id="voice-control-modal-btn" class="camera-btn camera-btn-icon" onclick="iniciarControlVoz()" title="Control por voz" disabled>
                     <span class="mic-icon">🎤</span>
                 </button>
-                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video">🎥</button>
+                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video" disabled>🎥</button>
             </div>
         </div>
     </div>
@@ -4581,6 +4581,16 @@
             const botonDespegar = document.getElementById('botonDespegar');
             const botonAterrizar = document.getElementById('botonAterrizar');
             const botonRTL = document.getElementById('botonRTL');
+            
+            // Botones de la cámara del dron
+            const cameraDespegar = document.getElementById('camera-despegar-btn');
+            const cameraAterrizar = document.getElementById('camera-aterrizar-btn');
+            const cameraRTL = document.getElementById('camera-rtl-btn');
+            const cameraSettings = document.getElementById('camera-settings-btn');
+            const cameraFoto = document.getElementById('botonCapturarFoto');
+            const cameraVoz = document.getElementById('voice-control-modal-btn');
+            const cameraVideo = document.getElementById('botonGrabarVideo');
+            const cameraDetection = document.getElementById('toggleDetectionBtn');
 
             // Resetear clases de todos los botones
             function resetButtonClasses(button) {
@@ -4616,7 +4626,17 @@
                             removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
                             addClass: []
                         });
+                        
+                        // Habilitar botón de despegar en cámara
+                        if (cameraDespegar) cameraDespegar.disabled = false;
                     }
+                    
+                    // Habilitar botones de utilidades de cámara al conectar
+                    if (cameraSettings) cameraSettings.disabled = false;
+                    if (cameraFoto) cameraFoto.disabled = false;
+                    if (cameraVoz) cameraVoz.disabled = false;
+                    if (cameraVideo) cameraVideo.disabled = false;
+                    if (cameraDetection) cameraDetection.disabled = false;
                     
                     botonAterrizar.disabled = true;
                     botonAterrizar.textContent = 'Aterrizar';
@@ -4628,6 +4648,9 @@
                         addClass: []
                     });
                     
+                    // Deshabilitar botón de aterrizar en cámara
+                    if (cameraAterrizar) cameraAterrizar.disabled = true;
+                    
                     botonRTL.disabled = true;
                     botonRTL.textContent = 'RTL';
                     resetButtonClasses(botonRTL);
@@ -4637,6 +4660,9 @@
                         removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
                         addClass: []
                     });
+                    
+                    // Deshabilitar botón de RTL en cámara
+                    if (cameraRTL) cameraRTL.disabled = true;
                     break;
 
                 case 'arming':
@@ -4648,6 +4674,13 @@
                 case 'flying':
                     // Dron volando
                     despegando = false; // Resetear variable cuando esté volando
+                    
+                    // Cancelar timeout de despegue si existe
+                    if (timeoutDespegue) {
+                        clearTimeout(timeoutDespegue);
+                        timeoutDespegue = null;
+                        console.log('✅ Timeout de despegue cancelado: dron volando correctamente');
+                    }
                     
                     // Asegurar que el botón conectar esté en verde
                     botonConectar.textContent = 'Conectado';
@@ -4681,6 +4714,9 @@
                         addClass: []
                     });
                     
+                    // Habilitar botón de aterrizar en cámara
+                    if (cameraAterrizar) cameraAterrizar.disabled = false;
+                    
                     botonRTL.disabled = false;
                     botonRTL.textContent = 'RTL';
                     resetButtonClasses(botonRTL);
@@ -4690,6 +4726,9 @@
                         removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
                         addClass: []
                     });
+                    
+                    // Habilitar botón de RTL en cámara
+                    if (cameraRTL) cameraRTL.disabled = false;
                     break;
 
                 case 'landing':
@@ -4797,6 +4836,9 @@
 
         // Variable para el timeout de conexión
         let timeoutConexion = null;
+        
+        // Variable para el timeout de despegue
+        let timeoutDespegue = null;
 
         function conectarDron() {
             console.log("Voy a conectar");
@@ -4846,6 +4888,41 @@
                     removeClass: [],
                     addClass: ['boton-amarillo']
                 });
+                
+                // Iniciar timeout de 15 segundos
+                // Si después de 15s no está volando, resetear el botón
+                if (timeoutDespegue) {
+                    clearTimeout(timeoutDespegue);
+                }
+                
+                timeoutDespegue = setTimeout(() => {
+                    console.log('⏰ Timeout de despegue: El dron no ha despegado en 15 segundos');
+                    
+                    // Solo resetear si aún está en estado "despegando"
+                    if (despegando) {
+                        despegando = false;
+                        botonDespegar.disabled = false;
+                        botonDespegar.textContent = 'Despegar';
+                        botonDespegar.classList.remove('boton-amarillo', 'boton-verde', 'boton-rojo');
+                        
+                        // Sincronizar con vista alumno
+                        socket.emit('button_style_sync', {
+                            buttonId: 'botonDespegar',
+                            text: 'Despegar',
+                            removeClass: ['boton-amarillo', 'boton-verde', 'boton-rojo'],
+                            addClass: []
+                        });
+                        
+                        showAlert(
+                            "El dron no ha despegado. Verifica el estado del dron e intenta nuevamente.",
+                            "Timeout de Despegue",
+                            "⚠️"
+                        );
+                    }
+                    
+                    timeoutDespegue = null;
+                }, 15000); // 15 segundos
+                
             } else {
                 showAlert(
                     "Por favor, ingrese una altura válida.",
