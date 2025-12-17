@@ -779,9 +779,14 @@ def handle_upload_photo(data):
 
 @socketio.on('upload_video')
 def handle_upload_video(data):
+    print(f"🎬 Recibido evento upload_video")
     try:
         rel_name = (data.get('filename') or '').replace('\\', '/')
         content = data.get('content') or data.get('data')
+        
+        print(f"  - filename: {rel_name}")
+        print(f"  - content length: {len(content) if content else 0} caracteres")
+        
         if not rel_name or not content:
             print('❌ upload_video: falta filename o content')
             return
@@ -794,14 +799,22 @@ def handle_upload_video(data):
 
         _, videos_root = _server_paths()
         dest_path = _safe_join(videos_root, rel_name)
+        
+        print(f"  - Creando directorio: {os.path.dirname(dest_path)}")
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-
+        
+        print(f"  - Decodificando base64...")
         blob = _decode_base64(content)
+        print(f"  - Tamaño decodificado: {len(blob)} bytes")
+        
+        print(f"  - Escribiendo archivo: {dest_path}")
         with open(dest_path, 'wb') as f:
             f.write(blob)
         print(f"🎥 Video subido y guardado en: {dest_path}")
     except Exception as e:
         print(f"❌ Error en upload_video: {e}")
+        import traceback
+        traceback.print_exc()
 
 # Enviar frame de video del movil procesado al navegador y a la estación de tierra
 @socketio.on("frame_from_camera")
