@@ -2144,9 +2144,9 @@ def connect_to_socketio_server():
             print(f"Intentando conectar al servidor Socket.IO (intento {attempt}/{max_retries})...")
             # Conectar al servidor Flask+Socket.IO (ambos en el mismo puerto)
             # DESARROLLO: HTTPS con certificado autofirmado (ssl_verify=False configurado en el cliente)
-            sio.connect('https://localhost:8106')
+            #sio.connect('https://localhost:8106')
             # PRODUCCIÓN: descomentar la siguiente línea
-            #sio.connect('https://dronseetac.upc.edu:8106')
+            sio.connect('https://dronseetac.upc.edu:8106')
             print("Conectado exitosamente al servidor Socket.IO")
             return True
         except Exception as e:

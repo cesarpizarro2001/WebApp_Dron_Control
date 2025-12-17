@@ -3622,6 +3622,7 @@
         professorIsTouchDevice = data.isTouchDevice;
         
         console.log(`[ALUMNO] 📱 Dispositivo del profesor: ${data.isTouchDevice ? 'TÁCTIL (Joystick)' : 'NO TÁCTIL (Cruceta)'}`);
+        console.log('[ALUMNO] Llamando a applyProfessorDeviceUI()...');
         
         // Aplicar la configuración
         applyProfessorDeviceUI();
@@ -3629,24 +3630,44 @@
     
     // Función para aplicar la UI según el dispositivo del profesor
     function applyProfessorDeviceUI() {
-        if (professorIsTouchDevice === null) return; // No hemos recibido info aún
+        if (professorIsTouchDevice === null) {
+            console.log('[ALUMNO] ⚠️ applyProfessorDeviceUI() llamada pero professorIsTouchDevice es null');
+            return; // No hemos recibido info aún
+        }
         
         const joystickContainer = document.getElementById('joystick-container');
         const navegacion = document.getElementById('navegacion');
         
+        console.log('[ALUMNO] Elementos encontrados:', {
+            joystickContainer: !!joystickContainer,
+            navegacion: !!navegacion,
+            professorIsTouchDevice: professorIsTouchDevice
+        });
+        
+        // SIEMPRE mostrar lo que usa el profesor, independientemente del dispositivo del alumno
         if (professorIsTouchDevice) {
-            // Profesor en móvil: mostrar joystick, ocultar pad
-            console.log('[ALUMNO] Mostrando joystick (profesor en móvil)');
+            // Profesor en móvil: TODOS los alumnos ven joystick
+            console.log('[ALUMNO] ✅ Mostrando joystick (profesor en móvil) - TODOS LOS ALUMNOS');
             if (joystickContainer) {
-                joystickContainer.style.display = 'block';
-                joystickContainer.style.opacity = '0.3';
+                joystickContainer.style.setProperty('display', 'block', 'important');
+                joystickContainer.style.setProperty('opacity', '0.3', 'important');
+                console.log('[ALUMNO] joystick-container display:', joystickContainer.style.display);
             }
-            if (navegacion) navegacion.style.display = 'none';
+            if (navegacion) {
+                navegacion.style.setProperty('display', 'none', 'important');
+                console.log('[ALUMNO] navegacion display:', navegacion.style.display);
+            }
         } else {
-            // Profesor en PC: mostrar pad, ocultar joystick
-            console.log('[ALUMNO] Mostrando cruceta (profesor en PC)');
-            if (joystickContainer) joystickContainer.style.display = 'none';
-            if (navegacion) navegacion.style.display = 'grid';
+            // Profesor en PC: TODOS los alumnos ven pad de navegación
+            console.log('[ALUMNO] ✅ Mostrando cruceta (profesor en PC) - TODOS LOS ALUMNOS');
+            if (joystickContainer) {
+                joystickContainer.style.setProperty('display', 'none', 'important');
+                console.log('[ALUMNO] joystick-container display:', joystickContainer.style.display);
+            }
+            if (navegacion) {
+                navegacion.style.setProperty('display', 'grid', 'important');
+                console.log('[ALUMNO] navegacion display:', navegacion.style.display);
+            }
         }
     }
     
