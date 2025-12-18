@@ -16,6 +16,7 @@ import numpy as np
 import re
 import asyncio
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
+from aiortc import RTCConfiguration, RTCIceServer
 from av import VideoFrame
 from ultralytics import YOLO
 
@@ -2064,11 +2065,16 @@ async def create_webrtc_offer(connection_id):
             except:
                 pass
             del webrtc_peer_connections[connection_id]
-        
-        # Crear NUEVA RTCPeerConnection (instancia fresca)
-        pc = RTCPeerConnection()
+
+        config = RTCConfiguration(iceServers=[
+            RTCIceServer(urls="stun:stun.relay.metered.ca:80"),
+            RTCIceServer(urls="turn:dronseetac.upc.edu:3478",
+                         username="dronseetac",
+                         credential="Mimara00.")
+        ])
+        pc = RTCPeerConnection(config)
         webrtc_peer_connections[connection_id] = pc
-        print(f"   └─> Nueva RTCPeerConnection creada")
+        print(f"   └─> Nueva RTCPeerConnection creada con ICE servers")
         
         # CRÍTICO: Crear NUEVA instancia de DronCameraTrack para esta conexión
         # No se puede reutilizar el mismo track entre múltiples RTCPeerConnection
