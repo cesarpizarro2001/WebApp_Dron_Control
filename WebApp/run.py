@@ -198,55 +198,6 @@ def handle_video_settings(settings):
     socketio.emit('video_settings', settings, include_self=False)
     print("✓ Configuración de video enviada a la Estación de Tierra")
 
-# Handler para solicitud de galería
-@socketio.on('request_gallery')
-def handle_request_gallery():
-    """Responde la galería desde el servidor con lo que está disponible para descargar"""
-    try:
-        photos_root, videos_root = _server_paths()
-        archivos = []
-
-        # Fotos
-        if os.path.exists(photos_root):
-            for carpeta_vuelo in os.listdir(photos_root):
-                carpeta_path = os.path.join(photos_root, carpeta_vuelo)
-                if os.path.isdir(carpeta_path):
-                    for nombre in os.listdir(carpeta_path):
-                        if nombre.lower().endswith(('.jpg', '.jpeg', '.png')):
-                            full = os.path.join(carpeta_path, nombre)
-                            archivos.append({
-                                'tipo': 'foto',
-                                'nombre': f"{carpeta_vuelo}/{nombre}",
-                                'fecha': os.path.getmtime(full)
-                            })
-
-        # Videos
-        if os.path.exists(videos_root):
-            for carpeta_vuelo in os.listdir(videos_root):
-                carpeta_path = os.path.join(videos_root, carpeta_vuelo)
-                if os.path.isdir(carpeta_path):
-                    for nombre in os.listdir(carpeta_path):
-                        if nombre.lower().endswith(('.mp4', '.avi', '.mov')):
-                            full = os.path.join(carpeta_path, nombre)
-                            archivos.append({
-                                'tipo': 'video',
-                                'nombre': f"{carpeta_vuelo}/{nombre}",
-                                'fecha': os.path.getmtime(full)
-                            })
-
-        print(f"📂 Galería (servidor): {len(archivos)} archivos")
-        socketio.emit('gallery_files', archivos)
-    except Exception as e:
-        print(f"❌ Error listando galería en servidor: {e}")
-        socketio.emit('gallery_files', [])
-
-# Handler para recibir archivos de galería desde la Estación de Tierra
-@socketio.on('gallery_files')
-def handle_gallery_files(archivos):
-    """Recibe archivos de galería desde la Estación de Tierra y los envía al navegador"""
-    print(f"📂 Recibidos {len(archivos)} archivos de galería, reenviando al navegador")
-    socketio.emit('gallery_files', archivos, include_self=False)
-    
 # ==================================================================================
 # SISTEMA DE SALA ALUMNOS
 # Los alumnos se unen a la sala 'alumnos' para recibir sincronización del profesor
@@ -339,6 +290,33 @@ def handle_drone_camera_sync(payload):
         print(f"❌ Error en drone_camera_sync: {e}")
 
 # Sincronización de modal de foto capturada
+@socketio.on('sync_photo_capture')
+def handle_sync_photo_capture(payload):
+    """Reenvía foto capturada (base64) a los alumnos para preview"""
+    try:
+        print(f"[SYNC FOTO → ALUMNOS] Reenviando foto capturada en base64")
+        socketio.emit('sync_photo_capture', payload, room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en sync_photo_capture: {e}")
+
+@socketio.on('sync_recording_start')
+def handle_sync_recording_start():
+    """Notifica a los alumnos que inició grabación de video"""
+    try:
+        print(f"[SYNC VIDEO → ALUMNOS] INICIO DE GRABACIÓN")
+        socketio.emit('sync_recording_start', room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en sync_recording_start: {e}")
+
+@socketio.on('sync_recording_stop')
+def handle_sync_recording_stop():
+    """Notifica a los alumnos que finalizó grabación de video"""
+    try:
+        print(f"[SYNC VIDEO → ALUMNOS] FIN DE GRABACIÓN")
+        socketio.emit('sync_recording_stop', room='alumnos')
+    except Exception as e:
+        print(f"❌ Error en sync_recording_stop: {e}")
+
 @socketio.on('photo_modal_sync')
 def handle_photo_modal_sync(payload):
     """Sincroniza visualización de fotos capturadas - SOLO A ALUMNOS"""
@@ -430,41 +408,6 @@ def handle_settings_action_sync(payload):
         socketio.emit('settings_action_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en settings_action_sync: {e}")
-
-# Sincronización de modal de galería
-@socketio.on('gallery_modal_sync')
-def handle_gallery_modal_sync(payload):
-    """Sincroniza apertura/cierre del modal de galería - SOLO A ALUMNOS"""
-    try:
-        action = payload.get('action')
-        print(f"[SYNC GALERÍA → ALUMNOS] {action.upper()}")
-        socketio.emit('gallery_modal_sync', payload, room='alumnos')
-    except Exception as e:
-        print(f"❌ Error en gallery_modal_sync: {e}")
-
-# Sincronización del contenido de la galería
-@socketio.on('gallery_content_sync')
-def handle_gallery_content_sync(payload):
-    """Sincroniza el contenido de archivos de la galería - SOLO A ALUMNOS"""
-    try:
-        archivos = payload.get('archivos', [])
-        print(f"[SYNC CONTENIDO GALERÍA → ALUMNOS] {len(archivos)} archivos")
-        socketio.emit('gallery_content_sync', payload, room='alumnos')
-    except Exception as e:
-        print(f"❌ Error en gallery_content_sync: {e}")
-
-# Sincronización de carpetas expandidas/colapsadas en la galería
-@socketio.on('gallery_folder_sync')
-def handle_gallery_folder_sync(payload):
-    """Sincroniza el estado (expandido/colapsado) de carpetas en la galería - SOLO A ALUMNOS"""
-    try:
-        folder_name = payload.get('folderName')
-        collapsed = payload.get('collapsed')
-        estado = "CERRADA" if collapsed else "ABIERTA"
-        print(f"[SYNC CARPETA GALERÍA → ALUMNOS] '{folder_name}' → {estado}")
-        socketio.emit('gallery_folder_sync', payload, room='alumnos')
-    except Exception as e:
-        print(f"❌ Error en gallery_folder_sync: {e}")
 
 # Sincronización del modal de confirmación
 @socketio.on('confirm_modal_sync')
@@ -730,91 +673,8 @@ def handle_flight_event(data):
         import traceback
         traceback.print_exc()
 
-# ==================================================================================
-# RECEPCIÓN DE SUBIDAS DE FOTOS/VIDEOS DESDE ESTACIÓN DE TIERRA
-# Guarda los binarios en EstacionTierra/captured_photos o captured_videos
-# ==================================================================================
-
-def _safe_join(base_dir, *paths):
-    target = os.path.normpath(os.path.join(base_dir, *paths))
-    base_abs = os.path.abspath(base_dir)
-    if not os.path.abspath(target).startswith(base_abs):
-        raise ValueError("Ruta fuera del directorio permitido")
-    return target
-
-def _decode_base64(content: str) -> bytes:
-    try:
-        # Permitir 'data:*;base64,' o sólo el contenido
-        if content.startswith('data:'):
-            content = content.split(',', 1)[1]
-        return base64.b64decode(content)
-    except Exception as e:
-        raise ValueError(f"Contenido base64 inválido: {e}")
-
-@socketio.on('upload_photo')
-def handle_upload_photo(data):
-    try:
-        rel_name = (data.get('filename') or '').replace('\\', '/')
-        content = data.get('content') or data.get('data')
-        if not rel_name or not content:
-            print('❌ upload_photo: falta filename o content')
-            return
-
-        if rel_name.startswith('/'):
-            rel_name = rel_name[1:]
-        if '..' in rel_name.split('/'):
-            print('❌ upload_photo: ruta no permitida')
-            return
-
-        photos_root, _ = _server_paths()
-        dest_path = _safe_join(photos_root, rel_name)
-        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-
-        blob = _decode_base64(content)
-        with open(dest_path, 'wb') as f:
-            f.write(blob)
-        print(f"📸 Foto subida y guardada en: {dest_path}")
-    except Exception as e:
-        print(f"❌ Error en upload_photo: {e}")
-
-@socketio.on('upload_video')
-def handle_upload_video(data):
-    print(f"🎬 Recibido evento upload_video")
-    try:
-        rel_name = (data.get('filename') or '').replace('\\', '/')
-        content = data.get('content') or data.get('data')
-        
-        print(f"  - filename: {rel_name}")
-        print(f"  - content length: {len(content) if content else 0} caracteres")
-        
-        if not rel_name or not content:
-            print('❌ upload_video: falta filename o content')
-            return
-
-        if rel_name.startswith('/'):
-            rel_name = rel_name[1:]
-        if '..' in rel_name.split('/'):
-            print('❌ upload_video: ruta no permitida')
-            return
-
-        _, videos_root = _server_paths()
-        dest_path = _safe_join(videos_root, rel_name)
-        
-        print(f"  - Creando directorio: {os.path.dirname(dest_path)}")
-        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-        
-        print(f"  - Decodificando base64...")
-        blob = _decode_base64(content)
-        print(f"  - Tamaño decodificado: {len(blob)} bytes")
-        
-        print(f"  - Escribiendo archivo: {dest_path}")
-        with open(dest_path, 'wb') as f:
-            f.write(blob)
-        print(f"🎥 Video subido y guardado en: {dest_path}")
-    except Exception as e:
-        print(f"❌ Error en upload_video: {e}")
-        import traceback
-        traceback.print_exc()
+# NOTA: Handlers upload_photo y upload_video eliminados - las fotos/videos ya no se suben al servidor
+# La webapp captura localmente en el navegador, la Estación de Tierra guarda en sus carpetas locales
 
 # Enviar frame de video del movil procesado al navegador y a la estación de tierra
 @socketio.on("frame_from_camera")

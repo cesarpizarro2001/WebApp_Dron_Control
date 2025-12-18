@@ -1124,17 +1124,6 @@ def capturar_foto():
         print(f"Enviando ruta: {relative_path}")
         # Envia la confirmación al cliente
         sio.emit('flight_event', {'event': 'foto_capturada', 'filename': relative_path})
-
-        # Subir la foto al servidor Flask para que esté disponible vía /static
-        try:
-            with open(filepath, 'rb') as f:
-                content_b64 = base64.b64encode(f.read()).decode('utf-8')
-            sio.emit('upload_photo', {
-                'filename': relative_path,
-                'content': content_b64
-            })
-        except Exception as e:
-            print(f"Error subiendo la foto al servidor: {e}")
         return True
     else:
         print("No hay frame disponible para capturar")
@@ -1254,29 +1243,7 @@ def stop_recording():
         # Enviar la ruta relativa que ya fue construida en start_recording()
         if current_video_filename:
             sio.emit('flight_event', {'event': 'video_detenido', 'filename': current_video_filename})
-
-            # Intentar subir el archivo de video al servidor Flask
-            print(f"[SYNC VIDEO → ALUMNOS] ABRIR - {current_video_filename}")
-            try:
-                # Pequeña espera para asegurar que el archivo esté cerrado
-                time.sleep(0.2)
-                if current_video_filepath and os.path.exists(current_video_filepath):
-                    print(f"📤 Subiendo video al servidor: {current_video_filepath}")
-                    with open(current_video_filepath, 'rb') as f:
-                        content_b64 = base64.b64encode(f.read()).decode('utf-8')
-                    print(f"📦 Video codificado en base64, tamaño: {len(content_b64)} caracteres")
-                    sio.emit('upload_video', {
-                        'filename': current_video_filename,
-                        'content': content_b64
-                    })
-                    print(f"✓ upload_video emitido al servidor")
-                else:
-                    print(f"❌ Video no existe en: {current_video_filepath}")
-            except Exception as e:
-                print(f"❌ Error subiendo el video al servidor: {e}")
-            print(f"[SYNC VIDEO → ALUMNOS] CERRAR")
-
-            current_video_filename = None  # Resetear después de enviar
+            current_video_filename = None
             current_video_filepath = None
         else:
             sio.emit('flight_event', {'event': 'video_detenido'})

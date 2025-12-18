@@ -1,5 +1,4 @@
-from flask import Blueprint, render_template, send_from_directory
-import os
+from flask import Blueprint, render_template
 
 main = Blueprint('main', __name__)
 
@@ -26,20 +25,3 @@ def alumno_piloto():
 @main.route('/alumno_movimiento')
 def alumno_movimiento():
     return render_template('alumno_movimiento.html')
-
-# Ruta para servir fotos capturadas desde EstacionTierra
-@main.route('/files/captured_photos/<path:filename>')
-def captured_photos(filename):
-    # Construir ruta relativa a EstacionTierra/captured_photos
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    photos_dir = os.path.join(base_dir, 'EstacionTierra', 'captured_photos')
-    print(f"Sirviendo foto desde: {photos_dir}/{filename}")
-    return send_from_directory(photos_dir, filename)
-
-# Ruta para servir videos grabados desde EstacionTierra
-@main.route('/files/captured_videos/<path:filename>')
-def captured_videos(filename):
-    # Construir ruta relativa a EstacionTierra/captured_videos
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    videos_dir = os.path.join(base_dir, 'EstacionTierra', 'captured_videos')
-    return send_from_directory(videos_dir, filename, mimetype='video/mp4')
