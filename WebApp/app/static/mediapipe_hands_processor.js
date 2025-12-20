@@ -360,6 +360,25 @@ class MediaPipeHandsProcessor {
                 break;
             case "DESPEGAR":
                 this.socket.emit("arm_takeOff", 5);
+                // Actualizar botón Despegar inmediatamente (UI local)
+                try {
+                    const botonDespegar = document.getElementById('botonDespegar');
+                    if (botonDespegar) {
+                        botonDespegar.textContent = 'Despegando...';
+                        botonDespegar.disabled = true;
+                        botonDespegar.classList.remove('boton-verde', 'boton-rojo');
+                        botonDespegar.classList.add('boton-amarillo');
+                    }
+                } catch (_) {}
+                // Sincronizar estilo con alumnos
+                try {
+                    this.socket.emit('button_style_sync', {
+                        buttonId: 'botonDespegar',
+                        text: 'Despegando...',
+                        removeClass: ['boton-verde', 'boton-rojo'],
+                        addClass: ['boton-amarillo']
+                    });
+                } catch (_) {}
                 break;
             case "NORTE":
                 this.socket.emit("go", "North");
