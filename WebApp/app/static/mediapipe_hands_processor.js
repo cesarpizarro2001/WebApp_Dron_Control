@@ -359,26 +359,18 @@ class MediaPipeHandsProcessor {
                 this.socket.emit("go", "Stop");
                 break;
             case "DESPEGAR":
-                this.socket.emit("arm_takeOff", 5);
-                // Actualizar botón Despegar inmediatamente (UI local)
-                try {
-                    const botonDespegar = document.getElementById('botonDespegar');
-                    if (botonDespegar) {
-                        botonDespegar.textContent = 'Despegando...';
-                        botonDespegar.disabled = true;
-                        botonDespegar.classList.remove('boton-verde', 'boton-rojo');
-                        botonDespegar.classList.add('boton-amarillo');
+                // Preferir llamar a la función global si existe para actualizar UI y enviar comando
+                if (typeof window !== 'undefined' && typeof window.despegarDronConAltura === 'function') {
+                    try {
+                        window.despegarDronConAltura(5);
+                    } catch (e) {
+                        console.warn('Fallo al llamar a despegarDronConAltura, haciendo fallback al emit:', e);
+                        this.socket.emit("arm_takeOff", 5);
                     }
-                } catch (_) {}
-                // Sincronizar estilo con alumnos
-                try {
-                    this.socket.emit('button_style_sync', {
-                        buttonId: 'botonDespegar',
-                        text: 'Despegando...',
-                        removeClass: ['boton-verde', 'boton-rojo'],
-                        addClass: ['boton-amarillo']
-                    });
-                } catch (_) {}
+                } else {
+                    // Fallback si no está disponible (otras vistas)
+                    this.socket.emit("arm_takeOff", 5);
+                }
                 break;
             case "NORTE":
                 this.socket.emit("go", "North");
