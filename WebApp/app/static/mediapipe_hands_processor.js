@@ -18,9 +18,35 @@ class MediaPipeHandsProcessor {
         this.socket = socket;
         this.hands = null;
         this.camera = null;
+        // Último comando EMITIDO (tras estabilización)
         this.lastCommand = null;
         this.gestureImages = {};
         this.isProcessing = false;
+
+        // Estabilización temporal de comandos (menos sensibilidad)
+        this.pendingCommand = null;     // Comando detectado actualmente (candidato)
+        this.pendingSince = 0;          // Timestamp desde que se detectó el candidato
+        this.pendingFrames = 0;         // Frames consecutivos con el mismo candidato
+        this.lastEmittedAt = 0;         // Timestamp del último comando emitido
+        this.minFrames = 4;             // Mínimo de frames consecutivos
+        this.holdTimesMs = {            // Tiempo mínimo de mantenimiento por comando
+            'LAND': 1200,
+            'DESPEGAR': 800,
+            'STOP': 600,
+            'NORTE': 300,
+            'SUR': 300,
+            'ESTE': 300,
+            'OESTE': 300
+        };
+        this.cooldownsMs = {            // Intervalo mínimo entre emisiones por comando
+            'LAND': 2000,
+            'DESPEGAR': 1500,
+            'STOP': 600,
+            'NORTE': 300,
+            'SUR': 300,
+            'ESTE': 300,
+            'OESTE': 300
+        };
         
         // Configuración de gestos (igual que Python)
         this.gesturesInfo = [
@@ -173,7 +199,8 @@ class MediaPipeHandsProcessor {
         // Dibujar chuleta de gestos (igual que Python)
         this.drawGestureCheatSheet();
         
-        let command = null;
+        // Comando detectado en este frame (sin estabilización)
+        let detected = null;
         
         // Si hay manos detectadas
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
@@ -194,23 +221,17 @@ class MediaPipeHandsProcessor {
                 });
                 
                 // Detectar gesto (misma lógica que Python)
-                command = this.detectGesture(landmarks);
+                detected = this.detectGesture(landmarks) || detected;
             }
         }
         
-        // Mostrar comando en pantalla (igual que Python: cv2.putText)
-        if (command) {
-            this.drawCommand(command);
-            
-            // Enviar comando solo si cambió (evitar spam)
-            if (command !== this.lastCommand) {
-                console.log(`🎯 Comando detectado: ${command}`);
-                this.sendCommand(command);
-                this.lastCommand = command;
-            }
-        } else {
-            this.lastCommand = null;
+        // Mostrar comando detectado (UI responsiva), aunque la emisión se estabiliza
+        if (detected) {
+            this.drawCommand(detected);
         }
+
+        // Estabilizar y emitir comando si cumple criterios de tiempo/frames
+        this._maybeEmitCommand(detected);
     }
     
     /**
@@ -330,6 +351,49 @@ class MediaPipeHandsProcessor {
             case "LAND":
                 this.socket.emit("Land");
                 break;
+        }
+    }
+
+    /**
+     * Lógica de estabilización: requiere mantener el mismo gesto
+     * por cierto tiempo y frames consecutivos antes de emitir.
+     */
+    _maybeEmitCommand(detected) {
+        const now = Date.now();
+
+        // Si no hay gesto detectado, resetear candidato
+        if (!detected) {
+            this.pendingCommand = null;
+            this.pendingFrames = 0;
+            this.pendingSince = 0;
+            return;
+        }
+
+        // Actualizar candidato y contadores
+        if (detected === this.pendingCommand) {
+            this.pendingFrames += 1;
+        } else {
+            this.pendingCommand = detected;
+            this.pendingFrames = 1;
+            this.pendingSince = now;
+        }
+
+        // Calcular requisitos para el comando actual
+        const holdMs = this.holdTimesMs[this.pendingCommand] || 300;
+        const cooldownMs = this.cooldownsMs[this.pendingCommand] || 300;
+
+        const heldLongEnough = (now - this.pendingSince) >= holdMs;
+        const framesEnough = this.pendingFrames >= this.minFrames;
+        const cooldownPassed = (now - this.lastEmittedAt) >= cooldownMs;
+
+        // Emitir solo si cumple todos los criterios y evita duplicados consecutivos
+        if (heldLongEnough && framesEnough && cooldownPassed) {
+            if (this.pendingCommand !== this.lastCommand) {
+                console.log(`✅ Comando estabilizado: ${this.pendingCommand} (frames=${this.pendingFrames}, holdMs=${now - this.pendingSince})`);
+                this.sendCommand(this.pendingCommand);
+                this.lastCommand = this.pendingCommand;
+                this.lastEmittedAt = now;
+            }
         }
     }
     
