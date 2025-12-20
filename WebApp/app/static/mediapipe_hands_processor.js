@@ -116,12 +116,12 @@ class MediaPipeHandsProcessor {
             }
         });
         
-        // Configurar opciones (igual que Python: max_num_hands=2)
+        // Configurar opciones más estrictas para evitar falsos positivos (cara/labios)
         this.hands.setOptions({
-            maxNumHands: 2,
+            maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.6,
-            minTrackingConfidence: 0.6
+            minDetectionConfidence: 0.8,
+            minTrackingConfidence: 0.8
         });
         
         // Handler para resultados
@@ -204,15 +204,23 @@ class MediaPipeHandsProcessor {
         
         // Si hay manos detectadas
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            // Procesar cada mano detectada (igual que Python con for hand_landmarks)
-            for (const landmarks of results.multiHandLandmarks) {
-                // Dibujar conexiones (líneas verdes, igual que Python)
+            // Procesar cada mano detectada con filtros de plausibilidad
+            for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+                const landmarks = results.multiHandLandmarks[i];
+
+                // Filtrar por confidence de handedness si disponible
+                let handednessOk = true;
+                if (results.multiHandedness && results.multiHandedness[i]) {
+                    handednessOk = (results.multiHandedness[i].score || 0) >= 0.8;
+                }
+                if (!handednessOk) continue;
+                // Dibujar conexiones (líneas verdes)
                 drawConnectors(this.ctx, landmarks, HAND_CONNECTIONS, {
                     color: '#00FF00',  // Verde
                     lineWidth: 2
                 });
                 
-                // Dibujar landmarks (puntos, igual que Python)
+                // Dibujar landmarks (puntos)
                 drawLandmarks(this.ctx, landmarks, {
                     color: '#FF0000',      // Rojo
                     fillColor: '#FFFFFF',  // Blanco
@@ -220,7 +228,24 @@ class MediaPipeHandsProcessor {
                     radius: 3
                 });
                 
-                // Detectar gesto (misma lógica que Python)
+                // Comprobar tamaño de palma para evitar falsos positivos (ej. labios)
+                const widthPx = this.canvas.width;
+                const getPoint = (index) => ({
+                    x: landmarks[index].x * widthPx,
+                    y: landmarks[index].y * this.canvas.height,
+                    z: landmarks[index].z
+                });
+                const wrist = getPoint(0);
+                const index_mcp = getPoint(5);
+                const distance = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                const palmSize = distance(wrist, index_mcp);
+                const minPalm = widthPx * 0.08; // ~8% del ancho: umbral de tamaño
+                if (palmSize < minPalm) {
+                    // Demasiado pequeño: probablemente no es una mano real
+                    continue;
+                }
+
+                // Detectar gesto (misma lógica) tras pasar filtros
                 detected = this.detectGesture(landmarks) || detected;
             }
         }
