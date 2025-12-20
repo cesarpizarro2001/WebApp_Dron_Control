@@ -132,6 +132,8 @@ def push_webrtc_frame(frame):
 webrtc_peer_connections = {}  # {connection_id: RTCPeerConnection}
 webrtc_event_loop = None  # Event loop de asyncio para WebRTC
 webrtc_thread = None  # Thread del event loop
+webrtc_keepalive_thread = None  # Thread para re-registro periódico
+webrtc_keepalive_running = False
 
 
 def start_webrtc_emitter():
@@ -172,6 +174,23 @@ def start_webrtc_emitter():
     sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
     print("📡 [WebRTC] Emisor registrado: dron_camera")
 
+    # Iniciar keepalive de registro para mantener el emisor siempre disponible
+    def keepalive_loop():
+        global webrtc_keepalive_running
+        while webrtc_keepalive_running:
+            try:
+                # Re-emitir registro de emisor (idempotente)
+                sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
+            except Exception:
+                pass
+            # Reintentar cada 10s
+            time.sleep(10)
+
+    global webrtc_keepalive_thread, webrtc_keepalive_running
+    webrtc_keepalive_running = True
+    webrtc_keepalive_thread = threading.Thread(target=keepalive_loop, daemon=True)
+    webrtc_keepalive_thread.start()
+
 
 def stop_webrtc_emitter():
     """
@@ -183,6 +202,10 @@ def stop_webrtc_emitter():
         return
     
     print("📡 [WebRTC] Deteniendo emisor...")
+
+    # Detener keepalive
+    global webrtc_keepalive_running
+    webrtc_keepalive_running = False
     
     # Cerrar todas las conexiones peer
     async def close_all_peers():
