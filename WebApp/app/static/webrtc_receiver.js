@@ -1,5 +1,5 @@
 /**
- * webrtc_drone_receiver.js
+ * webrtc_receiver.js (renamed from webrtc_drone_receiver.js)
  * Receptor WebRTC genérico para streams de video
  * 
  * Puede recibir:
@@ -398,25 +398,30 @@ class WebRTCDroneReceiver {
             const stats = await this.peerConnection.getStats();
             const report = {
                 bytesReceived: 0,
-                packetsReceived: 0,
-                framesReceived: 0
+                framesDecoded: 0,
+                framesDropped: 0,
+                jitter: 0,
+                packetsLost: 0
             };
             
-            stats.forEach(stat => {
-                if (stat.type === 'inbound-rtp' && stat.kind === 'video') {
-                    report.bytesReceived = stat.bytesReceived || 0;
-                    report.packetsReceived = stat.packetsReceived || 0;
-                    report.framesReceived = stat.framesReceived || 0;
+            stats.forEach((stat) => {
+                if (stat.type === 'inbound-rtp' && !stat.isRemote) {
+                    report.bytesReceived += stat.bytesReceived || 0;
+                    report.framesDecoded += stat.framesDecoded || 0;
+                    report.framesDropped += stat.framesDropped || 0;
+                    report.jitter = Math.max(report.jitter, stat.jitter || 0);
+                    report.packetsLost += stat.packetsLost || 0;
                 }
             });
             
             return report;
-        } catch (error) {
-            console.error('Error obteniendo estadísticas:', error);
+        } catch (e) {
+            console.warn('⚠️ [WebRTC] Error obteniendo estadísticas:', e);
             return null;
         }
     }
 }
 
-// Exportar para uso global
-window.WebRTCDroneReceiver = WebRTCDroneReceiver;
+// Exportar clase para uso en otras partes del código si se usa módulos
+// (No es necesario en entorno clásico con script tag)
+// export default WebRTCDroneReceiver;

@@ -1,6 +1,6 @@
 flask
 flask-socketio
-mediapipe
+mediapipe==0.10.9
 opencv-python
 numpy
 python-socketio

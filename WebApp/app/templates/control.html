@@ -14,8 +14,16 @@
     <!--    Necesito estos scripts para trabajar con websockets (Socket.IO)-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- WebRTC receptor para video del dron -->
-    <script src="{{ url_for('static', filename='webrtc_drone_receiver.js') }}"></script>
+    <!-- WebRTC receptor genérico -->
+    <script src="{{ url_for('static', filename='webrtc_receiver.js') }}"></script>
+    <!-- WebRTC emisor para gestos (profesor) -->
+    <script src="{{ url_for('static', filename='webrtc_gestos_sender.js') }}"></script>
+    <!-- MediaPipe Hands para procesamiento de gestos en el navegador -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='mediapipe_hands_processor.js') }}"></script>
     <script>
         // Detectar si es un dispositivo táctil
         function isTouchDevice() {
@@ -55,11 +63,12 @@
             background: rgba(255, 255, 255, 0.98);
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            padding: 20px;
+            padding: 12px;
+            padding-top: 6px;
             z-index: 2000;
             backdrop-filter: blur(10px);
             max-width: min(700px, 90vw);
-            max-height: 80vh;
+            max-height: 82dvh;
             animation: fadeIn 0.3s ease;
             overflow: hidden;
             width: fit-content;
@@ -77,13 +86,13 @@
         }
 
         #webcam-container h3 {
-            margin: 0 0 12px 0;
-            font-size: 22px;
+            margin: 0 0 6px 0;
+            font-size: 16px;
             font-weight: 600;
             color: #333;
             text-align: center;
-            border-bottom: 2px solid #2196F3;
-            padding-bottom: 8px;
+            border-bottom: 1px solid #2196F3;
+            padding-bottom: 3px;
         }
 
         /* Contenedor de la cámara con posición relativa */
@@ -97,7 +106,7 @@
             width: 100%;
             max-width: min(660px, 86vw);
             height: auto;
-            max-height: calc(80vh - 100px);
+            max-height: 84dvh;
             object-fit: contain;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -137,6 +146,7 @@
 
         .camera-top-controls-right {
             position: absolute;
+            top: 6px;
             right: 10px;
             display: flex;
             gap: 10px;
@@ -186,6 +196,13 @@
             border-color: rgba(33, 150, 243, 0.6);
         }
 
+        /* Estado deshabilitado para botones circulares */
+        .camera-btn-icon:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Estado de grabación activa */
         .camera-btn-icon.recording {
             background: #f44336;
@@ -228,7 +245,7 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             padding: 20px;
             max-width: min(700px, 90vw);
-            max-height: 80vh;
+            max-height: 80dvh;
             overflow: hidden;
             width: fit-content;
         }
@@ -317,11 +334,12 @@
             background: rgba(255, 255, 255, 0.98);
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            padding: 20px;
+            padding: 12px;
+            padding-top: 4px;
             z-index: 2000;
             backdrop-filter: blur(10px);
             max-width: min(700px, 90vw);
-            max-height: 80vh;
+            max-height: 82dvh;
             animation: fadeIn 0.3s ease;
             overflow: hidden;
             width: fit-content;
@@ -332,65 +350,38 @@
         }
 
         #camara-movil-modal h3 {
-            margin: 0 0 12px 0;
+            margin: 0 0 6px 0;
             font-size: 16px;
             font-weight: 600;
             color: #333;
             text-align: center;
-            border-bottom: 2px solid #764ba2;
-            padding-bottom: 8px;
+            border-bottom: 1px solid #2196F3;
+            padding-top: 4px;
+            padding-bottom: 6px;
         }
 
         .camara-movil-wrapper {
             position: relative;
             display: inline-block;
-            width: 100%;
+            width: auto;
+            margin: 0 auto;
         }
 
-        .camara-movil-controls {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            padding: 10px;
-            z-index: 10;
-            width: 100%;
-            box-sizing: border-box;
+        /* Eliminado botón de cambio de cámara (#botonFront) */
+
+        #camara-movil-modal #video {
+            display: none;
         }
 
-        #camara-movil-modal #botonFront {
-            background: rgba(118, 75, 162, 0.85);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
+        #camara-movil-modal #canvas {
+            display: none;
         }
 
-        #camara-movil-modal #botonFront:hover {
-            background: rgba(118, 75, 162, 0.95);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        #camara-movil-modal #botonFront:active {
-            transform: translateY(0);
-        }
-
-        #camara-movil-modal #video,
-        #camara-movil-modal #processedStream {
+        #camara-movil-modal #overlay-canvas {
             width: 100%;
             max-width: min(660px, 86vw);
             height: auto;
-            max-height: calc(80vh - 100px);
+            max-height: 84dvh;
             object-fit: contain;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -399,25 +390,30 @@
             background: #000;
         }
 
-        #camara-movil-modal #canvas {
-            display: none;
-        }
-
         @media (max-width: 768px) {
             #camara-movil-modal {
                 max-width: 95vw;
-                max-height: 70vh;
-                padding: 15px;
+                /* Igualar altura con el modal del dron en móvil */
+                max-height: 87dvh;
+                padding: 10px;
+                padding-top: 4px;
             }
 
-            #camara-movil-modal #video,
-            #camara-movil-modal #processedStream {
+            .camara-movil-wrapper {
+                display: inline-block;
+            }
+
+            #camara-movil-modal #overlay-canvas {
                 max-width: 90vw;
-                max-height: calc(70vh - 80px);
+                /* Igualar alto visible al del dron */
+                max-height: 79dvh;
             }
 
             #camara-movil-modal h3 {
                 font-size: 14px;
+                margin-bottom: 4px;
+                padding-bottom: 2px;
+                border-bottom-width: 1px;
             }
 
             #camara-movil-modal #botonFront {
@@ -2209,20 +2205,22 @@
             #webcam-container {
                 width: fit-content;
                 max-width: 98vw;
-                max-height: 85vh;
+                max-height: 87dvh;
                 padding: 10px;
                 border-radius: 12px;
             }
 
             #webcam-container h3 {
                 font-size: 14px;
-                margin-bottom: 10px;
-                padding-bottom: 6px;
+                margin-bottom: 4px;
+                padding-bottom: 2px;
+                border-bottom-width: 1px;
             }
 
             #video-stream {
                 max-width: calc(98vw - 20px);
-                max-height: calc(85vh - 80px);
+                /* Igualar al alto visible del móvil */
+                max-height: 79dvh;
                 border-radius: 8px;
             }
 
@@ -2559,11 +2557,16 @@
 
     <!-- Modal de Cámara Móvil -->
     <div id="camara-movil-modal">
-        <h3>📱 Cámara Móvil</h3>
+        <h3>📱 Cámara Móvil - Gestos</h3>
         <div class="camara-movil-wrapper">
+            <!-- Botón circular para cambiar cámara en esquina superior derecha -->
+                
+            <!-- Video oculto para MediaPipe (sin estilos inline conflictivos) -->
             <video id="video" autoplay playsinline></video>
+            <!-- Canvas oculto para procesamiento -->
             <canvas id="canvas"></canvas>
-            <img id="processedStream" alt="Video Procesado">
+            <!-- Canvas overlay visible con video + landmarks de MediaPipe -->
+            <canvas id="overlay-canvas"></canvas>
         </div>
     </div>
 
@@ -3621,6 +3624,12 @@
             const camaraMovilButtonsContainer = document.getElementById('camaraMovilButtonsContainer');
             
             camaraModal.classList.add('active');
+
+            // Asegurar que el overlay sea visible al abrir (puede haber quedado oculto)
+            const overlayCanvas = document.getElementById('overlay-canvas');
+            if (overlayCanvas) {
+                overlayCanvas.style.display = 'block';
+            }
             
             // Ocultar botón principal y mostrar contenedor de botones
             botonCamaraMovil.style.display = 'none';
@@ -3652,11 +3661,30 @@
                 action: 'close'
             });
             
+            // Detener transmisión WebRTC de gestos
+            if (gestosWebRTCSender) {
+                gestosWebRTCSender.stopStreaming();
+                gestosWebRTCSender = null;
+                console.log('🛑 Transmisión WebRTC de gestos detenida');
+            }
+            
+            // Detener MediaPipe processor si está activo
+            if (mediapipeProcessor) {
+                mediapipeProcessor.stop();
+                mediapipeProcessor = null;
+            }
+            
             // Detener stream de cámara si está activo
             const video = document.getElementById('video');
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
+            }
+            
+            // Ocultar overlay canvas
+            const overlayCanvas = document.getElementById('overlay-canvas');
+            if (overlayCanvas) {
+                overlayCanvas.style.display = 'none';
             }
         }
 
@@ -5803,46 +5831,84 @@
             }
         }
 
-        // Indico que no quiero ver el video del movil en la pantalla
+        // Indico que no quiero ver el video del movil en la pantalla (ahora el canvas lo muestra)
         video.style.display = 'none';
         let cam;
+        let mediapipeProcessor = null; // Procesador MediaPipe
+        let gestosWebRTCSender = null; // Emisor WebRTC para gestos
 
         // Activo la cámara frontal del móvil
         function frontCamera() {
         // Elijo la cámara frontal
             cam = "user";
-            const botonFront = document.getElementById('botonFront');
-            botonFront.classList.add('boton-verde');
+            // Botón de cambio de cámara eliminado; iniciar frontal por defecto
 
             startVideo();
         }
 
-        // Activo la cámara trasera del móvil (he desactivado esta opción para que la atención se la lleve la cámara frontal, pero funcionaria exactamente igual)
-        function backCamera () {
-        // Elijo la cámara trasera
-            const botonBack = document.getElementById('botonBack');
-            botonBack.classList.add('boton-verde');
-
-            cam = "environment";
-            startVideo();
-        }
-
-        // Inicio el video del móvil
-        function startVideo() {
-        // Verificar si getUserMedia es soportado por el navegador
+        // Inicio el video del móvil con MediaPipe
+        async function startVideo() {
+            // Verificar si getUserMedia es soportado por el navegador
             if (navigator.mediaDevices.getUserMedia) {
-                 // Aqui le indico la cámara que quiero
-                 navigator.mediaDevices.getUserMedia({
-                     video: { facingMode: cam }
-                 }).then(function(stream) {
-                     // Asignar el stream al elemento de video
-                     video.srcObject = stream;
-                     sendFrames();
-
-                 })
-                   .catch(function(error) {
-                        console.log("Error al acceder a la cámara: ", error);
-                   });
+                try {
+                    // Solicitar acceso a la cámara
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: cam }
+                    });
+                    
+                    // Asignar el stream al elemento de video (oculto por CSS, solo para MediaPipe)
+                    video.srcObject = stream;
+                    
+                    // Esperar a que el video esté listo
+                    await new Promise((resolve) => {
+                        video.onloadedmetadata = resolve;
+                    });
+                    
+                    // Obtener canvas overlay
+                    const overlayCanvas = document.getElementById('overlay-canvas');
+                    // Asegurar que esté visible por si se ocultó al cerrar
+                    if (overlayCanvas) overlayCanvas.style.display = 'block';
+                    
+                    // Ajustar tamaño del canvas al video
+                    overlayCanvas.width = video.videoWidth;
+                    overlayCanvas.height = video.videoHeight;
+                    
+                    console.log(`📐 Canvas ajustado a: ${overlayCanvas.width}x${overlayCanvas.height}`);
+                    
+                    // Crear y inicializar procesador MediaPipe
+                    if (!mediapipeProcessor) {
+                        mediapipeProcessor = new MediaPipeHandsProcessor(video, overlayCanvas, socket);
+                        await mediapipeProcessor.init();
+                    }
+                    
+                    // Iniciar procesamiento
+                    await mediapipeProcessor.start();
+                    
+                    console.log('✅ MediaPipe iniciado correctamente');
+                    
+                    // === INICIAR TRANSMISIÓN WebRTC DEL CANVAS ===
+                    // Capturar stream del canvas procesado
+                    const canvasStream = mediapipeProcessor.getCanvasStream(30); // 30 fps
+                    
+                    if (canvasStream) {
+                        // Crear emisor WebRTC si no existe
+                        if (!gestosWebRTCSender) {
+                            gestosWebRTCSender = new WebRTCGestosSender(socket, 'gestos_profesor');
+                        }
+                        
+                        // Iniciar transmisión a los alumnos
+                        await gestosWebRTCSender.startStreaming(canvasStream);
+                        console.log('📡 Transmisión WebRTC de gestos iniciada');
+                    }
+                    
+                } catch (error) {
+                    console.error("Error al acceder a la cámara:", error);
+                    showAlert(
+                        "No se pudo acceder a la cámara: " + error.message,
+                        "Error de Cámara",
+                        "⚠️"
+                    );
+                }
             } else {
                 showAlert(
                     "getUserMedia no está soportado por este navegador.",
@@ -5852,21 +5918,10 @@
             }
         }
 
-        // Envio el video del móvil al servidor para que lo procese
-        function sendFrames() {
-            setInterval(() => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                let frame = canvas.toDataURL("image/jpeg"); // Convertir a base64
-                socket.emit("frame_from_camera", frame); // Enviar frame al servidor
-            }, 200); // 200ms es 5 FPS, 66ms es 15 FPS y 33ms es 30 FPS
-        }
-
-        // Recibir frames procesados del servidor y mostrarlos
-        socket.on("processed_frame", function (data) {
-            imgStream.src = data; // Mostrar el frame recibido
-        });
+        // *** FUNCIONES sendFrames() Y processed_frame ELIMINADAS ***
+        // Ya no se necesita enviar frames al servidor porque
+        // MediaPipe procesa todo en el cliente (navegador)
+        // La detección de gestos y el dibujo ahora se hacen en JavaScript
 
         // Recibo despegar desde mediapipe
         socket.on('arm_takeOff', function(data) {

@@ -14,7 +14,7 @@
     <!--    Necesito estos scripts para trabajar con websockets (Socket.IO)-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='webrtc_drone_receiver.js') }}"></script>
+    <script src="{{ url_for('static', filename='webrtc_receiver.js') }}"></script>
     <script>
         // Detectar si es un dispositivo táctil
         function isTouchDevice() {
@@ -58,7 +58,7 @@
             z-index: 2000;
             backdrop-filter: blur(10px);
             max-width: min(700px, 90vw);
-            max-height: 80vh;
+            max-height: 82dvh;
             animation: fadeIn 0.3s ease;
             overflow: hidden;
             width: fit-content;
@@ -76,13 +76,13 @@
         }
 
         #webcam-container h3 {
-            margin: 0 0 12px 0;
-            font-size: 22px;
+            margin: 0 0 6px 0;
+            font-size: 16px;
             font-weight: 600;
             color: #333;
             text-align: center;
-            border-bottom: 2px solid #2196F3;
-            padding-bottom: 8px;
+            border-bottom: 1px solid #2196F3;
+            padding-bottom: 3px;
         }
 
         /* Contenedor de la cámara con posición relativa */
@@ -95,8 +95,7 @@
         #video-stream {
             width: 100%;
             max-width: min(660px, 86vw);
-            height: auto;
-            max-height: calc(80vh - 100px);
+            max-height: 84dvh;
             object-fit: contain;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -113,7 +112,8 @@
             left: 0;
             right: 0;
             display: flex;
-            justify-content: center;
+                padding: 12px;
+                padding-top: 6px;
             align-items: center;
             gap: 15px;
             padding: 10px;
@@ -129,6 +129,7 @@
 
         .camera-top-controls-right {
             position: absolute;
+            top: 6px;
             right: 10px;
             display: flex;
             gap: 10px;
@@ -178,6 +179,13 @@
             border-color: rgba(33, 150, 243, 0.6);
         }
 
+        /* Estado deshabilitado para botones circulares */
+        .camera-btn-icon:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Estado de grabación activa */
         .camera-btn-icon.recording {
             background: #f44336;
@@ -220,7 +228,7 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             padding: 20px;
             max-width: min(700px, 90vw);
-            max-height: 80vh;
+            max-height: 80dvh;
             overflow: hidden;
             width: fit-content;
         }
@@ -302,6 +310,15 @@
 
 
         /* === MODAL DE CÁMARA MÓVIL === */
+        #camara-movil-modal h3 {
+            margin: 0 0 6px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            border-bottom: 1px solid #2196F3;
+            padding-bottom: 3px;
+        }
         #camara-movil-modal {
             position: fixed;
             top: 50%;
@@ -311,11 +328,12 @@
             background: rgba(255, 255, 255, 0.98);
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            padding: 20px;
+            padding: 12px;
+            padding-top: px;
             z-index: 2000;
             backdrop-filter: blur(10px);
             max-width: min(700px, 90vw);
-            max-height: 80vh;
+            max-height: 82dvh;
             animation: fadeIn 0.3s ease;
             overflow: hidden;
             width: fit-content;
@@ -325,20 +343,13 @@
             display: block;
         }
 
-        #camara-movil-modal h3 {
-            margin: 0 0 12px 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-            text-align: center;
-            border-bottom: 2px solid #764ba2;
-            padding-bottom: 8px;
-        }
+        
 
         .camara-movil-wrapper {
             position: relative;
             display: inline-block;
-            width: 100%;
+            width: auto;
+            margin: 0 auto;
         }
 
         .camara-movil-controls {
@@ -355,41 +366,16 @@
             box-sizing: border-box;
         }
 
-        #camara-movil-modal #botonFront {
-            background: rgba(118, 75, 162, 0.85);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        #camara-movil-modal #botonFront:hover {
-            background: rgba(118, 75, 162, 0.95);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        #camara-movil-modal #botonFront:active {
-            transform: translateY(0);
-        }
+        /* Eliminado botón de cambio de cámara (#botonFront) */
 
         /* Ocultar video y canvas del alumno (solo usa processedStream) */
         #camara-movil-modal #video,
-        #camara-movil-modal #canvas {
-            display: none;
-        }
-
-        #camara-movil-modal #processedStream {
-            width: 100%;
-            max-width: min(660px, 86vw);
+        #camara-movil-modal #canvas,
+        #camara-movil-modal #processedStream,
+        #camara-movil-modal #gestos-profesor-stream {
+            max-width: 95vw;
             height: auto;
-            max-height: calc(80vh - 100px);
+            max-height: 84dvh;
             object-fit: contain;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -401,17 +387,24 @@
         @media (max-width: 768px) {
             #camara-movil-modal {
                 max-width: 95vw;
-                max-height: 70vh;
-                padding: 15px;
+                /* Igualar altura con modal del dron en móvil */
+                max-height: 87dvh;
+                 padding: 10px;
+                 padding-top: 4px;
             }
 
-            #camara-movil-modal #processedStream {
+            #camara-movil-modal #processedStream,
+            #camara-movil-modal #gestos-profesor-stream {
                 max-width: 90vw;
-                max-height: calc(70vh - 80px);
+                /* Igualar alto visible al del dron */
+                max-height: 79dvh;
             }
 
             #camara-movil-modal h3 {
                 font-size: 14px;
+                margin-bottom: 4px;
+                padding-bottom: 2px;
+                border-bottom-width: 1px;
             }
 
             #camara-movil-modal #botonFront {
@@ -2203,20 +2196,22 @@
             #webcam-container {
                 width: fit-content;
                 max-width: 98vw;
-                max-height: 85vh;
+                max-height: 87dvh;
                 padding: 10px;
                 border-radius: 12px;
             }
 
             #webcam-container h3 {
                 font-size: 14px;
-                margin-bottom: 10px;
-                padding-bottom: 6px;
+                margin-bottom: 4px;
+                padding-bottom: 2px;
+                border-bottom-width: 1px;
             }
 
             #video-stream {
                 max-width: calc(98vw - 20px);
-                max-height: calc(85vh - 80px);
+                /* Igualar al alto visible del móvil */
+                max-height: 79dvh;
                 border-radius: 8px;
             }
 
@@ -2442,11 +2437,10 @@
 
     <!-- Modal de Cámara Móvil -->
     <div id="camara-movil-modal">
-        <h3>📱 Cámara Móvil</h3>
+        <h3>📱 Cámara Móvil - Gestos del Profesor</h3>
         <div class="camara-movil-wrapper">
-            <video id="video" autoplay playsinline></video>
-            <canvas id="canvas"></canvas>
-            <img id="processedStream" alt="Video Procesado">
+            <!-- Video WebRTC para recibir gestos del profesor -->
+            <video id="gestos-profesor-stream" autoplay playsinline muted></video>
         </div>
     </div>
 
@@ -2560,6 +2554,9 @@
     // ========================================
     
     const socket = io();
+    
+    // WebRTC Receiver para stream de gestos del profesor
+    let gestosWebRTCReceiver = null;
     
     // ===== INICIALIZACIÓN BÁSICA =====
     const isMobileDevice = window.innerWidth <= 1024;
@@ -2751,14 +2748,10 @@
     let mediaRecorderAlumno = null;
     let recordedChunksAlumno = [];
     let videoBlobAlumno = null;
+    let recordedMimeAlumno = null;
+    let openVideoModalPending = false;
     
-    // Recibir frames procesados de la cámara móvil (con gestos)
-    socket.on('processed_frame', function(data) {
-        const processedStream = document.getElementById('processedStream');
-        if (processedStream) {
-            processedStream.src = data;
-        }
-    });
+    // [Deprecado] Soporte de 'processed_frame' eliminado: ahora todo va por WebRTC
     
     // Recibir cambios de estado de UI del profesor
     socket.on('ui_state', (state) => {
@@ -2861,21 +2854,29 @@
         const camaraModal = document.getElementById('camara-movil-modal');
         
         if (payload.action === 'open') {
-            console.log('[ALUMNO] 📱 Abriendo modal de cámara móvil');
+            console.log('[ALUMNO] 📱 Profesor abrió cámara - iniciando recepción WebRTC');
             if (camaraModal) {
                 camaraModal.classList.add('active');
-                // Deshabilitar todos los botones del modal para el alumno
-                const botonesModal = camaraModal.querySelectorAll('button');
-                botonesModal.forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.6';
-                    btn.style.cursor = 'not-allowed';
-                });
+                
+                // Iniciar recepción WebRTC del stream de gestos
+                const videoElement = document.getElementById('gestos-profesor-stream');
+                if (videoElement && !gestosWebRTCReceiver) {
+                    gestosWebRTCReceiver = new WebRTCDroneReceiver(videoElement, socket, 'gestos_profesor');
+                    gestosWebRTCReceiver.requestStream();
+                    console.log('📡 Solicitando stream de gestos del profesor');
+                }
             }
         } else if (payload.action === 'close') {
-            console.log('[ALUMNO] 📱 Cerrando modal de cámara móvil');
+            console.log('[ALUMNO] 📱 Profesor cerró cámara - deteniendo recepción');
             if (camaraModal) {
                 camaraModal.classList.remove('active');
+            }
+            
+            // Detener recepción WebRTC
+            if (gestosWebRTCReceiver) {
+                gestosWebRTCReceiver.stop();
+                gestosWebRTCReceiver = null;
+                console.log('🛑 Stream de gestos detenido');
             }
         }
     });
@@ -2992,12 +2993,18 @@
         };
         
         mediaRecorderAlumno.onstop = () => {
-            const usedMime = mediaRecorderAlumno && mediaRecorderAlumno.mimeType && mediaRecorderAlumno.mimeType.includes('mp4') ? 'video/mp4' : 'video/webm';
+            const usedMime = (mediaRecorderAlumno && mediaRecorderAlumno.mimeType && mediaRecorderAlumno.mimeType.includes('mp4')) ? 'video/mp4' : 'video/webm';
+            recordedMimeAlumno = usedMime;
             videoBlobAlumno = new Blob(recordedChunksAlumno, { type: usedMime });
             console.log('[ALUMNO] ✅ Video grabado localmente (NO descargado)');
+            // Si estaba pendiente abrir el modal, hacerlo ahora
+            if (openVideoModalPending) {
+                tryOpenRecordedVideoModal();
+            }
         };
         
-        mediaRecorderAlumno.start();
+        // Usar timeslice para asegurar dataavailable periódica
+        mediaRecorderAlumno.start(500);
         console.log('[ALUMNO] ✅ Grabación local iniciada');
     });
     
@@ -3020,46 +3027,69 @@
     });
     
     // Sincronización de modal de video grabado
+    function tryOpenRecordedVideoModal() {
+        const videoModal = document.getElementById('video-modal-container');
+        const capturedVideo = document.getElementById('captured-video');
+        if (!videoModal || !capturedVideo) return;
+        if (!videoBlobAlumno) return;
+        const blobUrl = URL.createObjectURL(videoBlobAlumno);
+        // Asignar directamente al elemento video para evitar issues de tipo
+        capturedVideo.src = blobUrl;
+        capturedVideo.load();
+        videoModal.style.zIndex = '2100';
+        videoModal.style.display = 'block';
+        videoModal.style.pointerEvents = 'none';
+        console.log('[ALUMNO] ✅ Reproduciendo video local (no descargado)');
+        openVideoModalPending = false;
+    }
+
     socket.on('video_modal_sync', (payload) => {
         const videoModal = document.getElementById('video-modal-container');
         const capturedVideo = document.getElementById('captured-video');
-        const videoSource = document.getElementById('video-source');
         
         if (payload.action === 'open') {
             console.log('[ALUMNO] 🎥 Mostrando video grabado localmente');
-            
-            if (videoModal && capturedVideo && videoSource && videoBlobAlumno) {
-                // Mostrar el video grabado localmente por el alumno
-                const blobUrl = URL.createObjectURL(videoBlobAlumno);
-                videoSource.src = blobUrl;
-                capturedVideo.load();
-                
-                // Mostrar el modal
-                videoModal.style.zIndex = '2100';
-                videoModal.style.display = 'block';
-                videoModal.style.pointerEvents = 'none';
-                
-                console.log('[ALUMNO] ✅ Reproduciendo video local (no descargado)');
-            } else if (!videoBlobAlumno) {
-                console.warn('[ALUMNO] ⚠️ No hay video grabado localmente para mostrar');
+            if (videoBlobAlumno) {
+                tryOpenRecordedVideoModal();
+            } else {
+                console.warn('[ALUMNO] ⚠️ No hay video grabado localmente para mostrar (esperando onstop...)');
+                // Esperar brevemente a que onstop construya el blob y luego abrir
+                openVideoModalPending = true;
+                let waited = 0;
+                const maxWait = 2000; // ms
+                const interval = setInterval(() => {
+                    if (videoBlobAlumno) {
+                        clearInterval(interval);
+                        tryOpenRecordedVideoModal();
+                    } else {
+                        waited += 100;
+                        if (waited >= maxWait) {
+                            clearInterval(interval);
+                            openVideoModalPending = false;
+                            console.warn('[ALUMNO] ❌ Timeout esperando video grabado');
+                        }
+                    }
+                }, 100);
             }
         } else if (payload.action === 'close') {
             console.log('[ALUMNO] 🎥 Cerrando modal de video');
             if (videoModal && capturedVideo) {
                 // Limpiar blob URL si existe
-                if (videoSource.src && videoSource.src.startsWith('blob:')) {
-                    URL.revokeObjectURL(videoSource.src);
+                if (capturedVideo.src && capturedVideo.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(capturedVideo.src);
                 }
                 
                 videoModal.style.display = 'none';
                 videoModal.style.pointerEvents = 'auto';
                 capturedVideo.pause();
                 capturedVideo.currentTime = 0;
-                videoSource.src = '';
+                capturedVideo.src = '';
                 
                 // Limpiar blob después de cerrar
                 videoBlobAlumno = null;
                 recordedChunksAlumno = [];
+                recordedMimeAlumno = null;
+                openVideoModalPending = false;
             }
         } else if (payload.action === 'play') {
             console.log('[ALUMNO] ▶️ Reproduciendo video en:', payload.currentTime);
