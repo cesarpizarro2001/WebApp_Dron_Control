@@ -574,25 +574,9 @@ def handle_flight_event(data):
         if event_type == 'flight_name_set':
             socketio.emit('flight_name_set', data.get('name'))
             print(f"✓ Emitido flight_name_set", flush=True)
-        elif event_type == 'foto_capturada':
-            filename = data.get('filename')
-            print(f"📸 Emitiendo foto_capturada con filename: '{filename}'", flush=True)
-            socketio.emit('foto_capturada', filename)
-            print(f"✓ foto_capturada emitido al navegador", flush=True)
-        elif event_type == 'video_iniciado':
-            socketio.emit('video_iniciado', data.get('filename'))
-            print(f"✓ Emitido video_iniciado", flush=True)
-        elif event_type == 'video_detenido':
-            filename = data.get('filename')
-            if filename:
-                socketio.emit('video_detenido', filename)
-                print(f"✓ Emitido video_detenido con filename: '{filename}'", flush=True)
-            else:
-                socketio.emit('video_detenido')
-                print(f"✓ Emitido video_detenido sin filename", flush=True)
-        elif event_type == 'video_error':
-            socketio.emit('video_error', data.get('message'))
-            print(f"✓ Emitido video_error", flush=True)
+        else:
+            # Eventos de foto/video basados en archivos están deprecados y se ignoran
+            print(f"⚠️ Evento deprecado o no soportado: {event_type}", flush=True)
     except Exception as e:
         print(f"❌ ERROR al emitir evento {event_type}: {e}", flush=True)
         import traceback
@@ -933,9 +917,9 @@ if __name__ == '__main__':
     import ssl
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     #CERTIFICADO LOCALHOST
-    #ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
     #CERTIFICADO SERVIDOR
-    ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
+    #ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
     
     # socketio.run() ejecuta tanto Flask como Socket.IO en el mismo puerto
     socketio.run(

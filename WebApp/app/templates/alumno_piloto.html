@@ -1623,6 +1623,12 @@
         let minimap = null;
         let dronMarker = null;
         let directionArrow = null;
+        // Variables de grabación local del alumno
+        let mediaRecorderAlumno = null;
+        let recordedChunksAlumno = [];
+        let videoBlobAlumno = null;
+        let recordedMimeAlumno = null;
+        let openVideoModalPending = false;
         
         // Variables de estado para manejo de botones
         let despegando = false;
@@ -1937,65 +1943,144 @@
             }
         });
 
-        // Sincronización de modal de foto capturada
-        socket.on('photo_modal_sync', (payload) => {
+        // Recibir captura de foto en base64 desde el profesor
+        socket.on('sync_photo_capture', (payload) => {
             const modal = document.getElementById('photo-modal');
             const img = document.getElementById('captured-photo');
-            
+            if (modal && img && payload && payload.photoData) {
+                img.src = payload.photoData;
+                modal.classList.add('show');
+                modal.style.pointerEvents = 'none';
+            }
+        });
+
+        // Sincronización de modal de foto (cierre)
+        socket.on('photo_modal_sync', (payload) => {
+            const modal = document.getElementById('photo-modal');
             if (payload.action === 'open') {
-                console.log('[ALUMNO] 📸 Mostrando foto capturada:', payload.photoName);
-                if (modal && img) {
-                    const timestamp = new Date().getTime();
-                    const fotoUrl = `/files/captured_photos/${payload.photoName}?t=${timestamp}`;
-                    img.src = fotoUrl;
-                    modal.classList.add('show');
-                }
+                // Ignorado: apertura se gestiona con sync_photo_capture
+                return;
             } else if (payload.action === 'close') {
-                console.log('[ALUMNO] 📸 Cerrando foto capturada');
                 if (modal) {
                     modal.classList.remove('show');
+                    modal.style.pointerEvents = 'auto';
                 }
             }
         });
 
-        // Sincronización de modal de video grabado
+        // Inicio de grabación local al sincronizar con el profesor
+        socket.on('sync_recording_start', () => {
+            // Mostrar indicador de grabación en la barra superior
+            const recordingIndicator = document.getElementById('recording-indicator');
+            if (recordingIndicator) {
+                recordingIndicator.style.display = 'flex';
+            }
+            const videoEl = document.getElementById('camera-feed');
+            if (!videoEl || !videoEl.srcObject) {
+                console.warn('[ALUMNO] No hay stream disponible para grabar');
+                return;
+            }
+            recordedChunksAlumno = [];
+            videoBlobAlumno = null;
+            let options = { mimeType: 'video/mp4' };
+            if (!('MediaRecorder' in window) || !MediaRecorder.isTypeSupported('video/mp4')) {
+                options = { mimeType: 'video/webm;codecs=vp8,opus' };
+            }
+            try {
+                mediaRecorderAlumno = new MediaRecorder(videoEl.srcObject, options);
+            } catch (e) {
+                mediaRecorderAlumno = new MediaRecorder(videoEl.srcObject);
+            }
+            mediaRecorderAlumno.ondataavailable = (ev) => {
+                if (ev.data && ev.data.size) recordedChunksAlumno.push(ev.data);
+            };
+            mediaRecorderAlumno.onstop = () => {
+                const usedMime = (mediaRecorderAlumno && mediaRecorderAlumno.mimeType && mediaRecorderAlumno.mimeType.includes('mp4')) ? 'video/mp4' : 'video/webm';
+                recordedMimeAlumno = usedMime;
+                videoBlobAlumno = new Blob(recordedChunksAlumno, { type: usedMime });
+                if (openVideoModalPending) {
+                    tryOpenRecordedVideoModal();
+                }
+            };
+            mediaRecorderAlumno.start(500);
+        });
+
+        // Fin de grabación local al sincronizar con el profesor
+        socket.on('sync_recording_stop', () => {
+            // Ocultar indicador de grabación
+            const recordingIndicator = document.getElementById('recording-indicator');
+            if (recordingIndicator) {
+                recordingIndicator.style.display = 'none';
+            }
+            if (mediaRecorderAlumno && mediaRecorderAlumno.state === 'recording') {
+                mediaRecorderAlumno.stop();
+            }
+        });
+
+        function tryOpenRecordedVideoModal() {
+            const modal = document.getElementById('video-modal');
+            const capturedVideo = document.getElementById('captured-video');
+            if (!modal || !capturedVideo || !videoBlobAlumno) return;
+            const blobUrl = URL.createObjectURL(videoBlobAlumno);
+            capturedVideo.src = blobUrl;
+            capturedVideo.load();
+            modal.classList.add('show');
+            modal.style.pointerEvents = 'none';
+            openVideoModalPending = false;
+        }
+
+        // Sincronización de modal de video para reproducir el blob local
         socket.on('video_modal_sync', (payload) => {
             const modal = document.getElementById('video-modal');
-            const video = document.getElementById('captured-video');
-            
+            const capturedVideo = document.getElementById('captured-video');
             if (payload.action === 'open') {
-                console.log('[ALUMNO] 🎥 Mostrando video grabado:', payload.videoName);
-                if (modal && video) {
-                    const timestamp = new Date().getTime();
-                    const videoUrl = `/files/captured_videos/${payload.videoName}?t=${timestamp}`;
-                    video.src = videoUrl;
-                    modal.classList.add('show');
-                    // Auto-reproducir el video
-                    video.play().catch(err => console.log('No se pudo auto-reproducir:', err));
+                if (videoBlobAlumno) {
+                    tryOpenRecordedVideoModal();
+                } else {
+                    openVideoModalPending = true;
+                    let waited = 0;
+                    const maxWait = 2000;
+                    const interval = setInterval(() => {
+                        if (videoBlobAlumno) {
+                            clearInterval(interval);
+                            tryOpenRecordedVideoModal();
+                        } else {
+                            waited += 100;
+                            if (waited >= maxWait) {
+                                clearInterval(interval);
+                                openVideoModalPending = false;
+                            }
+                        }
+                    }, 100);
                 }
             } else if (payload.action === 'close') {
-                console.log('[ALUMNO] 🎥 Cerrando video grabado');
-                if (modal && video) {
-                    video.pause();
-                    video.currentTime = 0;
+                if (modal && capturedVideo) {
+                    if (capturedVideo.src && capturedVideo.src.startsWith('blob:')) {
+                        URL.revokeObjectURL(capturedVideo.src);
+                    }
                     modal.classList.remove('show');
+                    modal.style.pointerEvents = 'auto';
+                    capturedVideo.pause();
+                    capturedVideo.currentTime = 0;
+                    capturedVideo.src = '';
+                    videoBlobAlumno = null;
+                    recordedChunksAlumno = [];
+                    recordedMimeAlumno = null;
+                    openVideoModalPending = false;
                 }
             } else if (payload.action === 'play') {
-                console.log('[ALUMNO] ▶️ Reproduciendo video en:', payload.currentTime);
-                if (video) {
-                    video.currentTime = payload.currentTime;
-                    video.play();
+                if (capturedVideo) {
+                    capturedVideo.currentTime = payload.currentTime;
+                    capturedVideo.play();
                 }
             } else if (payload.action === 'pause') {
-                console.log('[ALUMNO] ⏸️ Pausando video en:', payload.currentTime);
-                if (video) {
-                    video.currentTime = payload.currentTime;
-                    video.pause();
+                if (capturedVideo) {
+                    capturedVideo.currentTime = payload.currentTime;
+                    capturedVideo.pause();
                 }
             } else if (payload.action === 'seek') {
-                console.log('[ALUMNO] ⏩ Saltando a:', payload.currentTime);
-                if (video) {
-                    video.currentTime = payload.currentTime;
+                if (capturedVideo) {
+                    capturedVideo.currentTime = payload.currentTime;
                 }
             }
         });

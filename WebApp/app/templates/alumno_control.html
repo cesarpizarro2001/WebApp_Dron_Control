@@ -112,8 +112,7 @@
             left: 0;
             right: 0;
             display: flex;
-                padding: 12px;
-                padding-top: 6px;
+            justify-content: center;
             align-items: center;
             gap: 15px;
             padding: 10px;
@@ -123,8 +122,15 @@
         }
 
         .camera-top-controls-left {
+            position: absolute;
+            left: 10px;
             display: flex;
             gap: 15px;
+        }
+
+        .camera-top-controls-center {
+            display: flex;
+            gap: 15px; /* Igual que en control.html */
         }
 
         .camera-top-controls-right {
@@ -2394,22 +2400,26 @@
             <!-- Botones superiores sobre la cámara -->
             <div class="camera-top-controls">
                 <div class="camera-top-controls-left">
-                    <button class="camera-btn camera-btn-icon" disabled title="Despegar">✈️</button>
-                    <button class="camera-btn camera-btn-icon" disabled title="Aterrizar">🛬</button>
-                    <button class="camera-btn camera-btn-icon" disabled title="RTL">🏠</button>
+                    <button id="toggleDetectionBtn" class="camera-btn camera-btn-icon" onclick="toggleDetection()" title="Activar detección de objetos" style="background: gray;" disabled>🔍</button>
+                </div>
+                <div class="camera-top-controls-center">
+                    <button id="camera-despegar-btn" class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar" disabled>✈️</button>
+                    <button id="camera-aterrizar-btn" class="camera-btn camera-btn-icon" onclick="aterrizarDron()" title="Aterrizar" disabled>🛬</button>
+                    <button id="camera-rtl-btn" class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL" disabled>🏠</button>
                 </div>
                 <div class="camera-top-controls-right">
-                    <button class="camera-btn camera-btn-icon" disabled title="Configuración de Video">⚙️</button>
+                    <button id="camera-settings-btn" class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Configuración de Video" disabled>⚙️</button>
                 </div>
             </div>
-            <video id='video-stream' autoplay playsinline muted style="width: 100%; height: 100%; object-fit: contain; display: block;"></video>
+            <!-- Cambio de <img> a <video> para WebRTC -->
+            <video id='video-stream' autoplay playsinline muted style="width: 100%; height: 100%; object-fit: contain;"></video>
             <!-- Botones inferiores sobre la cámara -->
             <div class="camera-controls">
-                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" disabled title="Hacer foto">📸</button>
-                <button id="voice-control-modal-btn" class="camera-btn camera-btn-icon" disabled title="Control por voz">
+                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" onclick="capturarFoto()" title="Hacer foto" disabled>📸</button>
+                <button id="voice-control-modal-btn" class="camera-btn camera-btn-icon" onclick="iniciarControlVoz()" title="Control por voz" disabled>
                     <span class="mic-icon">🎤</span>
                 </button>
-                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" disabled title="Grabar video">🎥</button>
+                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video" disabled>🎥</button>
             </div>
         </div>
     </div>

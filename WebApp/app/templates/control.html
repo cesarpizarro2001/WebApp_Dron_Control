@@ -4093,17 +4093,7 @@
             previousDroneState = data.state;
         });
 
-        // Recibir eventos de video
-        socket.on('video_error', function(errorMsg) {
-            console.error(`Error en grabación: ${errorMsg}`);
-            showAlert(
-                `Error en grabación: ${errorMsg}`,
-                'Error de Video',
-                '❌'
-            );
-            document.getElementById('botonIniciarVideo').style.display = 'block';
-            document.getElementById('botonDetenerVideo').style.display = 'none';
-        });
+        // Eventos de video basados en servidor eliminados (deprecated)
 
         socket.on('flight_name_set', function(flightName) {
             currentFlightName = flightName;
@@ -4111,23 +4101,7 @@
             // Ya no mostramos el nombre del vuelo en el modal de cámara
         });
 
-        socket.on('foto_capturada', function(nombreFoto) {
-            mostrarFotoCapturada(nombreFoto);
-        });
-
-        socket.on('video_iniciado', function(nombreVideo) {
-            let ubicacion = currentFlightName ? `${currentFlightName}/${nombreVideo}` : nombreVideo;
-            console.log(`Grabación iniciada: ${ubicacion}`);
-        });
-
-        socket.on('video_detenido', function(nombreVideo) {
-            console.log("Grabación detenida");
-            
-            // Si se proporciona el nombre del video, mostrar el modal
-            if (nombreVideo) {
-                mostrarVideoGrabado(nombreVideo);
-            }
-        });
+        // Listeners foto_capturada/video_iniciado/video_detenido eliminados
 
         // Función para actualizar el estado de todos los botones según el estado del dron
         function updateButtonStates(droneState) {

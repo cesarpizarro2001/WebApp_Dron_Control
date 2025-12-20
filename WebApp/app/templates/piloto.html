@@ -2821,112 +2821,211 @@
         }
 
         // ========== FUNCIONES DE CAPTURA Y GRABACIÓN ==========
-        
+        // Helper para nombres de archivo
+        function uniqueName(prefix, ext) {
+            const ts = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const name = `${prefix}_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}.${ext}`;
+            return name;
+        }
+
+        // Variables para blobs mostrados (para revocar URLs)
+        let lastPhotoBlobUrl = null;
+        let lastVideoBlobUrl = null;
+
+        // Captura de foto local desde el stream WebRTC
         function capturarFoto() {
-            console.log('📸 Solicitando captura de foto...');
-            socket.emit('command', { action: 'capturarFoto' });
-        }
-
-        function toggleGrabacion() {
-            if (isRecording) {
-                console.log('🎥 Deteniendo grabación...');
-                socket.emit('command', { action: 'detenerVideo' });
-                isRecording = false;
-                // Ocultar indicador de grabación
-                document.getElementById('recording-indicator').style.display = 'none';
-                // Notificar a los alumnos
-                socket.emit('recording_state', { recording: false });
-            } else {
-                console.log('🎥 Iniciando grabación...');
-                socket.emit('command', { action: 'iniciarVideo' });
-                isRecording = true;
-                // Mostrar indicador de grabación
-                document.getElementById('recording-indicator').style.display = 'flex';
-                // Notificar a los alumnos
-                socket.emit('recording_state', { recording: true });
+            const videoEl = document.getElementById('camera-feed');
+            if (!videoEl || !videoEl.srcObject) {
+                alert('El video del dron no está disponible');
+                return;
             }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = videoEl.videoWidth || 1280;
+            canvas.height = videoEl.videoHeight || 720;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                const fileName = uniqueName('foto_dron', 'jpg');
+                
+                // Mostrar preview local
+                mostrarFotoCapturada(blob);
+                
+                // Enviar a alumnos como base64 para preview (no guardar)
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    const base64data = reader.result;
+                    socket.emit('sync_photo_capture', {
+                        photoData: base64data
+                    });
+                    console.log('📤 Foto enviada a alumnos para preview');
+                };
+                reader.readAsDataURL(blob);
+                
+                // Descargar automáticamente
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                console.log(`✅ Foto guardada: ${fileName}`);
+            }, 'image/jpeg', 0.92);
         }
 
-        // Función para mostrar la foto capturada
-        function mostrarFotoCapturada(nombreFoto) {
-            console.log('📸 Mostrando foto capturada:', nombreFoto);
+        // Toggle de grabación local usando MediaRecorder sobre el stream WebRTC
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        function toggleGrabacion() {
+            const videoEl = document.getElementById('camera-feed');
+            const indicator = document.getElementById('recording-indicator');
             
+            if (!isRecording) {
+                if (!videoEl || !videoEl.srcObject) {
+                    alert('No hay stream de video para grabar');
+                    return;
+                }
+                recordedChunks = [];
+
+                // Intentar MP4; fallback a WebM si no soporta
+                let options = { mimeType: 'video/mp4' };
+                if (!MediaRecorder.isTypeSupported('video/mp4')) {
+                    options = { mimeType: 'video/webm;codecs=vp8,opus' };
+                    console.warn('MP4 no soportado, usando WebM');
+                }
+                try {
+                    mediaRecorder = new MediaRecorder(videoEl.srcObject, options);
+                } catch (e) {
+                    console.warn('Fallo con opciones, creando MediaRecorder por defecto');
+                    mediaRecorder = new MediaRecorder(videoEl.srcObject);
+                }
+
+                mediaRecorder.ondataavailable = (ev) => {
+                    if (ev.data && ev.data.size) recordedChunks.push(ev.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const usedMime = (mediaRecorder && mediaRecorder.mimeType && mediaRecorder.mimeType.includes('mp4')) ? 'video/mp4' : 'video/webm';
+                    const blob = new Blob(recordedChunks, { type: usedMime });
+                    const fileName = uniqueName('video_dron', usedMime.includes('mp4') ? 'mp4' : 'webm');
+                    
+                    // Preview local
+                    mostrarVideoGrabado(blob);
+                    
+                    // Descarga automática
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = fileName;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    console.log(`✅ Video guardado: ${fileName}`);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                if (indicator) indicator.style.display = 'flex';
+                console.log('✅ Grabación iniciada');
+                socket.emit('sync_recording_start');
+                return;
+            }
+
+            // Detener grabación
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            if (indicator) indicator.style.display = 'none';
+            console.log('⏹️ Grabación detenida');
+            socket.emit('sync_recording_stop');
+        }
+        // Mostrar foto capturada (blob local o ruta del servidor)
+        function mostrarFotoCapturada(arg) {
             const modal = document.getElementById('photo-modal');
             const img = document.getElementById('captured-photo');
             
-            // Construir la URL de la foto con timestamp para evitar cache
-            // nombreFoto ya incluye el path completo (ej: PruebaPiloto/foto_dron_20251103-174942.jpg)
-            const timestamp = new Date().getTime();
-            const fotoUrl = `/files/captured_photos/${nombreFoto}?t=${timestamp}`;
+            // Limpiar URL anterior
+            if (lastPhotoBlobUrl) {
+                try { URL.revokeObjectURL(lastPhotoBlobUrl); } catch (_) {}
+                lastPhotoBlobUrl = null;
+            }
             
-            img.src = fotoUrl;
-            modal.classList.add('show');
-            anyModalOpen = true;
-            
-            // Sincronizar con alumnos
-            socket.emit('photo_modal_sync', {
-                action: 'open',
-                photoName: nombreFoto
-            });
+            if (arg instanceof Blob) {
+                lastPhotoBlobUrl = URL.createObjectURL(arg);
+                img.src = lastPhotoBlobUrl;
+                modal.classList.add('show');
+                anyModalOpen = true;
+                // NO emitir photo_modal_sync aquí: ya se envió sync_photo_capture
+            } else if (typeof arg === 'string') {
+                // Compatibilidad: ruta servida por el servidor
+                const timestamp = new Date().getTime();
+                const fotoUrl = `/files/captured_photos/${arg}?t=${timestamp}`;
+                img.src = fotoUrl;
+                modal.classList.add('show');
+                anyModalOpen = true;
+                // Emitir sync para alumnos (modo antiguo)
+                socket.emit('photo_modal_sync', { action: 'open', photoName: arg });
+            } else {
+                console.error('Parametro inválido en mostrarFotoCapturada');
+            }
         }
 
-        // Función para cerrar el modal de foto
+        // Cerrar modal de foto (revoca blob si existe)
         function closePhotoModal() {
             const modal = document.getElementById('photo-modal');
             modal.classList.remove('show');
             anyModalOpen = false;
-            
-            // Sincronizar con alumnos
-            socket.emit('photo_modal_sync', {
-                action: 'close'
-            });
+            if (lastPhotoBlobUrl) {
+                try { URL.revokeObjectURL(lastPhotoBlobUrl); } catch (_) {}
+                lastPhotoBlobUrl = null;
+            }
+            // Sincronizar con alumnos (solo cerrar)
+            socket.emit('photo_modal_sync', { action: 'close' });
         }
 
-        // Función para mostrar el video grabado
-        function mostrarVideoGrabado(nombreVideo) {
-            console.log('🎥 Mostrando video grabado:', nombreVideo);
-            
+        // Mostrar video grabado (blob local o ruta del servidor)
+        function mostrarVideoGrabado(arg) {
             const modal = document.getElementById('video-modal');
             const video = document.getElementById('captured-video');
             
-            // Construir la URL del video con timestamp para evitar cache
-            // nombreVideo ya incluye el path completo (ej: PruebaPiloto/video_dron_20251103-174942.mp4)
-            const timestamp = new Date().getTime();
-            const videoUrl = `/files/captured_videos/${nombreVideo}?t=${timestamp}`;
+            // Limpiar URL anterior
+            if (lastVideoBlobUrl) {
+                try { URL.revokeObjectURL(lastVideoBlobUrl); } catch (_) {}
+                lastVideoBlobUrl = null;
+            }
             
-            video.src = videoUrl;
-            modal.classList.add('show');
-            anyModalOpen = true;
+            if (arg instanceof Blob) {
+                lastVideoBlobUrl = URL.createObjectURL(arg);
+                video.src = lastVideoBlobUrl;
+                modal.classList.add('show');
+                anyModalOpen = true;
+                
+                // Sincronizar con alumnos - abrir modal
+                socket.emit('video_modal_sync', { action: 'open' });
+            } else if (typeof arg === 'string') {
+                // Compatibilidad: ruta servida por el servidor
+                const timestamp = new Date().getTime();
+                const videoUrl = `/files/captured_videos/${arg}?t=${timestamp}`;
+                video.src = videoUrl;
+                modal.classList.add('show');
+                anyModalOpen = true;
+                socket.emit('video_modal_sync', { action: 'open', videoName: arg });
+            } else {
+                console.error('Parametro inválido en mostrarVideoGrabado');
+            }
             
-            // Auto-reproducir el video
+            // Auto-reproducir si posible
             video.play().catch(err => console.log('No se pudo auto-reproducir:', err));
             
-            // Sincronizar con alumnos - mostrar video
-            socket.emit('video_modal_sync', {
-                action: 'open',
-                videoName: nombreVideo
-            });
-            
-            // Sincronizar play/pause/seek con alumnos
+            // Sync de reproducción con alumnos
             video.onplay = function() {
-                socket.emit('video_modal_sync', {
-                    action: 'play',
-                    currentTime: video.currentTime
-                });
+                socket.emit('video_modal_sync', { action: 'play', currentTime: video.currentTime });
             };
-            
             video.onpause = function() {
-                socket.emit('video_modal_sync', {
-                    action: 'pause',
-                    currentTime: video.currentTime
-                });
+                socket.emit('video_modal_sync', { action: 'pause', currentTime: video.currentTime });
             };
-            
             video.onseeked = function() {
-                socket.emit('video_modal_sync', {
-                    action: 'seek',
-                    currentTime: video.currentTime
-                });
+                socket.emit('video_modal_sync', { action: 'seek', currentTime: video.currentTime });
             };
         }
 
@@ -2941,6 +3040,10 @@
             
             modal.classList.remove('show');
             anyModalOpen = false;
+            if (lastVideoBlobUrl) {
+                try { URL.revokeObjectURL(lastVideoBlobUrl); } catch (_) {}
+                lastVideoBlobUrl = null;
+            }
             
             // Sincronizar con alumnos
             socket.emit('video_modal_sync', {
@@ -2948,30 +3051,7 @@
             });
         }
 
-        // Eventos Socket.IO para captura de foto y video
-        socket.on('foto_capturada', function(nombreFoto) {
-            console.log('✅ Foto capturada:', nombreFoto);
-            mostrarFotoCapturada(nombreFoto);
-        });
-
-        socket.on('video_iniciado', function(data) {
-            console.log('✅ Grabación iniciada');
-            isRecording = true;
-            // Mostrar indicador de grabación
-            document.getElementById('recording-indicator').style.display = 'flex';
-            // Notificar a los alumnos
-            socket.emit('recording_state', { recording: true });
-        });
-
-        socket.on('video_detenido', function(nombreVideo) {
-            console.log('✅ Grabación detenida:', nombreVideo);
-            isRecording = false;
-            // Ocultar indicador de grabación
-            document.getElementById('recording-indicator').style.display = 'none';
-            // Notificar a los alumnos
-            socket.emit('recording_state', { recording: false });
-            mostrarVideoGrabado(nombreVideo);
-        });
+        // Eventos Socket.IO de foto/video basados en archivos eliminados (deprecated)
 
         socket.on('flight_name_set', function(flightName) {
             currentFlightName = flightName;
