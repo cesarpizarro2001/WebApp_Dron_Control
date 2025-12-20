@@ -4511,6 +4511,14 @@
             botonDespegar.classList.add('boton-amarillo');
             botonDespegar.disabled = true;
             
+            // Sincronizar con vista alumno para reflejar estado inmediato
+            socket.emit('button_style_sync', {
+                buttonId: 'botonDespegar',
+                text: 'Despegando...',
+                removeClass: [],
+                addClass: ['boton-amarillo']
+            });
+
             // Enviar comando de despegue con la altura especificada
             socket.emit('command', { action: 'arm_takeOff', altura: String(altura) });
         }
