@@ -3565,10 +3565,6 @@
             const rutaButtonsContainer = document.getElementById('rutaButtonsContainer');
             
             // Ocultar los botones de ruta y mostrar el botón principal con estado "siguiendo"
-            // Sincronizar con alumnos - borrar todos los waypoints al finalizar ruta
-            socket.emit('waypoint_sync', {
-                action: 'clear_all'
-            });
             rutaButtonsContainer.classList.remove('show');
             botonRuta.style.display = 'block';
             botonRuta.textContent = "🚁 Siguiendo Ruta...";
