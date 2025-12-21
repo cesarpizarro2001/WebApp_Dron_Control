@@ -134,6 +134,8 @@ webrtc_event_loop = None  # Event loop de asyncio para WebRTC
 webrtc_thread = None  # Thread del event loop
 webrtc_keepalive_thread = None  # Thread para re-registro periódico
 webrtc_keepalive_running = False
+webrtc_emitter_registered = False  # Estado de registro del emisor
+webrtc_socket_connected = False    # Estado de conexión Socket.IO
 
 
 def start_webrtc_emitter():
@@ -170,26 +172,13 @@ def start_webrtc_emitter():
     webrtc_thread = threading.Thread(target=run_event_loop, daemon=True)
     webrtc_thread.start()
     
-    # Registrarse como emisor en el servidor
-    sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
-    print("📡 [WebRTC] Emisor registrado: dron_camera")
-
-    # Iniciar keepalive de registro para mantener el emisor siempre disponible
-    def keepalive_loop():
-        global webrtc_keepalive_running
-        while webrtc_keepalive_running:
-            try:
-                # Re-emitir registro de emisor (idempotente)
-                sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
-            except Exception:
-                pass
-            # Reintentar cada 10s
-            time.sleep(10)
-
-    global webrtc_keepalive_thread, webrtc_keepalive_running
-    webrtc_keepalive_running = True
-    webrtc_keepalive_thread = threading.Thread(target=keepalive_loop, daemon=True)
-    webrtc_keepalive_thread.start()
+    # Registrarse como emisor en el servidor (una sola vez)
+    try:
+        sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
+        webrtc_emitter_registered = True
+        print("📡 [WebRTC] Emisor registrado: dron_camera")
+    except Exception as e:
+        print(f"❌ [WebRTC] Error al registrar emisor: {e}")
 
 
 def stop_webrtc_emitter():
@@ -203,7 +192,13 @@ def stop_webrtc_emitter():
     
     print("📡 [WebRTC] Deteniendo emisor...")
 
-    # Detener keepalive
+    # Avisar al servidor que detenemos el streaming
+    try:
+        sio.emit('webrtc_stop_streaming', {'stream_id': 'dron_camera'})
+    except Exception:
+        pass
+
+    # Detener keepalive (ya no se usa)
     global webrtc_keepalive_running
     webrtc_keepalive_running = False
     
@@ -220,6 +215,9 @@ def stop_webrtc_emitter():
     # Detener event loop
     webrtc_event_loop.call_soon_threadsafe(webrtc_event_loop.stop)
     webrtc_event_loop = None
+    # Marcar emisor como no registrado
+    global webrtc_emitter_registered
+    webrtc_emitter_registered = False
     
     print("📡 [WebRTC] Emisor detenido")
 
@@ -1101,8 +1099,13 @@ def video_Websocket_thread():
             # Almacena el último frame capturado
             last_frame = frame.copy()
             
-            # NUEVO: Enviar frame a la cola compartida de WebRTC
-            push_webrtc_frame(frame)
+            # Enviar frame a la cola compartida de WebRTC
+            # Mirror horizontal (modo espejo) para que en la WebApp izquierda/derecha sean intuitivas
+            try:
+                frame_stream = cv2.flip(frame, 1)  # 1 = flip horizontal
+            except Exception:
+                frame_stream = frame
+            push_webrtc_frame(frame_stream)
             
             # [DESHABILITADO] Envío por Socket.IO de frames (usamos WebRTC)
             # quality = qualitySlider.get()
@@ -1809,6 +1812,11 @@ def update_video_display():
             if last_frame is not None and video_label:
                 # Convertir frame de BGR a RGB
                 frame_rgb = cv2.cvtColor(last_frame, cv2.COLOR_BGR2RGB)
+                # Mirror horizontal (modo espejo) para la previsualización local
+                try:
+                    frame_rgb = cv2.flip(frame_rgb, 1)
+                except Exception:
+                    pass
 
                 # Redimensionar frame para ajustarlo a la ventana (manteniendo aspecto)
                 height, width = frame_rgb.shape[:2]
@@ -2151,6 +2159,9 @@ def connect_to_socketio_server():
             # PRODUCCIÓN: descomentar la siguiente línea
             sio.connect('https://dronseetac.upc.edu:8106')
             print("Conectado exitosamente al servidor Socket.IO")
+            # Marcar conectado
+            global webrtc_socket_connected
+            webrtc_socket_connected = True
             return True
         except Exception as e:
             if attempt < max_retries:
@@ -2162,6 +2173,29 @@ def connect_to_socketio_server():
                 print(f"Asegúrate de que 'run.py' esté ejecutándose primero")
                 print(f"Error: {e}")
                 return False
+
+# Eventos de conexión/desconexión de Socket.IO
+@sio.event
+def connect():
+    global webrtc_socket_connected
+    webrtc_socket_connected = True
+    print("🔌 [Socket.IO] Conectado")
+    # Si la cámara del dron está activa y el emisor no está registrado, volver a registrar
+    try:
+        # Usamos la variable global directamente
+        if 'sendingWebsockets' in globals() and globals()['sendingWebsockets'] and not globals().get('webrtc_emitter_registered', False):
+            print("📡 [WebRTC] Re-registrando emisor tras reconexión")
+            sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
+            globals()['webrtc_emitter_registered'] = True
+    except Exception:
+        pass
+
+@sio.event
+def disconnect():
+    global webrtc_socket_connected, webrtc_emitter_registered
+    webrtc_socket_connected = False
+    webrtc_emitter_registered = False
+    print("🔌 [Socket.IO] Desconectado")
     
     return False
 
@@ -2564,7 +2598,7 @@ frequencySlider.set(30)
 frequencySlider.grid(row=1, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
 # Deshabilitar todos los botones excepto "Modo", "Conectar" y "Conectar WebApp" al iniciar
-# Solo permitir cambiar modo, conectar al dron y conectar a la WebApp al inicio
+# Solo permitir cambiar modo, conectar al dron, conectar a la WebApp al inicio, activar camara del dron recibir video del móvil y ver galeria.
 deshabilitar_boton(armBtn)
 deshabilitar_boton(takeOffBtn)
 deshabilitar_boton(NorthBtn)
@@ -2574,9 +2608,6 @@ deshabilitar_boton(WestBtn)
 deshabilitar_boton(StopBtn)
 deshabilitar_boton(RTLBtn)
 deshabilitar_boton(disconnectBtn, "desconectado")
-deshabilitar_boton(videoWebsocketBtn)
-deshabilitar_boton(galleryBtn)
-deshabilitar_boton(cameraBtn)
 
 # Precargar modelo YOLO al inicio
 print("🚀 Precargando modelo YOLO...")
