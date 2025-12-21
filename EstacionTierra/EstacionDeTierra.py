@@ -1142,6 +1142,11 @@ def capturar_foto():
 
         cv2.imwrite(filepath, last_frame)
         print(f"Foto guardada como {filepath}")
+        # Efecto visual de destello en la Estación de Tierra
+        try:
+            ventana.after(0, trigger_flash_overlay)
+        except Exception:
+            pass
         
         # Enviar la ruta relativa completa (incluyendo subcarpeta si existe)
         # Convertir a formato de URL (/ en lugar de \)
@@ -1248,6 +1253,11 @@ def start_recording():
         video_thread.start()
 
         sio.emit('flight_event', {'event': 'video_iniciado', 'filename': current_video_filename})
+        # Mostrar overlay REC en la Estación de Tierra
+        try:
+            ventana.after(0, show_rec_overlay)
+        except Exception:
+            pass
         return True
     else:
         print("No hay frame disponible para iniciar grabación")
@@ -1273,6 +1283,11 @@ def stop_recording():
             current_video_filepath = None
         else:
             sio.emit('flight_event', {'event': 'video_detenido'})
+        # Ocultar overlay REC
+        try:
+            ventana.after(0, hide_rec_overlay)
+        except Exception:
+            pass
         
         return True
     return False
@@ -1756,7 +1771,7 @@ def recibirCamara ():
 
 # Crea la ventana para mostrar el video del dron
 def create_video_display():
-    global video_display_window, video_label
+    global video_display_window, video_label, video_container
 
     video_display_window = tk.Toplevel(ventana)
     video_display_window.title(f"Video del Dron - {current_flight_name}")
@@ -1766,8 +1781,12 @@ def create_video_display():
     main_frame = tk.Frame(video_display_window)
     main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-    # Label para mostrar el video
-    video_label = tk.Label(main_frame, text="Esperando video...", bg="black", fg="white")
+    # Contenedor para el video y overlays (evita parpadeo del REC)
+    video_container = tk.Frame(main_frame, bg="black", borderwidth=0, highlightthickness=0)
+    video_container.pack(fill=tk.BOTH, expand=True)
+
+    # Label para mostrar el video (hijo del contenedor)
+    video_label = tk.Label(video_container, text="Esperando video...", bg="black", fg="white", borderwidth=0, highlightthickness=0)
     video_label.pack(fill=tk.BOTH, expand=True)
 
     # Frame para controles
@@ -1794,6 +1813,16 @@ def create_video_display():
     # Función para manejar el cierre de la ventana
     def on_closing():
         global sendingWebsockets, showing_video
+        # Ocultar overlays si están activos
+        try:
+            ventana.after(0, hide_rec_overlay)
+        except Exception:
+            pass
+        try:
+            if 'flash_overlay' in globals() and flash_overlay is not None and flash_overlay.winfo_exists():
+                flash_overlay.destroy()
+        except Exception:
+            pass
         sendingWebsockets = False
         showing_video = False
         videoWebsocketBtn['text'] = "Activar cámara dron"
@@ -1802,6 +1831,97 @@ def create_video_display():
         video_display_window.destroy()
 
     video_display_window.protocol("WM_DELETE_WINDOW", on_closing)
+
+
+# ==========================
+# Overlays de la previsualización
+# ==========================
+def show_rec_overlay():
+    """Muestra un indicador REC con temporizador sobre el video."""
+    global rec_overlay_label, rec_timer_job, rec_start_time, rec_blink_state
+    # Determinar el contenedor adecuado para overlays
+    parent = video_container if (video_container is not None and video_container.winfo_exists()) else video_label
+    if parent is None or not parent.winfo_exists():
+        return
+
+    # Crear label si no existe
+    if rec_overlay_label is None or not rec_overlay_label.winfo_exists():
+        rec_overlay_label = tk.Label(parent, text="REC 00:00", bg="#220000", fg="red",
+                                     font=("Arial", 12, "bold"))
+        # Posicionar arriba-izquierda con un pequeño margen
+        rec_overlay_label.place(in_=parent, x=10, y=10)
+
+    rec_start_time = time.time()
+    rec_blink_state = False
+
+    # Arrancar actualización
+    def tick():
+        global rec_timer_job, rec_blink_state
+        if rec_overlay_label is None or not rec_overlay_label.winfo_exists():
+            rec_timer_job = None
+            return
+
+        # Calcular tiempo transcurrido
+        elapsed = int(time.time() - rec_start_time) if rec_start_time else 0
+        mm = elapsed // 60
+        ss = elapsed % 60
+
+        try:
+            rec_overlay_label.configure(text=f"REC {mm:02d}:{ss:02d}", fg="red")
+            # Asegurar que el overlay quede por encima del frame del video
+            rec_overlay_label.lift()
+        except Exception:
+            pass
+
+        # Reprogramar
+        rec_timer_job = ventana.after(500, tick)
+
+    # Iniciar el ciclo
+    if rec_timer_job is None:
+        rec_timer_job = ventana.after(0, tick)
+
+
+def hide_rec_overlay():
+    """Oculta y limpia el indicador REC y su temporizador."""
+    global rec_overlay_label, rec_timer_job, rec_start_time
+    # Cancelar temporizador
+    try:
+        if rec_timer_job is not None:
+            ventana.after_cancel(rec_timer_job)
+    except Exception:
+        pass
+    rec_timer_job = None
+    rec_start_time = None
+
+    # Destruir label
+    try:
+        if rec_overlay_label is not None and rec_overlay_label.winfo_exists():
+            rec_overlay_label.destroy()
+    except Exception:
+        pass
+    rec_overlay_label = None
+
+
+def trigger_flash_overlay(duration_ms=300):
+    """Muestra un destello blanco breve sobre el video para indicar foto."""
+    global flash_overlay
+    parent = video_container if (video_container is not None and video_container.winfo_exists()) else video_label
+    if parent is None or not parent.winfo_exists():
+        return
+
+    # Crear overlay a pantalla completa del label de video
+    try:
+        # Destruir cualquier overlay anterior activo
+        if flash_overlay is not None and flash_overlay.winfo_exists():
+            flash_overlay.destroy()
+    except Exception:
+        pass
+
+    flash_overlay = tk.Label(parent, bg="white")
+    flash_overlay.place(in_=parent, relx=0, rely=0, relwidth=1, relheight=1)
+
+    # Quitar overlay tras el tiempo indicado
+    ventana.after(duration_ms, lambda: (flash_overlay.winfo_exists() and flash_overlay.destroy()))
 
 # Thread para actualizar la visualización del video
 def update_video_display():
@@ -1839,6 +1959,14 @@ def update_video_display():
                 if video_label and video_label.winfo_exists():
                     video_label.configure(image=img_tk, text="")
                     video_label.image = img_tk  # Mantener referencia
+                    # Mantener REC overlay en primer plano si existe
+                    try:
+                        if 'rec_overlay_label' in globals() and rec_overlay_label is not None and rec_overlay_label.winfo_exists():
+                            rec_overlay_label.lift()
+                        if 'flash_overlay' in globals() and flash_overlay is not None and flash_overlay.winfo_exists():
+                            flash_overlay.lift()
+                    except Exception:
+                        pass
 
             time.sleep(0.03)
 
@@ -1860,6 +1988,17 @@ def close_video_display():
     videoWebsocketBtn['text'] = "Activar cámara dron"
     videoWebsocketBtn['fg'] = 'black'
     videoWebsocketBtn['bg'] = 'violet'
+
+    # Limpiar overlays si existen
+    try:
+        ventana.after(0, hide_rec_overlay)
+    except Exception:
+        pass
+    try:
+        if 'flash_overlay' in globals() and flash_overlay is not None and flash_overlay.winfo_exists():
+            flash_overlay.destroy()
+    except Exception:
+        pass
 
     if video_display_window and video_display_window.winfo_exists():
         video_display_window.destroy()
@@ -2139,7 +2278,15 @@ gallery_window = None
 selected_flight = None
 video_display_window = None
 video_label = None
+video_container = None
 showing_video = False
+
+# Overlays en la ventana de video (solo Estación de Tierra)
+rec_overlay_label = None
+rec_timer_job = None
+rec_start_time = None
+rec_blink_state = False
+flash_overlay = None
 
 receivingCamera = False
 contador = 0
