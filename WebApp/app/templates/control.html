@@ -2960,6 +2960,13 @@
             waypointMarkers = [];
             rutaPolyline.setLatLngs([]);  // <-- Esta línea asegura borrar la línea negra
 
+            // Sincronizar con alumnos - borrar todos los waypoints al finalizar ruta
+            try {
+                socket.emit('waypoint_sync', {
+                    action: 'clear_all'
+                });
+            } catch (_) {}
+
             // Si la cámara no está abierta, cerrar conexión para liberar recursos
             try {
                 if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
