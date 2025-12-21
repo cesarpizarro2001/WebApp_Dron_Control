@@ -2588,7 +2588,7 @@
     let isFullscreen = false; // Para el botón de pantalla completa
     let professorIsTouchDevice = null; // Tipo de dispositivo del profesor (null hasta recibir info)
     // Mantener stream activo durante la ruta si hay capturas en waypoints
-    let routeRequiresStreamAlumno = false;
+    // Stream del dron se solicita al inicio de la ruta, sin depender de capturas
     
     // Función para actualizar la posición del dron en el mapa
     function updateDronePosition(lat, lon, heading) {
@@ -3194,9 +3194,8 @@
             // Limpiar la polyline
             rutaPolyline.setLatLngs([]);
 
-            // Si el stream se mantuvo solo para la ruta y la cámara no está abierta, cerrar conexión
+            // Si la cámara no está abierta, cerrar conexión para liberar recursos
             try {
-                routeRequiresStreamAlumno = false;
                 const webcamContainer = document.getElementById('webcam-container');
                 const webcamHidden = !webcamContainer || webcamContainer.style.display === 'none' || webcamContainer.style.display === '';
                 if (webrtcReceiver && videoElement && videoElement.srcObject && webcamHidden) {
@@ -3215,6 +3214,20 @@
             console.log('[ALUMNO] 📖 Abriendo modal de instrucciones de ruta');
             if (modal) {
                 modal.classList.add('show');
+            }
+            // Solicitar el stream de la cámara del dron al inicio del modo ruta
+            try {
+                const videoEl = document.getElementById('video-stream');
+                if (videoEl && socket) {
+                    if (typeof webrtcReceiver === 'undefined' || !webrtcReceiver) {
+                        console.log('🚀 [Alumno] Inicializando receptor WebRTC para dron_camera');
+                        webrtcReceiver = new WebRTCDroneReceiver(videoEl, socket, 'dron_camera');
+                    }
+                    console.log('📡 [Alumno] Solicitando stream WebRTC (dron_camera) por inicio de ruta');
+                    webrtcReceiver.requestStream();
+                }
+            } catch (e) {
+                console.warn('⚠️ [Alumno] No se pudo solicitar el stream WebRTC al recibir inicio de ruta:', e);
             }
         } else if (payload.action === 'close') {
             console.log('[ALUMNO] 📖 Cerrando modal de instrucciones de ruta');
@@ -3359,12 +3372,10 @@
         // Actualizar la línea de ruta
         rutaPolyline.setLatLngs(latLngs);
 
-        // Si la ruta incluye foto o video, solicitar stream y mantenerlo
+        // Asegurar que el stream de video esté disponible al recibir la ruta
         try {
-            const requiresStream = waypoints.some(wp => wp.captura && wp.captura !== 'ninguna');
-            routeRequiresStreamAlumno = requiresStream;
-            if (requiresStream && webrtcReceiver && videoElement && !videoElement.srcObject) {
-                console.log('📡 [Alumno] Solicitando stream WebRTC por capturas en ruta');
+            if (webrtcReceiver && videoElement && !videoElement.srcObject) {
+                console.log('📡 [Alumno] Solicitando stream WebRTC por inicio/actualización de ruta');
                 webrtcReceiver.requestStream();
             }
         } catch (_) {}

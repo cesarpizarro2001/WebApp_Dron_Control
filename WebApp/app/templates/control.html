@@ -2706,8 +2706,7 @@
         let waypoints = [];
         let waypointMarkers = [];
         let siguiendoRuta = false;
-        // Mantener stream activo durante la ruta si hay capturas en waypoints
-        let routeRequiresStream = false;
+        // Mantener stream activo durante la ruta
         let rutaPolyline = L.polyline([], { 
             color: '#2196F3',
             weight: 4,
@@ -2961,9 +2960,9 @@
             waypointMarkers = [];
             rutaPolyline.setLatLngs([]);  // <-- Esta línea asegura borrar la línea negra
 
-            // Si mantuvimos el stream solo para la ruta y la cámara no está abierta, cerrar conexión
+            // Si la cámara no está abierta, cerrar conexión para liberar recursos
             try {
-                if (routeRequiresStream && typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
+                if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
                     const webcamContainer = document.getElementById('webcam-container');
                     const videoEl = document.getElementById('video-stream');
                     const webcamHidden = !webcamContainer || webcamContainer.style.display === 'none' || webcamContainer.style.display === '';
@@ -2973,7 +2972,6 @@
                     }
                 }
             } catch (_) {}
-            routeRequiresStream = false;
 
             console.log('Ruta finalizada y limpiada');
         }
@@ -3425,6 +3423,21 @@
                 // Ocultar el botón "Crear Ruta" y mostrar los botones de ruta
                 botonRuta.style.display = 'none';
                 rutaButtonsContainer.classList.add('show');
+
+                // Solicitar el stream de la cámara del dron desde el inicio del modo ruta
+                try {
+                    const videoEl = document.getElementById('video-stream');
+                    if (videoEl && socket) {
+                        if (typeof webrtcReceiver === 'undefined' || !webrtcReceiver) {
+                            console.log('🚀 [Ruta] Inicializando receptor WebRTC para dron_camera');
+                            webrtcReceiver = new WebRTCDroneReceiver(videoEl, socket, 'dron_camera');
+                        }
+                        console.log('📡 [Ruta] Solicitando stream WebRTC (dron_camera)');
+                        webrtcReceiver.requestStream();
+                    }
+                } catch (e) {
+                    console.warn('⚠️ [Ruta] No se pudo solicitar el stream WebRTC al crear ruta:', e);
+                }
             }
         }
 
@@ -3566,17 +3579,11 @@
             document.getElementById('botonConectar').disabled = true;
             document.getElementById('botonDespegar').disabled = true;
 
-            // Determinar si la ruta requiere stream (foto o video en algún waypoint)
-            routeRequiresStream = waypoints.some(wp => wp.captura && wp.captura !== 'ninguna');
-            console.log('Iniciando ruta con', waypoints.length, 'waypoints', '| requiere stream:', routeRequiresStream);
-            // Asegurar que el stream de video esté disponible para capturas automáticas
+            // Asegurar que el stream de video esté disponible al iniciar ruta
             try {
                 const videoEl = document.getElementById('video-stream');
                 if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
-                    if (routeRequiresStream && (!videoEl || !videoEl.srcObject)) {
-                        console.log('📡 [Ruta] Solicitando stream WebRTC para capturas automáticas');
-                        webrtcReceiver.requestStream();
-                    } else if (videoEl && !videoEl.srcObject) {
+                    if (!videoEl || !videoEl.srcObject) {
                         console.log('📡 [Ruta] Solicitando stream WebRTC al iniciar ruta');
                         webrtcReceiver.requestStream();
                     }
@@ -3661,8 +3668,8 @@
             // Resetear conexión WebRTC si existe (permite reabrir)
             // Si hay una ruta en curso que requiere stream, mantener la conexión activa
             if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
-                if (routeRequiresStream && siguiendoRuta) {
-                    console.log('ℹ️ Manteniendo conexión WebRTC activa por ruta en curso (capturas pendientes)');
+                if (siguiendoRuta) {
+                    console.log('ℹ️ Manteniendo conexión WebRTC activa por ruta en curso');
                 } else {
                     try {
                         console.log('🔄 [Control] Reseteando receptor WebRTC al cerrar cámara dron');

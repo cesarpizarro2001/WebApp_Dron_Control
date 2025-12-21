@@ -2585,73 +2585,58 @@ pilot_rc_thread = None
 last_rc_command_time = None  # Timestamp del último comando recibido
 
 def pilot_rc_loop():
-    """Loop continuo que envía comandos RC al dron mientras está en modo piloto"""
+    """Loop continuo que envía comandos RC al dron mientras está en modo piloto.
+    Mantiene el loop vivo aunque el estado deje de ser 'flying' momentáneamente.
+    """
     global pilot_mode_active, pilot_rc_values, last_rc_command_time
-    
-    while pilot_mode_active and dron.state == "flying":
+
+    while pilot_mode_active:
+        # Esperar si el dron no está volando, pero mantener el loop activo
+        if dron.state != "flying":
+            time.sleep(0.05)
+            continue
+
         # Si no hemos recibido comandos en los últimos 0.3 segundos, resetear a 0
         if last_rc_command_time is not None:
             time_since_last_command = time.time() - last_rc_command_time
             if time_since_last_command > 0.3:
-                # No hay comandos recientes - resetear a posición neutra
                 pilot_rc_values['throttle'] = 0
                 pilot_rc_values['yaw'] = 0
                 pilot_rc_values['pitch'] = 0
                 pilot_rc_values['roll'] = 0
-        
+
         # VALIDACIÓN DE LÍMITES DE ALTURA
         current_altitude = dron.alt
         throttle_value = pilot_rc_values['throttle']
-        
-        # REDUCCIÓN GRADUAL cerca del límite máximo (entre 9.5m y 10m)
-        # A 10m el factor será 0 (bloqueo total), a 9.5m será 1.0 (100% de throttle)
+
         if current_altitude >= 9.5 and throttle_value > 0:
-            # Calcular factor de reducción:
-            # - A 9.5m: factor = 1.0 (sin reducción)
-            # - A 9.75m: factor = 0.5 (reduce a 50%)
-            # - A 10m: factor = 0 (bloquea)
-            factor = (ALTURA_MAXIMA - current_altitude) / (ALTURA_MAXIMA - 9.5)  # 1 a 0
-            
+            factor = (ALTURA_MAXIMA - current_altitude) / (ALTURA_MAXIMA - 9.5)
             original_throttle = throttle_value
             pilot_rc_values['throttle'] = throttle_value * factor
-            
             if abs(original_throttle - pilot_rc_values['throttle']) > 0.1:
                 print(f'🔼 Reduciendo ascenso cerca del techo: {current_altitude:.1f}m (throttle: {original_throttle:.2f} → {pilot_rc_values["throttle"]:.2f})')
-        
-        # REDUCCIÓN GRADUAL cerca del límite mínimo (entre 2m y 2.5m)
-        # A 2m el factor será 0 (bloqueo total), a 2.5m será 1.0 (100% de throttle)
         elif current_altitude <= 2.5 and throttle_value < 0:
-            # Calcular factor de reducción: 
-            # - A 2.5m: factor = 1.0 (sin reducción)
-            # - A 2.25m: factor = 0.5 (reduce a 50%)
-            # - A 2m: factor = 0 (bloquea)
-            factor = (current_altitude - ALTURA_MINIMA) / (2.5 - ALTURA_MINIMA)  # 0 a 1
-            
+            factor = (current_altitude - ALTURA_MINIMA) / (2.5 - ALTURA_MINIMA)
             original_throttle = throttle_value
             pilot_rc_values['throttle'] = throttle_value * factor
-            
             if abs(original_throttle - pilot_rc_values['throttle']) > 0.1:
                 print(f'🔽 Reduciendo descenso cerca del suelo: {current_altitude:.1f}m (throttle: {original_throttle:.2f} → {pilot_rc_values["throttle"]:.2f})')
-        
-        # Convertir de [-1, 1] a [1100, 1900]
+
         def normalize_to_pwm(value):
             return int(1500 + (value * 400))
-        
+
         throttle_pwm = normalize_to_pwm(pilot_rc_values['throttle'])
         yaw_pwm = normalize_to_pwm(pilot_rc_values['yaw'])
         pitch_pwm = normalize_to_pwm(pilot_rc_values['pitch'])
         roll_pwm = normalize_to_pwm(pilot_rc_values['roll'])
-        
-        # Enviar comandos RC al dron
-        dron.send_rc(pitch=pitch_pwm, roll=roll_pwm, throttle=throttle_pwm, yaw=yaw_pwm)
 
-        # Esperar 0.05 segundos (20 Hz)
+        dron.send_rc(pitch=pitch_pwm, roll=roll_pwm, throttle=throttle_pwm, yaw=yaw_pwm)
         time.sleep(0.05)
 
 @sio.on("pilot_rc")
 def handle_pilot_rc(data):
     """Handler para datos de joystick del modo piloto: [throttle, yaw, pitch, roll]"""
-    global webapp_commands_enabled, pilot_rc_values, last_rc_command_time
+    global webapp_commands_enabled, pilot_rc_values, last_rc_command_time, pilot_mode_active, pilot_rc_thread
     
     if not webapp_commands_enabled:
         return
@@ -2668,6 +2653,16 @@ def handle_pilot_rc(data):
         
         # Actualizar timestamp del último comando
         last_rc_command_time = time.time()
+
+        # Asegurar que el loop RC esté activo si llegan datos y el dron está volando
+        if not pilot_mode_active or pilot_rc_thread is None or not pilot_rc_thread.is_alive():
+            pilot_mode_active = True
+            try:
+                pilot_rc_thread = threading.Thread(target=pilot_rc_loop, daemon=True)
+                pilot_rc_thread.start()
+                print('🎮 Loop RC iniciado por recepción de datos')
+            except Exception as e:
+                print(f'⚠️ Error iniciando loop RC: {e}')
 
 @sio.on("pilot_action")
 def handle_pilot_action(data):
