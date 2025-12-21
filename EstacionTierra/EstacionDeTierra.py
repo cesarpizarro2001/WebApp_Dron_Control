@@ -1065,6 +1065,188 @@ def videoWebsockets():
         start_button = tk.Button(flight_name_window, text="Iniciar", bg="green", fg="white", command=start_video_stream)
         start_button.pack(pady=10)
 
+
+# ==========================
+# Cámara Móvil por WebRTC (receptor)
+# ==========================
+def ensure_webrtc_loop():
+    """Asegura que existe un event loop de asyncio para WebRTC (sin registrar emisor)."""
+    global webrtc_event_loop, webrtc_thread
+    if webrtc_event_loop is not None:
+        return
+    def run_event_loop():
+        import asyncio as _asyncio
+        nonlocal_loop = _asyncio.new_event_loop()
+        globals()['webrtc_event_loop'] = nonlocal_loop
+        _asyncio.set_event_loop(nonlocal_loop)
+        print("📡 [WebRTC] Event loop iniciado (receptor)")
+        nonlocal_loop.run_forever()
+    webrtc_thread = threading.Thread(target=run_event_loop, daemon=True)
+    webrtc_thread.start()
+
+def create_mobile_display():
+    global mobile_display_window, mobile_video_label
+    mobile_display_window = tk.Toplevel(ventana)
+    mobile_display_window.title("Cámara Móvil (WebRTC)")
+    mobile_display_window.geometry("640x520")
+
+    main_frame = tk.Frame(mobile_display_window)
+    main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+    mobile_video_label = tk.Label(main_frame, text="Esperando cámara móvil...", bg="black", fg="white")
+    mobile_video_label.pack(fill=tk.BOTH, expand=True)
+
+    def on_close_mobile():
+        stop_mobile_webrtc()
+        if mobile_display_window and mobile_display_window.winfo_exists():
+            mobile_display_window.destroy()
+    mobile_display_window.protocol("WM_DELETE_WINDOW", on_close_mobile)
+
+def update_mobile_display():
+    global mobile_video_label, mobile_last_frame, mobile_showing, mobile_display_window
+    while mobile_showing and mobile_display_window and mobile_display_window.winfo_exists():
+        try:
+            if mobile_last_frame is not None and mobile_video_label:
+                frame_rgb = cv2.cvtColor(mobile_last_frame, cv2.COLOR_BGR2RGB)
+                # Ajuste de tamaño
+                h, w = frame_rgb.shape[:2]
+                max_w, max_h = 600, 440
+                scale = min(max_w / w, max_h / h)
+                new_w, new_h = int(w * scale), int(h * scale)
+                frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
+                img_pil = Image.fromarray(frame_resized)
+                img_tk = ImageTk.PhotoImage(img_pil)
+                if mobile_video_label and mobile_video_label.winfo_exists():
+                    mobile_video_label.configure(image=img_tk, text="")
+                    mobile_video_label.image = img_tk
+            time.sleep(0.03)
+        except Exception as e:
+            print(f"Error actualizando móvil display: {e}")
+            time.sleep(0.1)
+
+async def _mobile_reader(track):
+    """Lee frames del track de video entrante (async en el event loop)."""
+    global mobile_receiving, mobile_last_frame
+    from av import VideoFrame as _VideoFrame
+    try:
+        while mobile_receiving:
+            frame = await track.recv()
+            if isinstance(frame, _VideoFrame):
+                img = frame.to_ndarray(format='bgr24')
+                mobile_last_frame = img
+    except Exception as e:
+        print(f"[Mobile] Reader finalizado: {e}")
+
+async def _mobile_handle_offer(connection_id, sdp, sdp_type):
+    """Crea PC receptor, procesa oferta y responde con answer."""
+    global mobile_pc, mobile_connection_id
+    try:
+        # Cerrar PC anterior si existiera
+        if mobile_pc is not None:
+            try:
+                await mobile_pc.close()
+            except Exception:
+                pass
+            mobile_pc = None
+
+        config = RTCConfiguration(iceServers=[
+            RTCIceServer(urls="stun:stun.relay.metered.ca:80"),
+            RTCIceServer(urls="turn:dronseetac.upc.edu:3478", username="dronseetac", credential="Mimara00.")
+        ])
+        pc = RTCPeerConnection(config)
+        mobile_pc = pc
+        mobile_connection_id = connection_id
+
+        @pc.on("track")
+        def on_track(track):
+            if track.kind == 'video':
+                # Lanzar lector de frames en el loop actual
+                asyncio.ensure_future(_mobile_reader(track))
+
+        # Procesar oferta
+        offer = RTCSessionDescription(sdp=sdp, type=sdp_type)
+        await pc.setRemoteDescription(offer)
+
+        # Crear y enviar respuesta
+        answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+
+        sio.emit('webrtc_answer', {
+            'connection_id': connection_id,
+            'sdp': pc.localDescription.sdp,
+            'sdp_type': pc.localDescription.type
+        })
+        print("📺 [Mobile] Respuesta enviada")
+    except Exception as e:
+        print(f"❌ [Mobile] Error en handle_offer: {e}")
+
+def start_mobile_webrtc():
+    """Solicita stream móvil y abre ventana de previsualización."""
+    global mobile_receiving, mobile_showing
+    ensure_webrtc_loop()
+    mobile_receiving = True
+    mobile_showing = True
+
+    create_mobile_display()
+    threading.Thread(target=update_mobile_display, daemon=True).start()
+
+    # Solicitar stream al servidor
+    try:
+        sio.emit('webrtc_request_stream', { 'stream_id': MOBILE_STREAM_ID })
+        print(f"📡 [Mobile] Solicitado stream: {MOBILE_STREAM_ID}")
+    except Exception as e:
+        print(f"❌ [Mobile] Error solicitando stream: {e}")
+
+def stop_mobile_webrtc():
+    """Detiene la recepción y cierra la conexión y la ventana."""
+    global mobile_receiving, mobile_showing, mobile_pc, mobile_connection_id, mobile_display_window
+    mobile_receiving = False
+    mobile_showing = False
+
+    # Notificar cierre al servidor para esta conexión
+    try:
+        if mobile_connection_id:
+            sio.emit('webrtc_close_connection', { 'connection_id': mobile_connection_id })
+    except Exception:
+        pass
+
+    # Cerrar PC
+    try:
+        if mobile_pc is not None:
+            if webrtc_event_loop:
+                async def _close():
+                    try:
+                        await mobile_pc.close()
+                    except Exception:
+                        pass
+                asyncio.run_coroutine_threadsafe(_close(), webrtc_event_loop)
+            mobile_pc = None
+    except Exception:
+        pass
+
+    mobile_connection_id = None
+
+    # Cerrar ventana si sigue abierta
+    try:
+        if mobile_display_window and mobile_display_window.winfo_exists():
+            mobile_display_window.destroy()
+    except Exception:
+        pass
+
+def recibirCamara():
+    """Toggle para recibir la cámara del móvil por WebRTC."""
+    global cameraBtn
+    if not mobile_receiving:
+        cameraBtn['text'] = "Detener video del movil"
+        cameraBtn['fg'] = 'white'
+        cameraBtn['bg'] = 'green'
+        start_mobile_webrtc()
+    else:
+        stop_mobile_webrtc()
+        cameraBtn['text'] = "Recibir video del movil"
+        cameraBtn['fg'] = 'black'
+        cameraBtn['bg'] = 'violet'
+
 # Thread para trabajar sobre el video
 def video_Websocket_thread():
     global cap, sendingWebsockets, sio, last_frame
@@ -1738,36 +1920,7 @@ def record_video_thread(filepath):
             video_writer.release()
             print(f"Video guardado: {filepath}") 
 
-# Recibir thread del frame de la camara del movil
-def recibirCamaraThread():
-    global latest_frame
-    global receivingCamera
-    global contador
-    # El nombre de la ventana tiene que ser diferente cada vez que inicio el thread, para eso uso el contador
-    while receivingCamera:
-        if latest_frame is not None:
-            cv2.imshow("Video camara " + str(contador), latest_frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-# Se recibe la camara del movil
-def recibirCamara ():
-    global receivingCamera
-    global cameraBtn
-    global contador
-
-    if receivingCamera:
-        receivingCamera = False
-        cameraBtn['text'] = "Recibir video del movil"
-        cameraBtn['fg'] = 'black'
-        cameraBtn['bg'] = 'violet'
-    else:
-        contador = contador + 1
-        receivingCamera = True
-        cameraBtn['text'] = "Detener video del movil"
-        cameraBtn['fg'] = 'white'
-        cameraBtn['bg'] = 'green'
-        threading.Thread (target = recibirCamaraThread).start()
+# [Eliminado] Ruta legacy de cámara móvil por Socket.IO/OpenCV.
 
 # Crea la ventana para mostrar el video del dron
 def create_video_display():
@@ -2123,6 +2276,26 @@ def handle_webrtc_answer(data):
     )
 
 
+@sio.on('webrtc_offer')
+def handle_webrtc_offer_receiver(data):
+    """Oferta recibida para receptor (cámara móvil)."""
+    stream_id = data.get('stream_id')
+    connection_id = data.get('connection_id')
+    sdp = data.get('sdp')
+    sdp_type = data.get('sdp_type')
+
+    # Solo gestionar la oferta si es para la cámara móvil
+    if stream_id != MOBILE_STREAM_ID:
+        return
+
+    print(f"📥 [Mobile] Oferta recibida para conexión: {connection_id}")
+    ensure_webrtc_loop()
+    asyncio.run_coroutine_threadsafe(
+        _mobile_handle_offer(connection_id, sdp, sdp_type),
+        webrtc_event_loop
+    )
+
+
 @sio.on('webrtc_close_connection')
 def handle_webrtc_close_connection(data):
     """
@@ -2148,7 +2321,26 @@ def handle_webrtc_close_connection(data):
             
             asyncio.run_coroutine_threadsafe(close_pc(), webrtc_event_loop)
     else:
-        print(f"🗑️ [WebRTC] Conexión {connection_id} ya no existe (ya cerrada)")
+        # ¿Es la conexión móvil?
+        if connection_id == mobile_connection_id and mobile_pc is not None:
+            print(f"🗑️ [Mobile] Cerrando conexión: {connection_id}")
+            if webrtc_event_loop:
+                async def close_pc():
+                    try:
+                        await mobile_pc.close()
+                    except Exception:
+                        pass
+                asyncio.run_coroutine_threadsafe(close_pc(), webrtc_event_loop)
+            # Reset móviles
+            try:
+                if mobile_display_window and mobile_display_window.winfo_exists():
+                    mobile_display_window.destroy()
+            except Exception:
+                pass
+            globals()['mobile_pc'] = None
+            globals()['mobile_connection_id'] = None
+        else:
+            print(f"🗑️ [WebRTC] Conexión {connection_id} ya no existe (ya cerrada)")
 
 
 @sio.on('webrtc_ice_candidate')
@@ -2158,31 +2350,40 @@ def handle_webrtc_ice_candidate(data):
     """
     connection_id = data.get('connection_id')
     
-    if webrtc_event_loop is None or connection_id not in webrtc_peer_connections:
+    if webrtc_event_loop is None:
         return
     
     # Agregar ICE candidate en el event loop
-    pc = webrtc_peer_connections[connection_id]
-    
-    async def add_ice():
+    async def add_ice_to(pc_target):
         try:
             from aiortc.sdp import candidate_from_sdp
-            
-            # Extraer datos del candidate
+            # Soportar formatos string u objeto
             candidate_str = data.get('candidate')
             sdp_mid = data.get('sdpMid')
             sdp_index = data.get('sdpMLineIndex')
-            
-            # Parsear el candidate string a objeto RTCIceCandidate
+            if isinstance(candidate_str, dict) and candidate_str.get('candidate'):
+                sdp_mid = candidate_str.get('sdpMid')
+                sdp_index = candidate_str.get('sdpMLineIndex')
+                candidate_str = candidate_str.get('candidate')
+
+            if not candidate_str:
+                return
             ice_candidate = candidate_from_sdp(candidate_str.split(':', 1)[1])
             ice_candidate.sdpMid = sdp_mid
             ice_candidate.sdpMLineIndex = sdp_index
-            
-            await pc.addIceCandidate(ice_candidate)
+            await pc_target.addIceCandidate(ice_candidate)
         except Exception as e:
             print(f"   └─> Error agregando ICE candidate: {e}")
-    
-    asyncio.run_coroutine_threadsafe(add_ice(), webrtc_event_loop)
+
+    # Prioridad: conexiones del emisor (dron) existentes
+    if connection_id in webrtc_peer_connections:
+        pc = webrtc_peer_connections[connection_id]
+        asyncio.run_coroutine_threadsafe(add_ice_to(pc), webrtc_event_loop)
+        return
+
+    # Si coincide con la conexión móvil, agregar al PC móvil
+    if connection_id == mobile_connection_id and mobile_pc is not None:
+        asyncio.run_coroutine_threadsafe(add_ice_to(mobile_pc), webrtc_event_loop)
 
 
 async def create_webrtc_offer(connection_id):
@@ -2288,8 +2489,23 @@ rec_start_time = None
 rec_blink_state = False
 flash_overlay = None
 
-receivingCamera = False
-contador = 0
+# ==========================
+# WebRTC Receptor: Cámara Móvil
+# ==========================
+# Nota: el emisor de la cámara móvil en la WebApp transmite el canvas procesado
+# de MediaPipe bajo el stream_id 'gestos_profesor'. Para ver ese vídeo aquí,
+# el receptor debe solicitar ese mismo stream_id.
+MOBILE_STREAM_ID = 'gestos_profesor'
+mobile_pc = None
+mobile_connection_id = None
+mobile_receiving = False
+mobile_last_frame = None
+mobile_display_window = None
+mobile_video_label = None
+mobile_showing = False
+mobile_reader_task = None
+
+# Variables legacy eliminadas para cámara móvil por Socket.IO
 
 # Conectar al servidor Socket.IO con reintentos automáticos
 def connect_to_socketio_server():
@@ -2353,16 +2569,7 @@ if not connect_to_socketio_server():
     print("    - Solo podrás usar la interfaz local de la Estación de Tierra")
     print("    - Para habilitar control remoto, ejecuta 'run.py' y reinicia esta aplicación\n")
 
-@sio.event
-def processed_frame(data):
-    # aqui entramos cada vez que recibimos un frame de la cámara del movil
-    global latest_frame
-    frame_bytes = base64.b64decode(data.split(",")[1])
-    # Convertir los bytes en un array NumPy
-    np_arr = np.frombuffer(frame_bytes, np.uint8)
-    # Decodificar la imagen
-    frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    latest_frame = frame
+# [Eliminado] Handler legacy de frames de móvil por Socket.IO (ahora WebRTC)
 
 @sio.on("go")
 def handle_go(direction):
