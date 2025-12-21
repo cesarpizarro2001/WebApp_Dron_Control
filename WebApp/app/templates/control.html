@@ -2706,6 +2706,8 @@
         let waypoints = [];
         let waypointMarkers = [];
         let siguiendoRuta = false;
+        // Mantener stream activo durante la ruta si hay capturas en waypoints
+        let routeRequiresStream = false;
         let rutaPolyline = L.polyline([], { 
             color: '#2196F3',
             weight: 4,
@@ -2878,6 +2880,38 @@
 
             // Si el dron está a menos de 3 metros del waypoint, consideramos que ha llegado
             if (distance < 3) {
+                // Ejecutar captura según lo configurado en el waypoint antes de avanzar
+                try {
+                    if (nextWaypoint && nextWaypoint.captura) {
+                        if (nextWaypoint.captura === 'foto') {
+                            // Asegurar que haya stream de video solicitado
+                            if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver && !document.getElementById('video-stream').srcObject) {
+                                webrtcReceiver.requestStream();
+                            }
+                            capturarFoto();
+                            console.log(`📸 Foto capturada en waypoint #${nextWaypoint.num}`);
+                        } else if (nextWaypoint.captura === 'video') {
+                            const duracionSeg = parseInt(nextWaypoint.duracion || 0);
+                            if (duracionSeg > 0) {
+                                if (!isRecording) {
+                                    // Asegurar que haya stream de video solicitado
+                                    if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver && !document.getElementById('video-stream').srcObject) {
+                                        webrtcReceiver.requestStream();
+                                    }
+                                    iniciarGrabacion();
+                                    console.log(`🎥 Grabación iniciada en waypoint #${nextWaypoint.num} por ${duracionSeg}s`);
+                                    setTimeout(() => {
+                                        detenerGrabacion();
+                                        console.log(`⏹️ Grabación detenida en waypoint #${nextWaypoint.num}`);
+                                    }, duracionSeg * 1000);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Error gestionando captura en waypoint:', e);
+                }
+
                 // Eliminar el waypoint alcanzado
                 waypoints.shift();
 
@@ -2926,6 +2960,20 @@
             waypointMarkers.forEach(m => map.removeLayer(m));
             waypointMarkers = [];
             rutaPolyline.setLatLngs([]);  // <-- Esta línea asegura borrar la línea negra
+
+            // Si mantuvimos el stream solo para la ruta y la cámara no está abierta, cerrar conexión
+            try {
+                if (routeRequiresStream && typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
+                    const webcamContainer = document.getElementById('webcam-container');
+                    const videoEl = document.getElementById('video-stream');
+                    const webcamHidden = !webcamContainer || webcamContainer.style.display === 'none' || webcamContainer.style.display === '';
+                    if (webcamHidden && videoEl && videoEl.srcObject) {
+                        console.log('📡 [Ruta] Cerrando stream WebRTC tras finalizar ruta');
+                        try { webrtcReceiver.reset(); } catch (_) {}
+                    }
+                }
+            } catch (_) {}
+            routeRequiresStream = false;
 
             console.log('Ruta finalizada y limpiada');
         }
@@ -3504,6 +3552,10 @@
             const rutaButtonsContainer = document.getElementById('rutaButtonsContainer');
             
             // Ocultar los botones de ruta y mostrar el botón principal con estado "siguiendo"
+            // Sincronizar con alumnos - borrar todos los waypoints al finalizar ruta
+            socket.emit('waypoint_sync', {
+                action: 'clear_all'
+            });
             rutaButtonsContainer.classList.remove('show');
             botonRuta.style.display = 'block';
             botonRuta.textContent = "🚁 Siguiendo Ruta...";
@@ -3514,7 +3566,22 @@
             document.getElementById('botonConectar').disabled = true;
             document.getElementById('botonDespegar').disabled = true;
 
-            console.log('Iniciando ruta con', waypoints.length, 'waypoints');
+            // Determinar si la ruta requiere stream (foto o video en algún waypoint)
+            routeRequiresStream = waypoints.some(wp => wp.captura && wp.captura !== 'ninguna');
+            console.log('Iniciando ruta con', waypoints.length, 'waypoints', '| requiere stream:', routeRequiresStream);
+            // Asegurar que el stream de video esté disponible para capturas automáticas
+            try {
+                const videoEl = document.getElementById('video-stream');
+                if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
+                    if (routeRequiresStream && (!videoEl || !videoEl.srcObject)) {
+                        console.log('📡 [Ruta] Solicitando stream WebRTC para capturas automáticas');
+                        webrtcReceiver.requestStream();
+                    } else if (videoEl && !videoEl.srcObject) {
+                        console.log('📡 [Ruta] Solicitando stream WebRTC al iniciar ruta');
+                        webrtcReceiver.requestStream();
+                    }
+                }
+            } catch (_) {}
             socket.emit('command', { action: 'waypointRuta', waypoints: waypoints });
         }
 
@@ -3592,12 +3659,17 @@
             }
             
             // Resetear conexión WebRTC si existe (permite reabrir)
+            // Si hay una ruta en curso que requiere stream, mantener la conexión activa
             if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver) {
-                try {
-                    console.log('🔄 [Control] Reseteando receptor WebRTC al cerrar cámara dron');
-                    webrtcReceiver.reset(); // Usar reset() en lugar de stop()
-                } catch (e) {
-                    console.warn('⚠️ Error al resetear receptor WebRTC:', e);
+                if (routeRequiresStream && siguiendoRuta) {
+                    console.log('ℹ️ Manteniendo conexión WebRTC activa por ruta en curso (capturas pendientes)');
+                } else {
+                    try {
+                        console.log('🔄 [Control] Reseteando receptor WebRTC al cerrar cámara dron');
+                        webrtcReceiver.reset(); // Usar reset() en lugar de stop()
+                    } catch (e) {
+                        console.warn('⚠️ Error al resetear receptor WebRTC:', e);
+                    }
                 }
             }
 

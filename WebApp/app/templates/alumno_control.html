@@ -2587,6 +2587,8 @@
     let followDrone = false; // Para el botón de seguir dron
     let isFullscreen = false; // Para el botón de pantalla completa
     let professorIsTouchDevice = null; // Tipo de dispositivo del profesor (null hasta recibir info)
+    // Mantener stream activo durante la ruta si hay capturas en waypoints
+    let routeRequiresStreamAlumno = false;
     
     // Función para actualizar la posición del dron en el mapa
     function updateDronePosition(lat, lon, heading) {
@@ -2977,45 +2979,86 @@
         
         // Iniciar grabación local del stream
         const videoEl = document.getElementById('video-stream');
-        if (!videoEl || !videoEl.srcObject) {
-            console.warn('[ALUMNO] No hay stream disponible para grabar');
-            return;
-        }
-        
-        recordedChunksAlumno = [];
-        videoBlobAlumno = null;
-        
-        // Configurar MediaRecorder
-        let options = { mimeType: 'video/mp4' };
-        if (!MediaRecorder.isTypeSupported('video/mp4')) {
-            options = { mimeType: 'video/webm;codecs=vp8,opus' };
-            console.warn('[ALUMNO] MP4 no soportado, usando WebM');
-        }
-        
+        // Asegurar que el stream WebRTC esté presente para poder grabar
         try {
-            mediaRecorderAlumno = new MediaRecorder(videoEl.srcObject, options);
-        } catch (e) {
-            mediaRecorderAlumno = new MediaRecorder(videoEl.srcObject);
-        }
-        
-        mediaRecorderAlumno.ondataavailable = (ev) => {
-            if (ev.data && ev.data.size) recordedChunksAlumno.push(ev.data);
-        };
-        
-        mediaRecorderAlumno.onstop = () => {
-            const usedMime = (mediaRecorderAlumno && mediaRecorderAlumno.mimeType && mediaRecorderAlumno.mimeType.includes('mp4')) ? 'video/mp4' : 'video/webm';
-            recordedMimeAlumno = usedMime;
-            videoBlobAlumno = new Blob(recordedChunksAlumno, { type: usedMime });
-            console.log('[ALUMNO] ✅ Video grabado localmente (NO descargado)');
-            // Si estaba pendiente abrir el modal, hacerlo ahora
-            if (openVideoModalPending) {
-                tryOpenRecordedVideoModal();
+            if (typeof webrtcReceiver !== 'undefined' && webrtcReceiver && videoEl && !videoEl.srcObject) {
+                console.log('[ALUMNO] 📡 Solicitando stream WebRTC para grabación sincronizada');
+                webrtcReceiver.requestStream();
             }
+        } catch (_) {}
+
+        // Función para iniciar la grabación cuando el stream esté listo
+        const startAlumnoRecording = () => {
+            if (!videoEl || !videoEl.srcObject) {
+                return;
+            }
+
+            // Evitar iniciar doble
+            if (mediaRecorderAlumno && mediaRecorderAlumno.state === 'recording') {
+                return;
+            }
+
+            recordedChunksAlumno = [];
+            videoBlobAlumno = null;
+
+            // Configurar MediaRecorder
+            let options = { mimeType: 'video/mp4' };
+            if (!MediaRecorder.isTypeSupported('video/mp4')) {
+                options = { mimeType: 'video/webm;codecs=vp8,opus' };
+                console.warn('[ALUMNO] MP4 no soportado, usando WebM');
+            }
+
+            try {
+                mediaRecorderAlumno = new MediaRecorder(videoEl.srcObject, options);
+            } catch (e) {
+                mediaRecorderAlumno = new MediaRecorder(videoEl.srcObject);
+            }
+
+            mediaRecorderAlumno.ondataavailable = (ev) => {
+                if (ev.data && ev.data.size) recordedChunksAlumno.push(ev.data);
+            };
+
+            mediaRecorderAlumno.onstop = () => {
+                const usedMime = (mediaRecorderAlumno && mediaRecorderAlumno.mimeType && mediaRecorderAlumno.mimeType.includes('mp4')) ? 'video/mp4' : 'video/webm';
+                recordedMimeAlumno = usedMime;
+                videoBlobAlumno = new Blob(recordedChunksAlumno, { type: usedMime });
+                console.log('[ALUMNO] ✅ Video grabado localmente (NO descargado)');
+                // Si estaba pendiente abrir el modal, hacerlo ahora
+                if (openVideoModalPending) {
+                    tryOpenRecordedVideoModal();
+                }
+            };
+
+            // Usar timeslice para asegurar dataavailable periódica
+            mediaRecorderAlumno.start(500);
+            console.log('[ALUMNO] ✅ Grabación local iniciada');
         };
-        
-        // Usar timeslice para asegurar dataavailable periódica
-        mediaRecorderAlumno.start(500);
-        console.log('[ALUMNO] ✅ Grabación local iniciada');
+
+        // Si aún no hay stream, esperar hasta que esté disponible
+        if (!videoEl || !videoEl.srcObject) {
+            console.warn('[ALUMNO] No hay stream disponible para grabar (esperando...)');
+            // Intentar iniciar al cargar metadatos
+            if (videoEl) {
+                videoEl.addEventListener('loadedmetadata', () => {
+                    startAlumnoRecording();
+                }, { once: true });
+            }
+            // Fallback: polling corto hasta 5s
+            let retries = 0;
+            const maxRetries = 50; // 50 * 100ms = 5s
+            const interval = setInterval(() => {
+                if (videoEl && videoEl.srcObject) {
+                    clearInterval(interval);
+                    startAlumnoRecording();
+                } else if (++retries >= maxRetries) {
+                    clearInterval(interval);
+                    console.warn('[ALUMNO] ❌ Timeout esperando stream para iniciar grabación');
+                }
+            }, 100);
+        } else {
+            // Stream ya disponible: iniciar grabación inmediatamente
+            startAlumnoRecording();
+        }
     });
     
     // Sincronización de fin de grabación de video
@@ -3066,7 +3109,7 @@
                 // Esperar brevemente a que onstop construya el blob y luego abrir
                 openVideoModalPending = true;
                 let waited = 0;
-                const maxWait = 2000; // ms
+                const maxWait = 10000; // Aumentado a 10s para tolerar latencias
                 const interval = setInterval(() => {
                     if (videoBlobAlumno) {
                         clearInterval(interval);
@@ -3076,7 +3119,7 @@
                         if (waited >= maxWait) {
                             clearInterval(interval);
                             openVideoModalPending = false;
-                            console.warn('[ALUMNO] ❌ Timeout esperando video grabado');
+                            console.warn('[ALUMNO] ❌ Timeout esperando video grabado (no se pudo abrir modal)');
                         }
                     }
                 }, 100);
@@ -3150,6 +3193,17 @@
             
             // Limpiar la polyline
             rutaPolyline.setLatLngs([]);
+
+            // Si el stream se mantuvo solo para la ruta y la cámara no está abierta, cerrar conexión
+            try {
+                routeRequiresStreamAlumno = false;
+                const webcamContainer = document.getElementById('webcam-container');
+                const webcamHidden = !webcamContainer || webcamContainer.style.display === 'none' || webcamContainer.style.display === '';
+                if (webrtcReceiver && videoElement && videoElement.srcObject && webcamHidden) {
+                    console.log('📡 [Alumno] Cerrando stream WebRTC tras cancelación de ruta');
+                    try { webrtcReceiver.reset(); } catch (_) {}
+                }
+            } catch (_) {}
         }
     });
     
@@ -3304,6 +3358,16 @@
         
         // Actualizar la línea de ruta
         rutaPolyline.setLatLngs(latLngs);
+
+        // Si la ruta incluye foto o video, solicitar stream y mantenerlo
+        try {
+            const requiresStream = waypoints.some(wp => wp.captura && wp.captura !== 'ninguna');
+            routeRequiresStreamAlumno = requiresStream;
+            if (requiresStream && webrtcReceiver && videoElement && !videoElement.srcObject) {
+                console.log('📡 [Alumno] Solicitando stream WebRTC por capturas en ruta');
+                webrtcReceiver.requestStream();
+            }
+        } catch (_) {}
     });
     
     // Recibir posición del joystick del profesor
