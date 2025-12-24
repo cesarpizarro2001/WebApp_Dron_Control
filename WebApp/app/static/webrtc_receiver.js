@@ -1,5 +1,5 @@
 /**
- * webrtc_receiver.js (renamed from webrtc_drone_receiver.js)
+ * webrtc_receiver.js
  * Receptor WebRTC genérico para streams de video
  * 
  * Puede recibir:

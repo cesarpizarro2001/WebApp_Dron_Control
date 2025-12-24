@@ -2437,7 +2437,6 @@
 
     <!-- Barra superior de controles principales -->
     <div class="top-controls">
-        <input type="number" id="altura" placeholder="Altura (m)" />
         <button id="botonConectar" onclick="conectarDron()">Conectar</button>
         <button id="botonDespegar" onclick="despegarDron()" disabled>Despegar</button>
         <button id="botonAterrizar" onclick="aterrizarDron()" disabled>Aterrizar</button>
@@ -4481,9 +4480,8 @@
         }
 
         function despegarDron() {
-            const altura = document.getElementById('altura').value;
-            if (altura) {
-                socket.emit('command', { action: 'arm_takeOff', altura: String(altura) });
+            const altura = 4;
+            socket.emit('command', { action: 'arm_takeOff', altura: String(altura) });
                 
                 despegando = true;
                 const botonDespegar = document.getElementById('botonDespegar');
@@ -4532,14 +4530,6 @@
                     
                     timeoutDespegue = null;
                 }, 15000); // 15 segundos
-                
-            } else {
-                showAlert(
-                    "Por favor, ingrese una altura válida.",
-                    "Altura Requerida",
-                    "⚠️"
-                );
-            }
         }
 
         // Función para despegar el dron mediante gesto o voz con altura específica
@@ -5462,20 +5452,11 @@
                     hablar(`Despegando a ${altura} metros`);
                     despegarDronConAltura(altura);
                 } else {
-                    // Si no se especifica altura, verificar si hay altura en el campo
-                    const alturaInput = document.getElementById('altura');
-                    const alturaValor = alturaInput ? alturaInput.value : null;
-                    
-                    if (alturaValor && alturaValor.trim() !== '') {
-                        console.log('Ejecutando: Despegar con altura del campo');
-                        hablar('Despegando');
-                        despegarDron();
-                    } else {
-                        console.log('Ejecutando: Solicitar altura de despegue');
-                        hablar('Ingrese o diga una altura de despegue');
-                        despegarDron();
-                        return false;
-                    }
+                    // Sin altura especificada: despegar a 4m por defecto
+                    console.log('Ejecutando: Despegar por defecto a 4 metros');
+                    hablar('Despegando a 4 metros');
+                    despegarDron();
+                    return true;
                 }
                 return true;
             }
