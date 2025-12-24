@@ -83,6 +83,18 @@ def handle_video_settings(settings):
     socketio.emit('video_settings', settings, include_self=False)
     print("✓ Configuración de video enviada a la Estación de Tierra")
 
+# Handler para corrección de ojo de pez (passthrough)
+@socketio.on('correccion')
+def handle_correccion(payload):
+    """Reenvía el toggle de corrección de fisheye a la Estación de Tierra"""
+    try:
+        enabled = payload.get('enabled') if isinstance(payload, dict) else payload
+        estado = 'ACTIVAR' if enabled else 'DESACTIVAR'
+        print(f"🐟 Corrección ojo de pez: {estado}")
+        socketio.emit('correccion', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error reenviando 'correccion': {e}")
+
 # ==================================================================================
 # PASSTHROUGH DE COMANDOS DE GESTOS (MediaPipe en navegador)
 # Estos eventos llegan desde el navegador (profesor) y se reenvían a la estación
@@ -917,9 +929,9 @@ if __name__ == '__main__':
     import ssl
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     #CERTIFICADO LOCALHOST
-    #ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
     #CERTIFICADO SERVIDOR
-    ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
+    #ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
     
     # socketio.run() ejecuta tanto Flask como Socket.IO en el mismo puerto
     socketio.run(

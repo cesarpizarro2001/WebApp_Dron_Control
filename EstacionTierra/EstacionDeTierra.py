@@ -13,6 +13,7 @@ import tkinter.messagebox as messagebox
 from PIL import Image, ImageTk
 from tkinter import ttk
 import numpy as np
+import yaml
 import re
 import asyncio
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
@@ -235,6 +236,18 @@ last_printed_state = None
 # Variables globales para detección de objetos
 yolo_model = None
 detection_enabled = False
+
+# Variables globales para corrección de ojo de pez (fisheye)
+fisheye_enabled = False
+fisheye_ready = False  # indica si new_cam_mtx y roi están calculados para el tamaño actual
+cam_matrix = None
+dist_coefs = None
+new_cam_mtx = None
+roi = None  # (x, y, w, h)
+
+# Ruta por defecto del archivo de calibración (editable)
+# Se usará el archivo ubicado directamente en la carpeta EstacionTierra
+default_calibration_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration_data_px.yaml')
 
 # Límites de altura de seguridad
 ALTURA_MINIMA = 2   # metros
@@ -1269,6 +1282,29 @@ def video_Websocket_thread():
             if not ret:
                 print("Error: No se pudo leer frame de la cámara")
                 break
+            
+            # Corrección de ojo de pez (si está activada y hay calibración)
+            try:
+                if fisheye_enabled and cam_matrix is not None and dist_coefs is not None:
+                    # Preparar matrices para el tamaño actual del frame si aún no están listas
+                    if not fisheye_ready or new_cam_mtx is None or roi is None:
+                        h, w = frame.shape[:2]
+                        new_cam_mtx_local, roi_local = cv2.getOptimalNewCameraMatrix(cam_matrix, dist_coefs, (w, h), 1, (w, h))
+                        # Guardar para reutilizar
+                        globals()['new_cam_mtx'] = new_cam_mtx_local
+                        globals()['roi'] = roi_local
+                        globals()['fisheye_ready'] = True
+                    # Aplicar undistort y recortar ROI
+                    u_img = cv2.undistort(frame, cam_matrix, dist_coefs, None, new_cam_mtx)
+                    x, y, rw, rh = roi
+                    # Validar ROI contra tamaño actual
+                    if rw > 0 and rh > 0:
+                        frame = u_img[y:y+rh, x:x+rw]
+                    else:
+                        frame = u_img
+            except Exception as e:
+                # En caso de error, registrar y continuar sin corrección
+                print(f"⚠️ Error aplicando corrección de ojo de pez: {e}")
             
             # DETECCIÓN DE OBJETOS (si está activada)
             if detection_enabled and yolo_model is not None:
@@ -2518,9 +2554,9 @@ def connect_to_socketio_server():
             print(f"Intentando conectar al servidor Socket.IO (intento {attempt}/{max_retries})...")
             # Conectar al servidor Flask+Socket.IO (ambos en el mismo puerto)
             # DESARROLLO: HTTPS con certificado autofirmado (ssl_verify=False configurado en el cliente)
-            #sio.connect('https://localhost:8106')
+            sio.connect('https://localhost:8106')
             # PRODUCCIÓN: descomentar la siguiente línea
-            sio.connect('https://dronseetac.upc.edu:8106')
+            #sio.connect('https://dronseetac.upc.edu:8106')
             print("Conectado exitosamente al servidor Socket.IO")
             # Marcar conectado
             global webrtc_socket_connected
@@ -2768,6 +2804,72 @@ def handle_video_settings(settings):
         
     except Exception as e:
         print(f'✗ Error al configurar video: {e}')
+        import traceback
+        traceback.print_exc()
+
+@sio.on("correccion")
+def handle_fisheye_toggle(payload):
+    """Handler para activar/desactivar corrección de distorsión (ojo de pez).
+    Espera un payload con { enabled: bool, calibration_path?: str }.
+    """
+    global webapp_commands_enabled
+    global fisheye_enabled, fisheye_ready, cam_matrix, dist_coefs, new_cam_mtx, roi
+    
+    if not webapp_commands_enabled:
+        print('CORRECCIÓN BLOQUEADA: (WebApp no autorizada)')
+        return
+    
+    try:
+        enabled = False
+        calibration_path = None
+        if isinstance(payload, dict):
+            enabled = bool(payload.get('enabled', False))
+            calibration_path = payload.get('calibration_path')
+        else:
+            enabled = bool(payload)
+        
+        fisheye_enabled = enabled
+        fisheye_ready = False  # recalcular matrices al próximo frame
+        
+        if enabled:
+            # Determinar ruta de calibración
+            if not calibration_path:
+                calibration_path = default_calibration_path
+            # Fallback: intentar en la raíz del proyecto si no existe en EstacionTierra
+            if not os.path.exists(calibration_path):
+                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                alt_path = os.path.join(project_root, 'output21', 'calibration_data_px.yaml')
+                if os.path.exists(alt_path):
+                    calibration_path = alt_path
+            
+            print('=' * 50)
+            print('🐟 Activando corrección de ojo de pez')
+            print(f'  Archivo de calibración: {calibration_path}')
+            print('=' * 50)
+            
+            if not os.path.exists(calibration_path):
+                print(f"✗ Archivo de calibración no encontrado: {calibration_path}")
+                print("   Desactivando corrección por falta de datos de calibración")
+                fisheye_enabled = False
+                return
+            
+            try:
+                with open(calibration_path, 'r') as f:
+                    data = yaml.safe_load(f)
+                cam_matrix = np.array(data.get('camera_matrix'))
+                dist_coefs = np.array(data.get('distortion_coefficients'))
+                new_cam_mtx = None
+                roi = None
+                print('✓ Datos de calibración cargados')
+            except Exception as e:
+                print(f'✗ Error leyendo calibración: {e}')
+                import traceback
+                traceback.print_exc()
+                fisheye_enabled = False
+        else:
+            print('🐟 Corrección de ojo de pez DESACTIVADA')
+    except Exception as e:
+        print(f'✗ Error en handler de corrección: {e}')
         import traceback
         traceback.print_exc()
 

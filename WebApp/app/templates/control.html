@@ -2512,6 +2512,7 @@
             <div class="camera-top-controls">
                 <div class="camera-top-controls-left">
                     <button id="toggleDetectionBtn" class="camera-btn camera-btn-icon" onclick="toggleDetection()" title="Activar detección de objetos" style="background: gray;" disabled>🔍</button>
+                    <button id="toggleFisheyeBtn" class="camera-btn camera-btn-icon" onclick="toggleFisheye()" title="Corrección ojo de pez" style="background: gray;" disabled>🐟</button>
                 </div>
                 <div class="camera-top-controls-center">
                     <button id="camera-despegar-btn" class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar" disabled>✈️</button>
@@ -3655,6 +3656,30 @@
                 console.log('🔍 Detección de objetos DESACTIVADA');
             }
         }
+
+        // Toggle de corrección de ojo de pez (server-side OpenCV)
+        let fisheyeEnabled = false;
+        function toggleFisheye() {
+            fisheyeEnabled = !fisheyeEnabled;
+            const btn = document.getElementById('toggleFisheyeBtn');
+
+            // Enviar simple toggle al servidor de Estación de Tierra
+            socket.emit('correccion', {
+                enabled: fisheyeEnabled
+                // Opcional: calibration_path puede enviarse si se necesita diferente al default
+            });
+
+            // Actualizar UI del botón
+            if (fisheyeEnabled) {
+                btn.style.background = '#4CAF50';
+                btn.title = 'Corrección activada';
+                console.log('🎛️ Corrección ojo de pez ACTIVADA');
+            } else {
+                btn.style.background = 'gray';
+                btn.title = 'Corrección ojo de pez';
+                console.log('🎛️ Corrección ojo de pez DESACTIVADA');
+            }
+        }
         
         // Función para cerrar la cámara del dron
         function cerrarCamaraDron() {
@@ -4200,6 +4225,7 @@
             const cameraVoz = document.getElementById('voice-control-modal-btn');
             const cameraVideo = document.getElementById('botonGrabarVideo');
             const cameraDetection = document.getElementById('toggleDetectionBtn');
+            const cameraFisheye = document.getElementById('toggleFisheyeBtn');
 
             // Resetear clases de todos los botones
             function resetButtonClasses(button) {
@@ -4246,6 +4272,7 @@
                     if (cameraVoz) cameraVoz.disabled = false;
                     if (cameraVideo) cameraVideo.disabled = false;
                     if (cameraDetection) cameraDetection.disabled = false;
+                    if (cameraFisheye) cameraFisheye.disabled = false;
                     
                     botonAterrizar.disabled = true;
                     botonAterrizar.textContent = 'Aterrizar';
@@ -4338,6 +4365,7 @@
                     
                     // Habilitar botón de RTL en cámara
                     if (cameraRTL) cameraRTL.disabled = false;
+                    if (cameraFisheye) cameraFisheye.disabled = false;
                     break;
 
                 case 'landing':
@@ -4412,6 +4440,7 @@
                         removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
                         addClass: []
                     });
+                    if (cameraFisheye) cameraFisheye.disabled = true;
                     break;
             }
         }
