@@ -1768,8 +1768,8 @@
             console.log('📤 Enviado evento join_alumno');
         });
 
-        // Recibir telemetría del profesor
-        socket.on('telemetry_info', (data) => {
+        // Función común para procesar telemetría
+        function processTelemetry(data) {
             // Actualizar estado
             if (data.state !== undefined) {
                 const stateElement = document.getElementById('state');
@@ -1807,7 +1807,16 @@
                     }
                 }
             }
+        }
 
+// Recibir telemetría por WebRTC Data Channel (cuando cámara abierta)
+        window.addEventListener('webrtc_telemetry', (event) => {
+            processTelemetry(event.detail);
+        });
+        
+        // Recibir telemetría por Socket.IO (fallback cuando cámara cerrada)
+        socket.on('telemetry_info', (data) => {
+            processTelemetry(data);
         });
 
         // Inicializar receptor WebRTC para la cámara del dron

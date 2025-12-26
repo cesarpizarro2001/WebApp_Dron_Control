@@ -4153,16 +4153,26 @@
                 isTouchDevice: IS_TOUCH_DEVICE
             });
             
-            // Inicializar receptor WebRTC (pero NO solicitar stream aún)
+            // Inicializar receptor WebRTC para VIDEO (stream: dron_camera)
+            // Este NO se solicita hasta abrir la cámara
             if (webrtcReceiver) {
                 webrtcReceiver.stop();
             }
-            webrtcReceiver = new WebRTCDroneReceiver(videoElement, socket);
-            console.log('📡 [WebRTC] Receptor inicializado (esperando apertura de cámara)');
+            webrtcReceiver = new WebRTCDroneReceiver(videoElement, socket, 'dron_camera');
+            console.log('📡 [WebRTC] Receptor de video inicializado');
+            
+            // Inicializar receptor WebRTC para TELEMETRÍA (stream: telemetry)
+            // Este se solicita INMEDIATAMENTE
+            if (window.telemetryReceiver) {
+                window.telemetryReceiver.stop();
+            }
+            window.telemetryReceiver = new WebRTCDroneReceiver(null, socket, 'telemetry');
+            window.telemetryReceiver.requestStream();
+            console.log('📡 [WebRTC] Receptor de telemetría solicitado');
         });
         
-        // Recibir telemetría del dron
-        socket.on('telemetry_info', function(data) {
+        // Función común para procesar telemetría (tanto de WebRTC como Socket.IO)
+        function processTelemetry(data) {
             telemetry_info = data;
 
             // Actualizar posición y dirección del dron
@@ -4197,6 +4207,11 @@
             }
 
             previousDroneState = data.state;
+        }
+        
+        // Recibir telemetría por WebRTC Data Channel
+        window.addEventListener('webrtc_telemetry', function(event) {
+            processTelemetry(event.detail);
         });
 
         // Eventos de video basados en servidor eliminados (deprecated)

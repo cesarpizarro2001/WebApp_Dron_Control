@@ -51,11 +51,43 @@ def allowExternal():
     cameraBtn['state'] = 'normal'
 
 def procesarTelemetria(telemetryInfo):
-    # Enviar telemetría al servidor Flask via Socket.IO
-    try:
-        sio.emit('telemetry_data', telemetryInfo)
-    except Exception:
-        pass
+    # Enviar telemetría por WebRTC Data Channels a todos los receptores conectados
+    import json
+    import asyncio
+    telemetry_json = json.dumps(telemetryInfo)
+    
+    sent_via_webrtc = False
+    
+    # Función asíncrona para enviar por data channel
+    async def send_to_channel(channel, data):
+        try:
+            channel.send(data)
+        except Exception as e:
+            print(f"Error enviando telemetría por Data Channel: {e}")
+            raise
+    
+    # Enviar a todos los data channels activos
+    for connection_id, channel in list(webrtc_data_channels.items()):
+        try:
+            if channel.readyState == 'open':
+                # Ejecutar send en el event loop de WebRTC
+                if webrtc_event_loop and webrtc_event_loop.is_running():
+                    asyncio.run_coroutine_threadsafe(
+                        send_to_channel(channel, telemetry_json),
+                        webrtc_event_loop
+                    )
+                    sent_via_webrtc = True
+        except Exception as e:
+            # Si falla, remover del diccionario
+            if connection_id in webrtc_data_channels:
+                del webrtc_data_channels[connection_id]
+    
+    # Fallback: Si no hay data channels activos, usar Socket.IO
+    if not sent_via_webrtc:
+        try:
+            sio.emit('telemetry_data', telemetryInfo)
+        except Exception:
+            pass
 
 def publish_event(event):
     # Publicar evento al servidor Flask
@@ -131,6 +163,7 @@ def push_webrtc_frame(frame):
 
 # Variables globales para WebRTC
 webrtc_peer_connections = {}  # {connection_id: RTCPeerConnection}
+webrtc_data_channels = {}  # {connection_id: RTCDataChannel} para telemetría
 webrtc_event_loop = None  # Event loop de asyncio para WebRTC
 webrtc_thread = None  # Thread del event loop
 webrtc_keepalive_thread = None  # Thread para re-registro periódico
@@ -1272,7 +1305,7 @@ def video_Websocket_thread():
 
     # Inicializar la cámara solo cuando se necesite
     if cap is None:
-        cap = cv2.VideoCapture(1)  # NO CAMBIAR: (0) en desarrollo es webcam, (0) en produccion es camara dron
+        cap = cv2.VideoCapture(0)  # NO CAMBIAR: (0) en desarrollo es webcam, (0) en produccion es camara dron
         if not cap.isOpened():
             print("Error: No se pudo abrir la cámara del dron")
             return
@@ -2296,12 +2329,13 @@ def handle_webrtc_prepare_offer(data):
     El servidor pide preparar una oferta para un nuevo receptor.
     Similar a cuando el proxy avisa: {"type": "receptor", "id": 0}
     
-    data = {'connection_id': str, 'receiver_sid': str}
+    data = {'connection_id': str, 'receiver_sid': str, 'stream_id': str}
     """
     connection_id = data.get('connection_id')
     receiver_sid = data.get('receiver_sid')
+    stream_id = data.get('stream_id', 'dron_camera')
     
-    print(f"📤 [WebRTC] Preparando oferta para receptor: {receiver_sid}")
+    print(f"📤 [WebRTC] Preparando oferta para receptor: {receiver_sid} (stream: {stream_id})")
     
     if webrtc_event_loop is None:
         print("   └─> ⚠️ Event loop no disponible")
@@ -2309,7 +2343,7 @@ def handle_webrtc_prepare_offer(data):
     
     # Crear la oferta en el event loop de asyncio
     asyncio.run_coroutine_threadsafe(
-        create_webrtc_offer(connection_id),
+        create_webrtc_offer(connection_id, stream_id),
         webrtc_event_loop
     )
 
@@ -2369,6 +2403,10 @@ def handle_webrtc_close_connection(data):
     if connection_id in webrtc_peer_connections:
         print(f"🗑️ [WebRTC] Cerrando conexión: {connection_id}")
         pc = webrtc_peer_connections[connection_id]
+        
+        # Eliminar data channel asociado
+        if connection_id in webrtc_data_channels:
+            del webrtc_data_channels[connection_id]
         
         # Eliminar inmediatamente del diccionario para permitir reconexión
         del webrtc_peer_connections[connection_id]
@@ -2449,10 +2487,13 @@ def handle_webrtc_ice_candidate(data):
         asyncio.run_coroutine_threadsafe(add_ice_to(mobile_pc), webrtc_event_loop)
 
 
-async def create_webrtc_offer(connection_id):
+async def create_webrtc_offer(connection_id, stream_id='dron_camera'):
     """
     Crea una conexión peer y genera una oferta SDP.
-    Equivalente a la lógica del sender cuando recibe {"type": "receptor"}
+    
+    Args:
+        connection_id: ID único de la conexión
+        stream_id: 'telemetry' (solo Data Channel) o 'dron_camera' (Data Channel + Video)
     """
     global webrtc_peer_connections
     
@@ -2477,11 +2518,21 @@ async def create_webrtc_offer(connection_id):
         webrtc_peer_connections[connection_id] = pc
         print(f"   └─> Nueva RTCPeerConnection creada con ICE servers")
         
-        # CRÍTICO: Crear NUEVA instancia de DronCameraTrack para esta conexión
-        # No se puede reutilizar el mismo track entre múltiples RTCPeerConnection
-        camera_track = DronCameraTrack()
-        pc.addTrack(camera_track)
-        print(f"   └─> Track de video NUEVO agregado (kind: {camera_track.kind})")
+        # Crear Data Channel para telemetría (siempre)
+        telemetry_channel = pc.createDataChannel('telemetry', ordered=True)
+        webrtc_data_channels[connection_id] = telemetry_channel
+        print(f"   └─> Data Channel 'telemetry' creado")
+        
+        # Añadir track de video SOLO si es el stream 'dron_camera' y la cámara está activa
+        if stream_id == 'dron_camera' and sendingWebsockets and cap is not None:
+            camera_track = DronCameraTrack()
+            pc.addTrack(camera_track)
+            print(f"   └─> Track de video agregado (kind: {camera_track.kind})")
+        else:
+            if stream_id == 'telemetry':
+                print(f"   └─> Stream de telemetría (sin video)")
+            else:
+                print(f"   └─> Sin video (cámara inactiva)")
         
         # Crear oferta
         offer = await pc.createOffer()
@@ -2606,13 +2657,21 @@ def connect():
     global webrtc_socket_connected
     webrtc_socket_connected = True
     print("🔌 [Socket.IO] Conectado")
-    # Si la cámara del dron está activa y el emisor no está registrado, volver a registrar
+    
+    # Iniciar emisor WebRTC para telemetría (stream separado, siempre activo)
     try:
-        # Usamos la variable global directamente
-        if 'sendingWebsockets' in globals() and globals()['sendingWebsockets'] and not globals().get('webrtc_emitter_registered', False):
-            print("📡 [WebRTC] Re-registrando emisor tras reconexión")
+        start_webrtc_emitter()
+        # Registrar stream de telemetría (sin video, solo Data Channel)
+        sio.emit('webrtc_register_emitter', {'stream_id': 'telemetry'})
+        print("📡 [WebRTC] Stream 'telemetry' registrado (solo Data Channel)")
+    except Exception as e:
+        print(f"⚠️ Error iniciando emisor de telemetría: {e}")
+    
+    # Si la cámara del dron está activa, re-registrar su stream
+    try:
+        if 'sendingWebsockets' in globals() and globals()['sendingWebsockets']:
             sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
-            globals()['webrtc_emitter_registered'] = True
+            print("📡 [WebRTC] Stream 'dron_camera' re-registrado")
     except Exception:
         pass
 

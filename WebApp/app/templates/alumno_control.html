@@ -2715,10 +2715,17 @@
     socket.on('connect', () => {
         console.log('Conectado al servidor como alumno');
         socket.emit('join_alumno');
+        
+        // Inicializar receptor de telemetría (siempre activo)
+        if (!window.telemetryReceiver) {
+            window.telemetryReceiver = new WebRTCDroneReceiver(null, socket, 'telemetry');
+            window.telemetryReceiver.requestStream();
+            console.log('📡 [WebRTC] Receptor de telemetría inicializado');
+        }
     });
     
-    // Recibir información de telemetría del profesor
-    socket.on('telemetry_info', function(data) {
+    // Función común para procesar telemetría
+    function processTelemetry(data) {
         telemetry_info = data;
 
         // Actualizar posición y dirección del dron
@@ -2730,13 +2737,23 @@
         const telemetriaDiv = document.getElementById('datos-telemetria');
         if (telemetriaDiv) {
             telemetriaDiv.innerHTML = `
-                <span><strong>Altitud:</strong><span class="dato">${data.alt}m</span></span>
-                <span><strong>Velocidad:</strong><span class="dato">${data.groundSpeed.toFixed(2)}m/s</span></span>
-                <span><strong>Estado:</strong><span class="dato">${data.state}</span></span>
+                <span><strong>Altitud:</strong><span class="dato">${data.alt !== undefined ? data.alt.toFixed(1) : '0.0'}m</span></span>
+                <span><strong>Velocidad:</strong><span class="dato">${data.groundSpeed !== undefined ? data.groundSpeed.toFixed(2) : '0.00'}m/s</span></span>
+                <span><strong>Estado:</strong><span class="dato">${data.state || 'disconnected'}</span></span>
             `;
         }
 
         previousDroneState = data.state;
+    }
+    
+    // Recibir telemetría por WebRTC Data Channel (cuando cámara abierta)
+    window.addEventListener('webrtc_telemetry', function(event) {
+        processTelemetry(event.detail);
+    });
+    
+    // Recibir telemetría por Socket.IO (fallback cuando cámara cerrada)
+    socket.on('telemetry_info', function(data) {
+        processTelemetry(data);
     });
     
     // Recibir frames de video de la cámara móvil del profesor

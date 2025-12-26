@@ -1057,12 +1057,12 @@
             socket.emit('join_alumno');
         });
 
-        // Telemetría del dron
-        socket.on('telemetry_info', (data) => {
+        // Función común para procesar telemetría
+        function processTelemetry(data) {
             // Actualizar telemetría en la barra superior
             document.getElementById('state').textContent = data.state || 'disconnected';
-            document.getElementById('altitude').textContent = data.relative_alt ? data.relative_alt.toFixed(1) : '0.0';
-            document.getElementById('speed').textContent = data.groundspeed ? data.groundspeed.toFixed(1) : '0.0';
+            document.getElementById('altitude').textContent = data.alt ? data.alt.toFixed(1) : '0.0';
+            document.getElementById('speed').textContent = data.groundSpeed ? data.groundSpeed.toFixed(1) : '0.0';
 
             // Actualizar posición en el minimapa
             if (data.lat && data.lon && dronMarker && minimap) {
@@ -1082,6 +1082,16 @@
                     directionArrow.setIcon(newIcon);
                 }
             }
+        }
+        
+        // Recibir telemetría por WebRTC Data Channel (cuando cámara abierta)
+        window.addEventListener('webrtc_telemetry', (event) => {
+            processTelemetry(event.detail);
+        });
+        
+        // Recibir telemetría por Socket.IO (fallback cuando cámara cerrada)
+        socket.on('telemetry_info', (data) => {
+            processTelemetry(data);
         });
 
         // Sincronización de botones de control

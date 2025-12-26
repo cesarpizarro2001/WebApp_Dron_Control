@@ -2042,7 +2042,8 @@
 
         // Handler stream_frame eliminado - ahora usamos WebRTC exclusivamente
         
-        socket.on('telemetry_info', (data) => {
+        // Función común para procesar telemetría
+        function processTelemetry(data) {
             // console.log('Telemetría recibida:', data);  // Comentado para no llenar la consola
             
             // Actualizar estado
@@ -2119,6 +2120,11 @@
             if (data.state) {
                 updateButtonStates(data.state);
             }
+        }
+        
+        // Recibir telemetría por WebRTC Data Channel
+        window.addEventListener('webrtc_telemetry', (event) => {
+            processTelemetry(event.detail);
         });
 
         // Función para obtener color según estado del dron

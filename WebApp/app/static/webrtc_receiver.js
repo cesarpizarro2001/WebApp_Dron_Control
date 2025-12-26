@@ -162,6 +162,39 @@ class WebRTCDroneReceiver {
         console.log('🔗 [WebRTC] Creando RTCPeerConnection');
         this.peerConnection = new RTCPeerConnection(this.iceServers);
         
+        // Handler para Data Channel (telemetría)
+        this.peerConnection.ondatachannel = (event) => {
+            console.log('📡 [WebRTC] Data Channel recibido:', event.channel.label);
+            const channel = event.channel;
+            
+            if (channel.label === 'telemetry') {
+                channel.onopen = () => {
+                    console.log('✅ [WebRTC] Canal de telemetría abierto');
+                };
+                
+                channel.onmessage = (e) => {
+                    try {
+                        const telemetryData = JSON.parse(e.data);
+                        // Emitir evento personalizado para que el resto del código lo maneje
+                        // igual que antes con Socket.IO
+                        window.dispatchEvent(new CustomEvent('webrtc_telemetry', {
+                            detail: telemetryData
+                        }));
+                    } catch (err) {
+                        console.error('❌ Error parseando telemetría:', err);
+                    }
+                };
+                
+                channel.onerror = (error) => {
+                    console.error('❌ [WebRTC] Error en Data Channel:', error);
+                };
+                
+                channel.onclose = () => {
+                    console.log('📡 [WebRTC] Canal de telemetría cerrado');
+                };
+            }
+        };
+        
         // Handler para ICE candidates
         this.peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
@@ -186,6 +219,12 @@ class WebRTCDroneReceiver {
             console.log('   └─> Video element:', this.videoElement);
             console.log('   └─> Stream activo:', event.streams[0].active);
             console.log('   └─> Tracks:', event.streams[0].getTracks());
+            
+            // Si no hay videoElement, este receptor es solo para telemetría (sin video)
+            if (!this.videoElement) {
+                console.log('   └─> Receptor sin video (solo telemetría)');
+                return;
+            }
             
             if (this.videoElement && event.streams && event.streams[0]) {
                 // Asignar stream

@@ -1489,7 +1489,8 @@
             console.log('Conectado al servidor');
         });
 
-        socket.on('telemetry_info', (data) => {
+        // Función común para procesar telemetría
+        function processTelemetry(data) {
             // Actualizar estado
             if (data.state !== undefined) {
                 const stateElement = document.getElementById('state');
@@ -1548,6 +1549,16 @@
             if (data.state) {
                 updateButtonStates(data.state);
             }
+        }
+        
+        // Recibir telemetría por WebRTC Data Channel
+        window.addEventListener('webrtc_telemetry', (event) => {
+            processTelemetry(event.detail);
+        });
+        
+        // Recibir telemetría por Socket.IO (fallback)
+        socket.on('telemetry_info', (data) => {
+            processTelemetry(data);
         });
 
         function getStateColor(state) {
