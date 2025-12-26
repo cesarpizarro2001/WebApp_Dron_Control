@@ -95,6 +95,19 @@ def handle_correccion(payload):
     except Exception as e:
         print(f"❌ Error reenviando 'correccion': {e}")
 
+# Handler para zoom de cámara (passthrough)
+@socketio.on('zoom')
+def handle_zoom(payload):
+    """Reenvía el comando de zoom a la Estación de Tierra"""
+    try:
+        x = payload.get('x', 0)
+        y = payload.get('y', 0)
+        level = payload.get('level', 1.0)
+        print(f"🔍 Zoom: level={level:.2f}, center=({x}, {y})")
+        socketio.emit('zoom', payload, include_self=False)
+    except Exception as e:
+        print(f"❌ Error reenviando 'zoom': {e}")
+
 # ==================================================================================
 # PASSTHROUGH DE COMANDOS DE GESTOS (MediaPipe en navegador)
 # Estos eventos llegan desde el navegador (profesor) y se reenvían a la estación
@@ -929,9 +942,9 @@ if __name__ == '__main__':
     import ssl
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     #CERTIFICADO LOCALHOST
-    ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    #ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
     #CERTIFICADO SERVIDOR
-    #ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
+    ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
     
     # socketio.run() ejecuta tanto Flask como Socket.IO en el mismo puerto
     socketio.run(

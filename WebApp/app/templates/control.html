@@ -6555,6 +6555,118 @@
         window.addEventListener('orientationchange', function() {
             setTimeout(checkOrientationModal, 100);
         });
+
+        // ===== FUNCIONALIDAD DE ZOOM EN VIDEO =====
+        (function() {
+            let zoomLevel = 1.0;  // 1.0 = sin zoom, 2.0 = 2x zoom, etc.
+            let zoomCenterX = 0.5; // Centro X relativo (0.0 a 1.0)
+            let zoomCenterY = 0.5; // Centro Y relativo (0.0 a 1.0)
+            const MIN_ZOOM = 1.0;
+            const MAX_ZOOM = 4.0;
+
+            function attachZoomHandlers() {
+                const videoEl = document.getElementById('video-stream');
+                if (!videoEl) return;
+
+                // Click para centrar el zoom en un punto
+                videoEl.addEventListener('click', function(e) {
+                    const rect = videoEl.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width;
+                    const y = (e.clientY - rect.top) / rect.height;
+                    
+                    // Si ya hay zoom, aumentar; si no, empezar con 2x
+                    if (zoomLevel === 1.0) {
+                        zoomLevel = 2.0;
+                    } else if (zoomLevel < MAX_ZOOM) {
+                        zoomLevel = Math.min(zoomLevel + 0.5, MAX_ZOOM);
+                    } else {
+                        // Reset zoom
+                        zoomLevel = 1.0;
+                        x = 0.5;
+                        y = 0.5;
+                    }
+
+                    zoomCenterX = x;
+                    zoomCenterY = y;
+                    sendZoom(x, y, zoomLevel);
+                });
+
+                // Pinch-to-zoom para dispositivos táctiles
+                let initialDistance = 0;
+                let initialZoom = 1.0;
+
+                videoEl.addEventListener('touchstart', function(e) {
+                    if (e.touches.length === 2) {
+                        e.preventDefault();
+                        const touch1 = e.touches[0];
+                        const touch2 = e.touches[1];
+                        initialDistance = Math.hypot(
+                            touch2.clientX - touch1.clientX,
+                            touch2.clientY - touch1.clientY
+                        );
+                        initialZoom = zoomLevel;
+                    }
+                }, { passive: false });
+
+                videoEl.addEventListener('touchmove', function(e) {
+                    if (e.touches.length === 2) {
+                        e.preventDefault();
+                        const touch1 = e.touches[0];
+                        const touch2 = e.touches[1];
+                        const currentDistance = Math.hypot(
+                            touch2.clientX - touch1.clientX,
+                            touch2.clientY - touch1.clientY
+                        );
+
+                        // Calcular nuevo nivel de zoom
+                        const scale = currentDistance / initialDistance;
+                        zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, initialZoom * scale));
+
+                        // Centro del pinch
+                        const rect = videoEl.getBoundingClientRect();
+                        const centerX = (touch1.clientX + touch2.clientX) / 2;
+                        const centerY = (touch1.clientY + touch2.clientY) / 2;
+                        zoomCenterX = (centerX - rect.left) / rect.width;
+                        zoomCenterY = (centerY - rect.top) / rect.height;
+
+                        sendZoom(zoomCenterX, zoomCenterY, zoomLevel);
+                    }
+                }, { passive: false });
+
+                videoEl.addEventListener('touchend', function(e) {
+                    if (e.touches.length < 2) {
+                        initialDistance = 0;
+                    }
+                });
+
+                console.log('✅ Zoom handlers attached to video-stream');
+            }
+
+            function sendZoom(x, y, level) {
+                // Mapear coordenadas relativas a coordenadas de pixel del video real
+                const videoEl = document.getElementById('video-stream');
+                if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return;
+
+                // Coordenadas en píxeles del video original
+                const videoX = Math.round(x * videoEl.videoWidth);
+                const videoY = Math.round(y * videoEl.videoHeight);
+
+                socket.emit('zoom', {
+                    x: videoX,
+                    y: videoY,
+                    level: level
+                });
+
+                console.log(`🔍 Zoom: level=${level.toFixed(2)}, center=(${videoX}, ${videoY})`);
+            }
+
+            // Esperar a que el DOM esté listo
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', attachZoomHandlers);
+            } else {
+                attachZoomHandlers();
+            }
+        })();
         
     </script>
 </body>

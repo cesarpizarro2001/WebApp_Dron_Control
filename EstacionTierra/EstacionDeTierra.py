@@ -245,6 +245,11 @@ dist_coefs = None
 new_cam_mtx = None
 roi = None  # (x, y, w, h)
 
+# Variables globales para zoom
+zoom_level = 1.0  # 1.0 = sin zoom, 2.0 = 2x zoom, etc.
+zoom_center = None  # (x, y) en coordenadas de píxeles del frame
+zoom_lock = threading.Lock()
+
 # Ruta por defecto del archivo de calibración (editable)
 # Se usará el archivo ubicado directamente en la carpeta EstacionTierra
 default_calibration_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calibration_data_px.yaml')
@@ -1314,16 +1319,43 @@ def video_Websocket_thread():
                 except Exception as e:
                     print(f"❌ Error en detección: {e}")
             
+            # ZOOM (si está activado)
+            with zoom_lock:
+                current_zoom = zoom_level
+                current_center = zoom_center
+            
+            if current_zoom > 1.0 and current_center is not None:
+                try:
+                    h, w = frame.shape[:2]
+                    cx, cy = current_center
+                    
+                    # Calcular tamaño de la región a cropear
+                    crop_w = int(w / current_zoom)
+                    crop_h = int(h / current_zoom)
+                    
+                    # Calcular límites del crop centrado en (cx, cy)
+                    x1 = max(0, cx - crop_w // 2)
+                    y1 = max(0, cy - crop_h // 2)
+                    x2 = min(w, x1 + crop_w)
+                    y2 = min(h, y1 + crop_h)
+                    
+                    # Ajustar si nos salimos de los límites
+                    if x2 - x1 < crop_w:
+                        x1 = max(0, x2 - crop_w)
+                    if y2 - y1 < crop_h:
+                        y1 = max(0, y2 - crop_h)
+                    
+                    # Cropear y redimensionar al tamaño original
+                    cropped = frame[y1:y2, x1:x2]
+                    frame = cv2.resize(cropped, (w, h), interpolation=cv2.INTER_LINEAR)
+                except Exception as e:
+                    print(f"⚠️ Error aplicando zoom: {e}")
+            
             # Almacena el último frame capturado
             last_frame = frame.copy()
             
             # Enviar frame a la cola compartida de WebRTC
-            # Mirror horizontal (modo espejo) para que en la WebApp izquierda/derecha sean intuitivas
-            try:
-                frame_stream = cv2.flip(frame, 1)  # 1 = flip horizontal
-            except Exception:
-                frame_stream = frame
-            push_webrtc_frame(frame_stream)
+            push_webrtc_frame(frame)
             
             # [DESHABILITADO] Envío por Socket.IO de frames (usamos WebRTC)
             # quality = qualitySlider.get()
@@ -2119,13 +2151,8 @@ def update_video_display():
     while showing_video and video_display_window and video_display_window.winfo_exists():
         try:
             if last_frame is not None and video_label:
-                # Convertir frame de BGR a RGB
+                # Convertir frame de BGR a RGB (last_frame ya está flippeado)
                 frame_rgb = cv2.cvtColor(last_frame, cv2.COLOR_BGR2RGB)
-                # Mirror horizontal (modo espejo) para la previsualización local
-                try:
-                    frame_rgb = cv2.flip(frame_rgb, 1)
-                except Exception:
-                    pass
 
                 # Redimensionar frame para ajustarlo a la ventana (manteniendo aspecto)
                 height, width = frame_rgb.shape[:2]
@@ -2554,9 +2581,9 @@ def connect_to_socketio_server():
             print(f"Intentando conectar al servidor Socket.IO (intento {attempt}/{max_retries})...")
             # Conectar al servidor Flask+Socket.IO (ambos en el mismo puerto)
             # DESARROLLO: HTTPS con certificado autofirmado (ssl_verify=False configurado en el cliente)
-            sio.connect('https://localhost:8106')
+            #sio.connect('https://localhost:8106')
             # PRODUCCIÓN: descomentar la siguiente línea
-            #sio.connect('https://dronseetac.upc.edu:8106')
+            sio.connect('https://dronseetac.upc.edu:8106')
             print("Conectado exitosamente al servidor Socket.IO")
             # Marcar conectado
             global webrtc_socket_connected
@@ -2872,6 +2899,24 @@ def handle_fisheye_toggle(payload):
         print(f'✗ Error en handler de corrección: {e}')
         import traceback
         traceback.print_exc()
+
+@sio.on('zoom')
+def handle_zoom(data):
+    """Handler para recibir comandos de zoom desde la WebApp"""
+    global zoom_level, zoom_center
+    
+    try:
+        x = data.get('x', 0)
+        y = data.get('y', 0)
+        level = data.get('level', 1.0)
+        
+        with zoom_lock:
+            zoom_level = level
+            zoom_center = (x, y)
+        
+        print(f"🔍 Zoom actualizado: level={level:.2f}, center=({x}, {y})")
+    except Exception as e:
+        print(f"❌ Error procesando zoom: {e}")
 
 @sio.on("request_gallery")
 def handle_request_gallery():
