@@ -1272,7 +1272,7 @@ def video_Websocket_thread():
 
     # Inicializar la cámara solo cuando se necesite
     if cap is None:
-        cap = cv2.VideoCapture(0)  # NO CAMBIAR: (0) en desarrollo es webcam, (0) en produccion es camara dron
+        cap = cv2.VideoCapture(1)  # NO CAMBIAR: (0) en desarrollo es webcam, (0) en produccion es camara dron
         if not cap.isOpened():
             print("Error: No se pudo abrir la cámara del dron")
             return
@@ -2672,18 +2672,26 @@ def pilot_rc_loop():
         current_altitude = dron.alt
         throttle_value = pilot_rc_values['throttle']
 
+        # CRÍTICO: Los valores de throttle deben mantenerse en el rango [-1, 1] para evitar
+        # que el PWM resultante (1500 + value*400) caiga fuera del rango [1100, 1900].
+        # Si el PWM < 975, se activa el failsafe RTL del dron.
+        
         if current_altitude >= 9.5 and throttle_value > 0:
+            # Factor puede ser negativo si te pasas del techo (empuja hacia abajo)
             factor = (ALTURA_MAXIMA - current_altitude) / (ALTURA_MAXIMA - 9.5)
             original_throttle = throttle_value
-            pilot_rc_values['throttle'] = throttle_value * factor
+            # Aplicar factor y clampear al rango seguro [-1.0, 1.0]
+            pilot_rc_values['throttle'] = max(-1.0, min(1.0, throttle_value * factor))
             if abs(original_throttle - pilot_rc_values['throttle']) > 0.1:
-                print(f'🔼 Reduciendo ascenso cerca del techo: {current_altitude:.1f}m (throttle: {original_throttle:.2f} → {pilot_rc_values["throttle"]:.2f})')
+                print(f'🔼 Controlando altura cerca del techo: {current_altitude:.1f}m (throttle: {original_throttle:.2f} → {pilot_rc_values["throttle"]:.2f})')
         elif current_altitude <= 2.5 and throttle_value < 0:
+            # Factor puede ser negativo si te pasas del suelo (empuja hacia arriba)
             factor = (current_altitude - ALTURA_MINIMA) / (2.5 - ALTURA_MINIMA)
             original_throttle = throttle_value
-            pilot_rc_values['throttle'] = throttle_value * factor
+            # Aplicar factor y clampear al rango seguro [-1.0, 1.0]
+            pilot_rc_values['throttle'] = max(-1.0, min(1.0, throttle_value * factor))
             if abs(original_throttle - pilot_rc_values['throttle']) > 0.1:
-                print(f'🔽 Reduciendo descenso cerca del suelo: {current_altitude:.1f}m (throttle: {original_throttle:.2f} → {pilot_rc_values["throttle"]:.2f})')
+                print(f'🔽 Controlando altura cerca del suelo: {current_altitude:.1f}m (throttle: {original_throttle:.2f} → {pilot_rc_values["throttle"]:.2f})')
 
         def normalize_to_pwm(value):
             return int(1500 + (value * 400))
