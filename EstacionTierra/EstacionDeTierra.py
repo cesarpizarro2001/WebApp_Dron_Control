@@ -2573,7 +2573,7 @@ mobile_reader_task = None
 # Conectar al servidor Socket.IO con reintentos automáticos
 def connect_to_socketio_server():
     """Intenta conectarse al servidor Socket.IO con reintentos"""
-    max_retries = 10
+    max_retries = 3
     retry_delay = 2  # segundos
     
     for attempt in range(1, max_retries + 1):
@@ -2917,6 +2917,20 @@ def handle_zoom(data):
         print(f"🔍 Zoom actualizado: level={level:.2f}, center=({x}, {y})")
     except Exception as e:
         print(f"❌ Error procesando zoom: {e}")
+
+@sio.on('zoom_reset')
+def handle_zoom_reset():
+    """Handler para resetear el zoom a valores por defecto"""
+    global zoom_level, zoom_center
+    
+    try:
+        with zoom_lock:
+            zoom_level = 1.0
+            zoom_center = None
+        
+        print("🔍 Zoom reseteado: level=1.0, center=None")
+    except Exception as e:
+        print(f"❌ Error reseteando zoom: {e}")
 
 @sio.on("request_gallery")
 def handle_request_gallery():

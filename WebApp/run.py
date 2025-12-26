@@ -108,6 +108,16 @@ def handle_zoom(payload):
     except Exception as e:
         print(f"❌ Error reenviando 'zoom': {e}")
 
+# Handler para reset de zoom (passthrough)
+@socketio.on('zoom_reset')
+def handle_zoom_reset():
+    """Reenvía el comando de reset de zoom a la Estación de Tierra"""
+    try:
+        print(f"🔎 Zoom reset")
+        socketio.emit('zoom_reset', include_self=False)
+    except Exception as e:
+        print(f"❌ Error reenviando 'zoom_reset': {e}")
+
 # ==================================================================================
 # PASSTHROUGH DE COMANDOS DE GESTOS (MediaPipe en navegador)
 # Estos eventos llegan desde el navegador (profesor) y se reenvían a la estación

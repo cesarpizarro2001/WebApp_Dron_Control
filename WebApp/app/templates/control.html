@@ -6564,6 +6564,17 @@
             const MIN_ZOOM = 1.0;
             const MAX_ZOOM = 4.0;
 
+            // Variables para detectar double-tap
+            let lastTapTs = 0;
+            let lastTapPos = { x: 0, y: 0 };
+            const doubleTapMaxDelayMs = 300;  // 300ms entre taps
+            const doubleTapMaxMovePx = 30;    // Máximo movimiento permitido
+            let pinchActive = false;
+
+            function distance(x1, y1, x2, y2) {
+                return Math.hypot(x2 - x1, y2 - y1);
+            }
+
             function attachZoomHandlers() {
                 const videoEl = document.getElementById('video-stream');
                 if (!videoEl) return;
@@ -6598,6 +6609,7 @@
                 videoEl.addEventListener('touchstart', function(e) {
                     if (e.touches.length === 2) {
                         e.preventDefault();
+                        pinchActive = true;
                         const touch1 = e.touches[0];
                         const touch2 = e.touches[1];
                         initialDistance = Math.hypot(
@@ -6636,10 +6648,57 @@
                 videoEl.addEventListener('touchend', function(e) {
                     if (e.touches.length < 2) {
                         initialDistance = 0;
+                        
+                        // Resetear pinchActive después de un breve delay
+                        setTimeout(() => { pinchActive = false; }, 50);
+                    }
+
+                    // Detectar double-tap para reset
+                    if (pinchActive) return;
+
+                    const now = Date.now();
+                    const t = e.changedTouches && e.changedTouches[0];
+                    if (!t) return;
+
+                    const cx = t.clientX;
+                    const cy = t.clientY;
+
+                    const moved = distance(cx, cy, lastTapPos.x, lastTapPos.y);
+
+                    if (
+                        now - lastTapTs <= doubleTapMaxDelayMs &&
+                        moved <= doubleTapMaxMovePx
+                    ) {
+                        // 🎯 DOUBLE TAP DETECTADO
+                        e.preventDefault();
+                        handleDoubleTap();
+
+                        // Reset para evitar triple-tap
+                        lastTapTs = 0;
+                        lastTapPos = { x: 0, y: 0 };
+                    } else {
+                        // Registrar este tap
+                        lastTapTs = now;
+                        lastTapPos = { x: cx, y: cy };
                     }
                 });
 
                 console.log('✅ Zoom handlers attached to video-stream');
+            }
+
+            function handleDoubleTap() {
+                zoomLevel = 1.0;
+                zoomCenterX = 0.5;
+                zoomCenterY = 0.5;
+                pinchActive = false;
+
+                sendZoomReset();
+
+                console.log('🔎 Double-tap → reset de zoom');
+            }
+
+            function sendZoomReset() {
+                socket.emit('zoom_reset');
             }
 
             function sendZoom(x, y, level) {
