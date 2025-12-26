@@ -2527,11 +2527,11 @@
             <video id='video-stream' autoplay playsinline muted style="width: 100%; height: 100%; object-fit: contain;"></video>
             <!-- Botones inferiores sobre la cámara -->
             <div class="camera-controls">
-                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" onclick="capturarFoto()" title="Hacer foto" disabled>📸</button>
+                <button id="botonCapturarFoto" class="camera-btn camera-btn-icon" onclick="capturarFoto()" title="Hacer foto">📸</button>
                 <button id="voice-control-modal-btn" class="camera-btn camera-btn-icon" onclick="iniciarControlVoz()" title="Control por voz" disabled>
                     <span class="mic-icon">🎤</span>
                 </button>
-                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video" disabled>🎥</button>
+                <button id="botonGrabarVideo" class="camera-btn camera-btn-icon" onclick="toggleGrabacion()" title="Grabar video">🎥</button>
             </div>
         </div>
     </div>
@@ -4440,7 +4440,8 @@
                         removeClass: ['boton-verde', 'boton-amarillo', 'boton-rojo'],
                         addClass: []
                     });
-                    if (cameraFisheye) cameraFisheye.disabled = true;
+                    // Mantener herramientas de cámara habilitadas incluso desconectado
+                    // No deshabilitar corrección de ojo de pez ni detección
                     break;
             }
         }
