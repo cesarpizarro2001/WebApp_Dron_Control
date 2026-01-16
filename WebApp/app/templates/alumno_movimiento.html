@@ -129,7 +129,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            padding: 8px;
+            padding: 4px 8px; /* Reducir padding superior */
             padding-bottom: 80px; /* Espacio extra para botones fijos */
             /* Offset dinámico bajo la barra fija */
             margin-top: var(--topbar-height);
@@ -156,7 +156,7 @@
             padding: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             border: 1px solid #e9ecef;
-            margin-top: 8px;
+            margin-top: 2px; /* Reducir espacio superior */
             margin-bottom: 8px;
         }
 
@@ -762,6 +762,130 @@
             0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0; }
         }
+
+        /* Sliders deshabilitados para alumno (solo visualización) */
+        .setting-slider:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ========== MEDIA QUERIES PARA PANTALLAS GRANDES (DESKTOP) ========== */
+        @media (min-width: 768px) {
+            /* Aumentar tamaño máximo del contenido principal */
+            .orientation-display {
+                max-width: 600px;
+                padding: 20px;
+            }
+
+            /* Aumentar tamaño de la visualización del móvil */
+            .phone-visualization {
+                width: 280px;
+                height: 140px;
+            }
+
+            /* Aumentar tamaño de los valores de ángulo */
+            .angle-box {
+                padding: 12px;
+            }
+
+            .angle-label {
+                font-size: 12px;
+            }
+
+            .angle-value {
+                font-size: 32px;
+            }
+
+            .angle-unit {
+                font-size: 18px;
+            }
+
+            /* Aumentar tamaño del botón de calibración */
+            .calibration-btn {
+                padding: 12px 20px;
+                font-size: 15px;
+            }
+
+            /* Aumentar tamaño del indicador de dirección */
+            .direction-indicator {
+                padding: 12px 20px;
+            }
+
+            .direction-label {
+                font-size: 12px;
+            }
+
+            .direction-value {
+                font-size: 24px;
+            }
+
+            /* Aumentar tamaño del minimapa */
+            .minimap-container {
+                width: 160px;
+                height: 160px;
+            }
+
+            /* Aumentar tamaño de los botones de control */
+            .control-btn {
+                padding: 14px 28px;
+                font-size: 16px;
+                min-width: 120px;
+            }
+
+            /* Ajustar padding del contenido principal */
+            .main-content {
+                padding: 20px;
+            }
+
+            /* Aumentar tamaño de elementos de telemetría */
+            .telemetry-item {
+                padding: 6px 12px;
+            }
+
+            .telemetry-label {
+                font-size: 10px;
+            }
+
+            .telemetry-value {
+                font-size: 16px;
+            }
+
+            /* Aumentar tamaño del botón home */
+            .home-btn {
+                padding: 10px 18px;
+                font-size: 14px;
+            }
+
+            .top-bar h2 {
+                font-size: 18px;
+            }
+        }
+
+        /* Para pantallas muy grandes */
+        @media (min-width: 1024px) {
+            .orientation-display {
+                max-width: 800px;
+                padding: 30px;
+            }
+
+            .phone-visualization {
+                width: 360px;
+                height: 180px;
+            }
+
+            .angle-value {
+                font-size: 40px;
+            }
+
+            .direction-value {
+                font-size: 28px;
+            }
+
+            .minimap-container {
+                width: 200px;
+                height: 200px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1001,7 +1125,68 @@
         let dronMarker = null;
         let directionArrow = null;
 
+        // === Ajuste dinámico de altura de la barra superior ===
+        function updateTopbarHeight() {
+            const topBar = document.querySelector('.top-bar');
+            if (!topBar) return;
+            const rect = topBar.getBoundingClientRect();
+            const height = Math.round(rect.height);
+            document.documentElement.style.setProperty('--topbar-height', height + 'px');
+        }
+
+        // Actualizar al cargar, al cambiar tamaño y al cambiar orientación
+        window.addEventListener('DOMContentLoaded', () => {
+            updateTopbarHeight();
+            // segunda medición tras el render para evitar saltos
+            requestAnimationFrame(updateTopbarHeight);
+            setTimeout(updateTopbarHeight, 100);
+
+            // Deshabilitar todos los sliders dentro de ajustes para el alumno
+            document.querySelectorAll('.settings-content .setting-slider').forEach(el => {
+                try {
+                    el.disabled = true;
+                } catch {}
+            });
+        });
+        window.addEventListener('resize', updateTopbarHeight);
+        window.addEventListener('orientationchange', updateTopbarHeight);
+
         // ==================== INICIALIZACIÓN ====================
+
+        // Panel de ajustes (abrir/cerrar)
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('settingsOverlay');
+            if (!panel || !overlay) return;
+            panel.classList.toggle('open');
+            const opened = panel.classList.contains('open');
+            overlay.classList.toggle('open', opened);
+            // Recalcular altura tras cambios visuales
+            updateTopbarHeight();
+        }
+
+        // Pantalla completa
+        function toggleFullscreen() {
+            const btn = document.getElementById('fullscreenBtn');
+            if (!document.fullscreenElement) {
+                (document.documentElement.requestFullscreen || document.body.requestFullscreen).call(document.documentElement);
+                if (btn) btn.classList.add('active');
+                document.body.classList.add('is-fullscreen');
+            } else {
+                (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
+                if (btn) btn.classList.remove('active');
+                document.body.classList.remove('is-fullscreen');
+            }
+        }
+
+        // Sincronizar estado visual al cambiar fullscreen por otros medios
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.getElementById('fullscreenBtn');
+            const isFs = !!document.fullscreenElement;
+            document.body.classList.toggle('is-fullscreen', isFs);
+            if (btn) btn.classList.toggle('active', isFs);
+            updateTopbarHeight();
+        });
 
         // Inicializar minimapa
         function initMinimap() {

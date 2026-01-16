@@ -11,7 +11,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 professor_device_info = {'isTouchDevice': None}
 # Estado UI compartido para re-sincronizar a alumnos que se conectan tarde
 ui_state = {
-    'gamepad_modal': None  # 'open' | 'close' | None
+    'gamepad_modal': None,  # 'open' | 'close' | None
+    'gamepad_connected': False  # Estado de conexión del gamepad del profesor
 }
 
 # ========================================================================
@@ -190,6 +191,14 @@ def handle_join_alumno():
             emit('gamepad_modal_sync', {'action': 'open'})
     except Exception as e:
         print(f"❌ Error re-sincronizando gamepad_modal al alumno: {e}")
+    
+    # Reenviar estado actual del gamepad si el profesor tiene uno conectado
+    try:
+        gamepad_connected = ui_state.get('gamepad_connected', False)
+        print(f"  └─> Re-sincronizando estado del gamepad: {'CONECTADO' if gamepad_connected else 'DESCONECTADO'}")
+        emit('gamepad_status_sync', {'connected': gamepad_connected})
+    except Exception as e:
+        print(f"❌ Error re-sincronizando gamepad_status al alumno: {e}")
 
 # ==================================================================================
 
@@ -317,6 +326,10 @@ def handle_gamepad_status_sync(payload):
         connected = payload.get('connected')
         status = 'CONECTADO' if connected else 'DESCONECTADO'
         print(f"[SYNC GAMEPAD → ALUMNOS] {status}")
+        
+        # Guardar el estado actual para nuevos alumnos que se conecten
+        ui_state['gamepad_connected'] = connected
+        
         socketio.emit('gamepad_status_sync', payload, room='alumnos')
     except Exception as e:
         print(f"❌ Error en gamepad_status_sync: {e}")

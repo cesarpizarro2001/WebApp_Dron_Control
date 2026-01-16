@@ -206,6 +206,9 @@ def start_webrtc_emitter():
     webrtc_thread = threading.Thread(target=run_event_loop, daemon=True)
     webrtc_thread.start()
     
+    # Esperar a que el event loop esté listo (pequeño delay para asegurar que el thread está corriendo)
+    time.sleep(0.1)
+    
     # Registrarse como emisor en el servidor (una sola vez)
     try:
         sio.emit('webrtc_register_emitter', {'stream_id': 'dron_camera'})
@@ -1321,7 +1324,7 @@ def video_Websocket_thread():
                 print("Error: No se pudo leer frame de la cámara")
                 break
             
-            # Corrección de ojo de pez (si está activada y hay calibración)
+            # Corrección de ojo de pez 
             try:
                 if fisheye_enabled and cam_matrix is not None and dist_coefs is not None:
                     # Preparar matrices para el tamaño actual del frame si aún no están listas
@@ -1342,17 +1345,9 @@ def video_Websocket_thread():
                         frame = u_img
             except Exception as e:
                 # En caso de error, registrar y continuar sin corrección
-                print(f"⚠️ Error aplicando corrección de ojo de pez: {e}")
+                print(f" Error aplicando corrección de ojo de pez: {e}")
             
-            # DETECCIÓN DE OBJETOS (si está activada)
-            if detection_enabled and yolo_model is not None:
-                try:
-                    results = yolo_model(frame, verbose=False, max_det=4, conf=0.5)
-                    frame = results[0].plot()  # Frame con bounding boxes y labels
-                except Exception as e:
-                    print(f"❌ Error en detección: {e}")
-            
-            # ZOOM (si está activado)
+            # ZOOM DIGITAL
             with zoom_lock:
                 current_zoom = zoom_level
                 current_center = zoom_center
@@ -1382,7 +1377,15 @@ def video_Websocket_thread():
                     cropped = frame[y1:y2, x1:x2]
                     frame = cv2.resize(cropped, (w, h), interpolation=cv2.INTER_LINEAR)
                 except Exception as e:
-                    print(f"⚠️ Error aplicando zoom: {e}")
+                    print(f" Error aplicando zoom: {e}")
+            
+            # DETECCIÓN DE OBJETOS
+            if detection_enabled and yolo_model is not None:
+                try:
+                    results = yolo_model(frame, verbose=False, max_det=4, conf=0.5)
+                    frame = results[0].plot()  # Frame con bounding boxes y labels
+                except Exception as e:
+                    print(f"Error en detección: {e}")
             
             # Almacena el último frame capturado
             last_frame = frame.copy()
@@ -2661,6 +2664,10 @@ def connect():
     # Iniciar emisor WebRTC para telemetría (stream separado, siempre activo)
     try:
         start_webrtc_emitter()
+        
+        # Pequeño delay adicional para asegurar que el event loop está completamente listo
+        time.sleep(0.05)
+        
         # Registrar stream de telemetría (sin video, solo Data Channel)
         sio.emit('webrtc_register_emitter', {'stream_id': 'telemetry'})
         print("📡 [WebRTC] Stream 'telemetry' registrado (solo Data Channel)")
@@ -3187,12 +3194,12 @@ deshabilitar_boton(RTLBtn)
 deshabilitar_boton(disconnectBtn, "desconectado")
 
 # Precargar modelo YOLO al inicio
-print("🚀 Precargando modelo YOLO...")
+print("Precargando modelo YOLO...")
 try:
     yolo_model = YOLO('yolov8s.pt')
-    print("✅ Modelo YOLO precargado y listo")
+    print("Modelo YOLO precargado y listo")
 except Exception as e:
-    print(f"⚠️  No se pudo precargar YOLO: {e}")
+    print(f"No se pudo precargar YOLO: {e}")
     yolo_model = None
 
 ventana.mainloop()

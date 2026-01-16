@@ -125,12 +125,12 @@
             position: absolute;
             left: 10px;
             display: flex;
-            gap: 15px;
+            gap: 5px;
         }
 
         .camera-top-controls-center {
             display: flex;
-            gap: 15px; /* Igual que en control.html */
+            gap: 5px; /* Igual que en control.html */
         }
 
         .camera-top-controls-right {
@@ -138,7 +138,7 @@
             top: 6px;
             right: 10px;
             display: flex;
-            gap: 10px;
+            gap: 5px;
         }
 
         .camera-controls {
@@ -1544,8 +1544,13 @@
         }
 
         #voice-control-modal-btn .mic-icon {
-            font-size: 28px;
+            font-size: 22px;
             transition: transform 0.3s ease;
+            display: block;
+            text-align: center;
+            line-height: 1;
+            margin: 0;
+            padding: 0;
         }
 
         #voice-control-modal-btn.listening {
@@ -2153,6 +2158,10 @@
                 font-size: 14px;
             }
 
+            #voice-control-modal-btn .mic-icon {
+                font-size: 16px;
+            }
+
             .voice-text {
                 font-size: 11px;
             }
@@ -2400,6 +2409,7 @@
             <div class="camera-top-controls">
                 <div class="camera-top-controls-left">
                     <button id="toggleDetectionBtn" class="camera-btn camera-btn-icon" onclick="toggleDetection()" title="Activar detección de objetos" style="background: gray;" disabled>🔍</button>
+                    <button id="toggleFisheyeBtn" class="camera-btn camera-btn-icon" onclick="toggleFisheye()" title="Corrección ojo de pez" style="background: gray;" disabled>🐟</button>
                 </div>
                 <div class="camera-top-controls-center">
                     <button id="camera-despegar-btn" class="camera-btn camera-btn-icon" onclick="despegarDron()" title="Despegar" disabled>✈️</button>
@@ -2407,7 +2417,7 @@
                     <button id="camera-rtl-btn" class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL" disabled>🏠</button>
                 </div>
                 <div class="camera-top-controls-right">
-                    <button id="camera-settings-btn" class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Configuración de Video" disabled>⚙️</button>
+                    <button class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Ajustes" disabled>⚙️</button>
                 </div>
             </div>
             <!-- Cambio de <img> a <video> para WebRTC -->

@@ -136,12 +136,12 @@
             position: absolute;
             left: 10px;
             display: flex;
-            gap: 15px;
+            gap: 5px;
         }
 
         .camera-top-controls-center {
             display: flex;
-            gap: 15px;
+            gap: 5px;
         }
 
         .camera-top-controls-right {
@@ -149,7 +149,7 @@
             top: 6px;
             right: 10px;
             display: flex;
-            gap: 10px;
+            gap: 5px;
         }
 
         .camera-controls {
@@ -1547,8 +1547,13 @@
         }
 
         #voice-control-modal-btn .mic-icon {
-            font-size: 28px;
+            font-size: 22px;
             transition: transform 0.3s ease;
+            display: block;
+            text-align: center;
+            line-height: 1;
+            margin: 0;
+            padding: 0;
         }
 
         #voice-control-modal-btn.listening {
@@ -2156,6 +2161,10 @@
                 font-size: 14px;
             }
 
+            #voice-control-modal-btn .mic-icon {
+                font-size: 16px;
+            }
+
             .voice-text {
                 font-size: 11px;
             }
@@ -2225,7 +2234,7 @@
             }
 
             .camera-top-controls {
-                gap: 10px;
+                gap: 8px;
                 padding: 8px;
             }
 
@@ -2520,7 +2529,7 @@
                     <button id="camera-rtl-btn" class="camera-btn camera-btn-icon" onclick="returnToLaunch()" title="RTL" disabled>🏠</button>
                 </div>
                 <div class="camera-top-controls-right">
-                    <button id="camera-settings-btn" class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Configuración de Video" disabled>⚙️</button>
+                    <button class="camera-btn camera-btn-icon" onclick="toggleSettings()" title="Ajustes">⚙️</button>
                 </div>
             </div>
             <!-- Cambio de <img> a <video> para WebRTC -->
@@ -2585,7 +2594,7 @@
     <div id="modal-instrucciones" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>📍 Crear Ruta</h2>
+                <h2>Crear Ruta</h2>
             </div>
             <div class="modal-body">
                 <h3>🗺️ Cómo usar:</h3>
@@ -2594,7 +2603,7 @@
                     <li>Se unen con <strong>línea azul</strong></li>
                 </ul>
 
-                <h3>📸 Capturas:</h3>
+                <h3>📍 Waypoints:</h3>
                 <ul>
                     <li><span class="color-indicator yellow"></span><strong>Ninguna</strong> - Solo pasa</li>
                     <li><span class="color-indicator blue"></span><strong>Foto</strong> - Captura al llegar</li>
@@ -3647,7 +3656,7 @@
             
             // Actualizar UI del botón
             if (detectionEnabled) {
-                btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                 btn.title = 'Desactivar detección de objetos';
                 console.log('🔍 Detección de objetos ACTIVADA');
             } else {
@@ -3840,7 +3849,7 @@
             return `${prefix}_${flightName}_${timestamp}.${ext}`;
         }
 
-        // Función de capturar foto (navegador - captura local del stream WebRTC)
+        // Función de capturar foto (captura local del stream WebRTC)
         function capturarFoto() {
             const videoEl = document.getElementById('video-stream');
             if (!videoEl || !videoEl.srcObject) {
@@ -3857,10 +3866,10 @@
             canvas.toBlob((blob) => {
                 const fileName = uniqueName('foto', 'jpg');
                 
-                // Mostrar preview usando función existente
+                // Mostrar preview de la foto
                 mostrarFotoCapturada(blob);
                 
-                // Enviar foto a los alumnos (base64) para que la vean sin guardar
+                // Enviar foto a los alumnos para que la vean (sin guardar)
                 const reader = new FileReader();
                 reader.onloadend = function() {
                     const base64data = reader.result;
@@ -4038,7 +4047,7 @@
             const videoEl = document.getElementById('video-stream');
             
             if (!isRecording) {
-                // Iniciar grabación
+                // Hay video?
                 if (!videoEl || !videoEl.srcObject) {
                     alert('No hay stream de video para grabar');
                     return;
@@ -4235,7 +4244,6 @@
             const cameraDespegar = document.getElementById('camera-despegar-btn');
             const cameraAterrizar = document.getElementById('camera-aterrizar-btn');
             const cameraRTL = document.getElementById('camera-rtl-btn');
-            const cameraSettings = document.getElementById('camera-settings-btn');
             const cameraFoto = document.getElementById('botonCapturarFoto');
             const cameraVoz = document.getElementById('voice-control-modal-btn');
             const cameraVideo = document.getElementById('botonGrabarVideo');
@@ -4282,7 +4290,6 @@
                     }
                     
                     // Habilitar botones de utilidades de cámara al conectar
-                    if (cameraSettings) cameraSettings.disabled = false;
                     if (cameraFoto) cameraFoto.disabled = false;
                     if (cameraVoz) cameraVoz.disabled = false;
                     if (cameraVideo) cameraVideo.disabled = false;
@@ -4514,14 +4521,22 @@
             // Limpiar timeout anterior
             if (timeoutConexion) clearTimeout(timeoutConexion);
 
-            // Timeout corto (1s) para revertir si aún no hay backend listo
+            // Timeout de 3 segundos para mantener el estado amarillo mientras se establece la conexión WebRTC
             timeoutConexion = setTimeout(() => {
                 if (!telemetry_info || telemetry_info.state !== 'connected') {
                     botonConectar.textContent = 'Conectar';
                     botonConectar.classList.remove('boton-verde', 'boton-amarillo');
-                    console.log("⚠️ Timeout de conexión - volviendo a estado inicial");
+                    console.log("⚠️ Timeout de conexión (3s) - volviendo a estado inicial");
+                    
+                    // Sincronizar con vista alumno
+                    socket.emit('button_style_sync', {
+                        buttonId: 'botonConectar',
+                        text: 'Conectar',
+                        removeClass: ['boton-verde', 'boton-amarillo'],
+                        addClass: []
+                    });
                 }
-            }, 1000);
+            }, 3000);
         }
 
         function despegarDron() {
@@ -4574,7 +4589,7 @@
                     }
                     
                     timeoutDespegue = null;
-                }, 15000); // 15 segundos
+                }, 20000); // 20 segundos
         }
 
         // Función para despegar el dron mediante gesto o voz con altura específica
@@ -6346,6 +6361,7 @@
             const joystickContainer = document.getElementById('joystick-container');
             const joystickArea = document.getElementById('joystick-area');
             const navegacion = document.getElementById('navegacion');
+            const botonModoMovimiento = document.getElementById('botonModoMovimiento');
             
             if (IS_TOUCH_DEVICE) {
                 // Dispositivo táctil: mostrar joystick fijo, ocultar cruceta
@@ -6358,7 +6374,13 @@
                 if (navegacion) {
                     navegacion.classList.add('touch-hidden');
                 }
-                console.log('Configurado para dispositivo táctil: Joystick visible, cruceta oculta');
+                // Habilitar botón de Modo Movimiento
+                if (botonModoMovimiento) {
+                    botonModoMovimiento.disabled = false;
+                    botonModoMovimiento.style.opacity = '1';
+                    botonModoMovimiento.style.cursor = 'pointer';
+                }
+                console.log('Configurado para dispositivo táctil: Joystick visible, cruceta oculta, Modo Movimiento habilitado');
             } else {
                 // Dispositivo no táctil: ocultar joystick completamente, mostrar cruceta
                 if (joystickContainer) {
@@ -6370,7 +6392,14 @@
                 if (navegacion) {
                     navegacion.classList.remove('touch-hidden');
                 }
-                console.log('Configurado para dispositivo no táctil: Cruceta visible, joystick completamente oculto');
+                // Deshabilitar botón de Modo Movimiento
+                if (botonModoMovimiento) {
+                    botonModoMovimiento.disabled = true;
+                    botonModoMovimiento.style.opacity = '0.5';
+                    botonModoMovimiento.style.cursor = 'not-allowed';
+                    botonModoMovimiento.title = 'Modo solo disponible en dispositivos táctiles';
+                }
+                console.log('Configurado para dispositivo no táctil: Cruceta visible, joystick completamente oculto, Modo Movimiento deshabilitado');
             }
         }
 

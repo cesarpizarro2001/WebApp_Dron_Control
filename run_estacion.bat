@@ -17,4 +17,26 @@ start /min cmd /k "cd /d %~dp0EstacionTierra && if exist ..\.venv\Scripts\activa
 
 echo [OK] Estacion de Tierra lanzada en una ventana separada.
 
+echo.
+echo =================================================
+echo                 QR GENERADOS
+echo =================================================
+echo.
+
+REM === URLs fijas para entorno UPC ===
+set prof_url=https://dronseetac.upc.edu:8106
+set alum_url=https://dronseetac.upc.edu:8106/alumno_control
+
+echo WebApp Profesor:
+echo    %prof_url%
+echo.
+echo WebApp Alumno:
+echo    %alum_url%
+echo.
+echo.
+echo QR del Profesor                                            QR del Alumno
+python Generador_QR_colindante.py %prof_url% %alum_url%
+echo.
+echo.
+
 pause
