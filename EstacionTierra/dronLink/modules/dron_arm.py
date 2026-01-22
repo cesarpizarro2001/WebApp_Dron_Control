@@ -1,4 +1,5 @@
 import threading
+import time
 from pymavlink import mavutil
 
 def setFlightMode (self,mode):
@@ -18,7 +19,25 @@ def _arm(self, callback=None, params = None):
                                          mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 1, 0, 0, 0, 0, 0, 0)
 
     msg = self.message_handler.wait_for_message('COMMAND_ACK', timeout=3)
-    self.vehicle.motors_armed_wait()
+    
+    # Esperar armado con timeout manual de 10 segundos
+    timeout = 10
+    start_time = time.time()
+    armed = False
+    
+    while time.time() - start_time < timeout:
+        if self.vehicle.motors_armed():
+            print("✓ El dron se armó correctamente")
+            armed = True
+            break
+        time.sleep(0.1)  # Verificar cada 100ms
+    
+    if not armed:
+        print("Timeout esperando armado del dron (10s)")
+        print("✗ ERROR: El dron NO se armó")
+        self.state = "connected"
+        return
+    
     self.state = "armed"
     if callback != None:
         if self.id == None:
