@@ -736,12 +736,12 @@ def handle_webrtc_request_stream(data):
     if stream_id in webrtc_emitters:
         emitter_sid = webrtc_emitters[stream_id]
         
-        # Limpiar TODAS las conexiones anteriores de este receptor (si existen)
+        # Limpiar solo las conexiones anteriores de este receptor PARA EL MISMO STREAM
         old_connections = [conn_id for conn_id, conn in webrtc_active_connections.items() 
-                          if conn['receiver'] == receiver_sid]
+                          if conn['receiver'] == receiver_sid and conn.get('stream_id') == stream_id]
         
         for old_conn_id in old_connections:
-            print(f"   └─> 🗑️ Cerrando conexión anterior: {old_conn_id}")
+            print(f"   └─> 🗑️ Cerrando conexión anterior del mismo stream ({stream_id}): {old_conn_id}")
             # Notificar al emisor que cierre la conexión anterior
             emit('webrtc_close_connection', {'connection_id': old_conn_id}, room=emitter_sid)
             # Eliminar de activas
@@ -965,9 +965,9 @@ if __name__ == '__main__':
     import ssl
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     #CERTIFICADO LOCALHOST
-    #ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
     #CERTIFICADO SERVIDOR
-    ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
+    #ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
     
     # socketio.run() ejecuta tanto Flask como Socket.IO en el mismo puerto
     socketio.run(
