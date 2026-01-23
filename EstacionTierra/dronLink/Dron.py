@@ -22,7 +22,7 @@ class Dron(object):
         self.frequency = None  #numero de muestras de telemetría por segundo
 
         self.going = False # se usa en dron_nav
-        self.navSpeed = 5 # se usa en dron_nav
+        self.navSpeed = 1 # se usa en dron_nav
         self.direction = 'Stop' # se usa en dron_nav
 
         self.sendTelemetryInfo = False #usado en dron_telemetry

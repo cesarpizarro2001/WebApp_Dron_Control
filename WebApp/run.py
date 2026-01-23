@@ -965,9 +965,9 @@ if __name__ == '__main__':
     import ssl
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     #CERTIFICADO LOCALHOST
-    ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
+    #ssl_context.load_cert_chain('public_certificate.pem', 'private_key.pem')
     #CERTIFICADO SERVIDOR
-    #ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
+    ssl_context.load_cert_chain('/etc/letsencrypt/live/dronseetac.upc.edu/cert.pem','/etc/letsencrypt/live/dronseetac.upc.edu/privkey.pem')
     
     # socketio.run() ejecuta tanto Flask como Socket.IO en el mismo puerto
     socketio.run(

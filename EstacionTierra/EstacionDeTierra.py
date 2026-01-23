@@ -872,6 +872,23 @@ def on_command_received(data):
             print(f'Moviendo al: {direction}')
             dron.go(direction)
 
+    elif action == 'move_distance':
+        if dron.state == 'flying':
+            direction = data.get('direction')
+            distance = float(data.get('distance', 1))
+            print(f'Moviendo {distance}m al {direction} (controlado por autopiloto)')
+            
+            def on_move_complete():
+                print(f'✅ Movimiento completado: {distance}m al {direction}')
+                # Notificar a la WebApp que el movimiento terminó
+                sio.emit('move_distance_complete', {
+                    'direction': direction,
+                    'distance': distance
+                })
+            
+            # Ejecutar move_distance de forma no bloqueante con callback
+            dron.move_distance(direction, distance, blocking=False, callback=on_move_complete)
+
     elif action == 'Land':
         if dron.state == 'flying':
             print('Aterrizando desde WebApp')

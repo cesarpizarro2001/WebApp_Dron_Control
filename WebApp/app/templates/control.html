@@ -4223,6 +4223,20 @@
             processTelemetry(event.detail);
         });
 
+        // Recibir notificación de que move_distance ha completado
+        socket.on('move_distance_complete', function(data) {
+            console.log(`✅ Movimiento completado por autopiloto: ${data.distance}m al ${data.direction}`);
+            
+            // Desactivar estado de movimiento con distancia
+            if (movimientoConDistancia.activo) {
+                movimientoConDistancia.activo = false;
+                movimientoConDistancia.direccion = null;
+                movimientoConDistancia.distanciaObjetivo = 0;
+                
+                hablar(`Movimiento completado, distancia recorrida ${data.distance} metros`);
+            }
+        });
+
         // Eventos de video basados en servidor eliminados (deprecated)
 
         socket.on('flight_name_set', function(flightName) {
@@ -4658,42 +4672,6 @@
             intervaloMonitoreo: null
         };
 
-        // Función para calcular distancia entre dos puntos GPS (fórmula de Haversine)
-        function calcularDistanciaGPS(lat1, lon1, lat2, lon2) {
-            const R = 6371000; // Radio de la Tierra en metros
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c; // Distancia en metros
-        }
-
-        // Función para monitorear distancia recorrida
-        function monitorearDistancia() {
-            if (!movimientoConDistancia.activo || !telemetry_info) {
-                return;
-            }
-
-            // Calcular distancia recorrida desde posición inicial
-            const distanciaActual = calcularDistanciaGPS(
-                movimientoConDistancia.posicionInicial.lat,
-                movimientoConDistancia.posicionInicial.lon,
-                telemetry_info.lat,
-                telemetry_info.lon
-            );
-
-            movimientoConDistancia.distanciaRecorrida = distanciaActual;
-
-            console.log(`📏 Distancia recorrida: ${distanciaActual.toFixed(2)}m / ${movimientoConDistancia.distanciaObjetivo}m`);
-
-            // Verificar si se alcanzó la distancia objetivo (con tolerancia de 0.5m)
-            if (distanciaActual >= movimientoConDistancia.distanciaObjetivo - 0.5) {
-                detenerMovimientoConDistancia(true);
-            }
-        }
-
         // Función para detener movimiento con distancia
         function detenerMovimientoConDistancia(exitoso = false) {
             if (movimientoConDistancia.activo) {
@@ -4729,33 +4707,29 @@
                 detenerMovimientoConDistancia(false);
             }
 
-            // Si se especifica distancia, activar monitoreo
+            // Si se especifica distancia, usar move_distance (más preciso, controlado por el autopiloto)
             if (distanciaMetros !== null && distanciaMetros > 0) {
-                if (!telemetry_info || !telemetry_info.lat || !telemetry_info.lon) {
-                    console.error('❌ No hay telemetría GPS disponible');
-                    hablar('Error: No hay GPS disponible');
-                    return;
-                }
-
-                // Guardar posición inicial
-                movimientoConDistancia.posicionInicial = {
-                    lat: telemetry_info.lat,
-                    lon: telemetry_info.lon
-                };
+                console.log(`🎯 Movimiento preciso: ${direction} por ${distanciaMetros}m (controlado por autopiloto)`);
+                
+                // Enviar comando move_distance al backend
+                socket.emit('command', { 
+                    action: 'move_distance', 
+                    direction: direction, 
+                    distance: distanciaMetros 
+                });
+                
+                // Marcar como activo para el sistema de órdenes compuestas
+                movimientoConDistancia.activo = true;
                 movimientoConDistancia.direccion = direction;
                 movimientoConDistancia.distanciaObjetivo = distanciaMetros;
-                movimientoConDistancia.distanciaRecorrida = 0;
-                movimientoConDistancia.activo = true;
-
-                console.log(`🎯 Iniciando movimiento al ${direction} por ${distanciaMetros}m`);
-                console.log(`📍 Posición inicial: ${telemetry_info.lat.toFixed(6)}, ${telemetry_info.lon.toFixed(6)}`);
-
-                // Iniciar monitoreo cada 100ms
-                movimientoConDistancia.intervaloMonitoreo = setInterval(monitorearDistancia, 100);
+                
+                // Nota: El autopiloto del dron controla la distancia exacta
+                // No necesitamos monitoreo GPS desde JavaScript
+            } else {
+                // Movimiento continuo sin distancia específica
+                console.log(`🎯 Movimiento continuo: ${direction}`);
+                socket.emit('command', { action: 'go', direction: direction });
             }
-
-            // Enviar comando de movimiento
-            socket.emit('command', { action: 'go', direction: direction });
         }
 
         function returnToLaunch() {
@@ -4879,7 +4853,7 @@
                  comandoLower.includes('oeste') || comandoLower.includes('izquierda')) &&
                  extraerDistancia(comando) !== null) {
                 
-                console.log('⏳ Esperando a que se complete el movimiento con distancia...');
+                console.log('⏳ Esperando a que el autopiloto complete el movimiento...');
                 
                 // Esperar hasta que movimientoConDistancia.activo sea false
                 const tiempoInicio = Date.now();
@@ -4887,7 +4861,7 @@
                 
                 while (Date.now() - tiempoInicio < timeout) {
                     if (!movimientoConDistancia.activo) {
-                        console.log('✅ Movimiento completado');
+                        console.log('✅ Movimiento completado por autopiloto');
                         await new Promise(resolve => setTimeout(resolve, 500)); // Pequeña pausa extra
                         return true;
                     }
