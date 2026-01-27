@@ -208,6 +208,16 @@ def handle_telemetry(data):
     # Reenviar telemetría a todos los clientes web conectados (profesores y alumnos)
     socketio.emit('telemetry_info', data, include_self=False)
 
+# Recibir confirmación de movimiento completado desde la Estación de Tierra
+@socketio.on('move_distance_complete')
+def handle_move_distance_complete(data):
+    """Reenvía notificación de movimiento completado a la WebApp"""
+    direction = data.get('direction')
+    distance = data.get('distance')
+    print(f"✅ Movimiento completado recibido del backend: {distance}m al {direction}")
+    # Reenviar a todos los clientes web
+    socketio.emit('move_distance_complete', data, include_self=False)
+
 # ==================================================================================
 # HANDLERS DE SINCRONIZACIÓN PROFESOR -> ALUMNO (alumno_control.html)
 # Estos handlers retransmiten eventos del profesor a los alumnos para mantener
