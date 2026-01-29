@@ -10,9 +10,9 @@ El sistema incluye:
 - Control modo piloto (mando real y joysticks virtuales)
 - Control por sensores del movil
 - Telemetría en tiempo real
-- Visualización de video del dron
+- Video camara del dron en tiempo real
 - Sistema de waypoints y rutas
-- Galería de fotos y videos capturados
+- Interfaz para alumnos
 
 ## 2. Requerimientos
 
@@ -86,7 +86,7 @@ El sistema incluye:
 ## 5. Recursos Adicionales
 
 ### Videos Tutorial
-- Video tutorial disponible en: https://www.youtube.com/watch?v=iixXgZBE0gM&ab_channel=DronsEETAC
+- Video tutorial disponible en: [https://www.youtube.com/watch?v=iixXgZBE0gM&ab_channel=DronsEETAC](https://www.youtube.com/watch?v=C7m6DbcpqIo)
 - Video explicación del código disponible en: https://www.youtube.com/watch?v=3-QpJUCHGdY&ab_channel=DronsEETAC
 
 ---
