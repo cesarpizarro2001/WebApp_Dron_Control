@@ -37,7 +37,7 @@ El sistema incluye:
 
 ### Paso 2: Instalar Dependencias Automáticamente
 1. Navegar hasta la carpeta del proyecto
-2. Ejecutar el archivo **`setup.bat`** haciendo doble clic
+2. Ejecutar el archivo **`setup.bat`** haciendo doble clic (solo para Windows)
 3. El script automáticamente:
    - ✅ Verificará que tengas Python 3.10.x instalado
    - ✅ Instalará todas las librerías necesarias desde `requirements.txt`
@@ -45,7 +45,8 @@ El sistema incluye:
 4. Esperar a que finalice la instalación (puede tardar varios minutos)
 5. Si todo es correcto, verás un mensaje de confirmación
 
-**Nota**: Si el script detecta una versión incorrecta de Python, mostrará un error y deberás instalar Python 3.10.x antes de continuar.
+**Nota**: - Si el script detecta una versión incorrecta de Python, mostrará un error y deberás instalar Python 3.10.x antes de continuar.
+          - Si no usa windows deberá crear el entorno virtual e instalar las librerias de forma tradicional.
 
 ### Paso 3: Configurar Certificados HTTPS
 1. Abrir Git Bash en la carpeta del proyecto
@@ -72,11 +73,12 @@ El sistema incluye:
 3. Verificar que la telemetría esté funcionando correctamente
 
 ### Paso 2: Ejecutar la Aplicación Web
-1. En la carpeta del proyecto, ejecutar **`run.bat`** haciendo doble clic
+1. En la carpeta del proyecto, ejecutar **`run.bat`** haciendo doble clic (solo para Windows)
 2. El script iniciará automáticamente:
    - ✅ Servidor Flask (WebApp)
    - ✅ Estación de Tierra (conexión con el dron)
 3. Esperar a que aparezcan mensajes indicando que los servidores están corriendo
+**Nota:** Si no utiliza Windows deberá iniciar el entorno virtual y correr tanto run.py como estaciondetierra.py
 
 ### Paso 3: Acceder a la Interfaz Web
 1. Una vez ejecutado `run.bat`, en la ventana de consola aparecerá:
@@ -87,8 +89,8 @@ El sistema incluye:
 
 ### Videos Tutorial
 - Video tutorial disponible en: [https://www.youtube.com/watch?v=iixXgZBE0gM&ab_channel=DronsEETAC](https://www.youtube.com/watch?v=C7m6DbcpqIo)
-- Video explicación del código disponible en: https://www.youtube.com/watch?v=3-QpJUCHGdY&ab_channel=DronsEETAC
+- Video explicación del código disponible en: [https://www.youtube.com/watch?v=3-QpJUCHGdY&ab_channel=DronsEETAC](https://www.youtube.com/watch?v=r8kGio3rBJI)
 
 ---
 
-**Última actualización**: Diciembre 2025
+**Última actualización**: Febrero 2025
